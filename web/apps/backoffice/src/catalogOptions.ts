@@ -1,4 +1,4 @@
-import { useTenantId } from '@kapsora/auth';
+import { usePermission, useSession, useTenantId } from '@kapsora/auth';
 import { useQuery } from '@tanstack/react-query';
 
 import { useOps } from './api';
@@ -16,8 +16,10 @@ export const catalogOptionKeys = {
 export function useDefinitionOptions() {
   const ops = useOps();
   const tenantId = useTenantId();
-  return useQuery({
-    queryKey: catalogOptionKeys.definitions(tenantId),
+  const actorId = useSession((state) => state.session?.actorId ?? '');
+  const canRead = usePermission('catalog.read');
+  const query = useQuery({
+    queryKey: [...catalogOptionKeys.definitions(tenantId), actorId],
     queryFn: async () => {
       const page = await ops.catalog.listDefinitions(tenantId, { active: true, limit: 200 });
       return page.items.map((definition) => ({
@@ -25,14 +27,28 @@ export function useDefinitionOptions() {
         label: `${definition.code} · ${definition.name}`,
       }));
     },
+    enabled: canRead,
   });
+  if (!canRead) {
+    return {
+      ...query,
+      data: [],
+      isPending: false,
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+    };
+  }
+  return query;
 }
 
 export function useCategoryOptions() {
   const ops = useOps();
   const tenantId = useTenantId();
-  return useQuery({
-    queryKey: catalogOptionKeys.categories(tenantId),
+  const actorId = useSession((state) => state.session?.actorId ?? '');
+  const canRead = usePermission('catalog.read');
+  const query = useQuery({
+    queryKey: [...catalogOptionKeys.categories(tenantId), actorId],
     queryFn: async () => {
       const page = await ops.catalog.listCategories(tenantId, { limit: 200 });
       return page.items.map((category) => ({
@@ -40,5 +56,17 @@ export function useCategoryOptions() {
         label: `${category.code} · ${category.name}`,
       }));
     },
+    enabled: canRead,
   });
+  if (!canRead) {
+    return {
+      ...query,
+      data: [],
+      isPending: false,
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+    };
+  }
+  return query;
 }

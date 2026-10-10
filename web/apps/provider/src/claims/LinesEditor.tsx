@@ -1,4 +1,6 @@
 import type { ClaimLine, NewClaimLine } from '@kapsora/api-client';
+import { useId } from 'react';
+import { claimDecimal, validClaimDecimal } from './numbers';
 import { useTranslation } from '@kapsora/i18n';
 import { Button, Input, Select, TBody, TD, TH, THead, TR, Table, useMinWidth } from '@kapsora/ui';
 
@@ -37,8 +39,8 @@ export function toNewLines(lines: DraftLine[]): NewClaimLine[] {
     lineNo: index + 1,
     serviceDefinitionId: l.serviceDefinitionId,
     unitType: l.unitType,
-    quantity: l.quantity.trim(),
-    lineAmount: l.lineAmount.trim(),
+    quantity: claimDecimal(l.quantity),
+    lineAmount: claimDecimal(l.lineAmount),
     currencyCode: 'TRY',
     description: l.description.trim() ? l.description.trim() : null,
   }));
@@ -48,7 +50,10 @@ export function linesValid(lines: DraftLine[]): boolean {
   return (
     lines.length > 0 &&
     lines.every(
-      (l) => l.serviceDefinitionId !== '' && l.quantity.trim() !== '' && l.lineAmount.trim() !== '',
+      (l) =>
+        l.serviceDefinitionId !== '' &&
+        validClaimDecimal(l.quantity, true) &&
+        validClaimDecimal(l.lineAmount),
     )
   );
 }
@@ -64,12 +69,15 @@ export function linesValid(lines: DraftLine[]): boolean {
 export function LinesEditor({
   lines,
   onChange,
+  fixedServices,
 }: {
   lines: DraftLine[];
   onChange: (lines: DraftLine[]) => void;
+  fixedServices?: { value: string; label: string; unitType: string }[];
 }) {
   const { t } = useTranslation();
-  const options = useServiceDefinitions();
+  const errorPrefix = useId();
+  const options = useServiceDefinitions(fixedServices === undefined);
   const wide = useMinWidth(768);
   const update = (index: number, patch: Partial<DraftLine>) =>
     onChange(lines.map((l, i) => (i === index ? { ...l, ...patch } : l)));
@@ -80,13 +88,17 @@ export function LinesEditor({
       ...(picked?.unitType ? { unitType: picked.unitType } : {}),
     });
   };
-  const serviceOptions = (options.data ?? []).map((o) => ({ value: o.value, label: o.label }));
+  const serviceOptions = (fixedServices ?? options.data ?? []).map((o) => ({
+    value: o.value,
+    label: o.label,
+  }));
 
   const controls = (line: DraftLine, index: number) => ({
     service: (
       <Select
         name={`lines.${index}.serviceDefinitionId`}
         aria-label={t('claims.lines.service')}
+        disabled={fixedServices !== undefined}
         value={line.serviceDefinitionId}
         onChange={(e) => pickService(index, e.target.value)}
         placeholder={t('common.none')}
@@ -102,24 +114,54 @@ export function LinesEditor({
       />
     ),
     quantity: (
-      <Input
-        name={`lines.${index}.quantity`}
-        aria-label={t('claims.lines.quantity')}
-        value={line.quantity}
-        onChange={(e) => update(index, { quantity: e.target.value })}
-        inputMode="decimal"
-        className="w-24 text-right font-mono"
-      />
+      <div className="grid justify-items-end gap-1">
+        <Input
+          name={`lines.${index}.quantity`}
+          aria-label={t('claims.lines.quantity')}
+          value={line.quantity}
+          onChange={(e) => update(index, { quantity: e.target.value })}
+          aria-invalid={!validClaimDecimal(line.quantity, true) || undefined}
+          aria-describedby={
+            !validClaimDecimal(line.quantity, true) ? `${errorPrefix}-${index}-quantity` : undefined
+          }
+          inputMode="decimal"
+          className="w-24 text-right font-mono"
+        />
+        {!validClaimDecimal(line.quantity, true) ? (
+          <p
+            id={`${errorPrefix}-${index}-quantity`}
+            role="alert"
+            className="text-danger max-w-48 text-xs"
+          >
+            {t('claims.handoff.quantityError')}
+          </p>
+        ) : null}
+      </div>
     ),
     asked: (
-      <Input
-        name={`lines.${index}.lineAmount`}
-        aria-label={t('claims.lines.asked')}
-        value={line.lineAmount}
-        onChange={(e) => update(index, { lineAmount: e.target.value })}
-        inputMode="decimal"
-        className="w-32 text-right font-mono"
-      />
+      <div className="grid justify-items-end gap-1">
+        <Input
+          name={`lines.${index}.lineAmount`}
+          aria-label={t('claims.lines.asked')}
+          value={line.lineAmount}
+          onChange={(e) => update(index, { lineAmount: e.target.value })}
+          aria-invalid={!validClaimDecimal(line.lineAmount) || undefined}
+          aria-describedby={
+            !validClaimDecimal(line.lineAmount) ? `${errorPrefix}-${index}-lineAmount` : undefined
+          }
+          inputMode="decimal"
+          className="w-32 text-right font-mono"
+        />
+        {!validClaimDecimal(line.lineAmount) ? (
+          <p
+            id={`${errorPrefix}-${index}-lineAmount`}
+            role="alert"
+            className="text-danger max-w-48 text-xs"
+          >
+            {t('claims.handoff.amountError')}
+          </p>
+        ) : null}
+      </div>
     ),
     remove: (
       <Button
@@ -142,12 +184,14 @@ export function LinesEditor({
             <TR>
               <TH>{t('claims.lines.line')}</TH>
               <TH>{t('claims.lines.service')}</TH>
-              <TH>{t('claims.lines.description')}</TH>
+              {fixedServices === undefined ? <TH>{t('claims.lines.description')}</TH> : null}
               <TH className="text-right">{t('claims.lines.quantity')}</TH>
               <TH className="text-right">{t('claims.lines.asked')}</TH>
-              <TH>
-                <span className="sr-only">{t('common.actions')}</span>
-              </TH>
+              {fixedServices === undefined ? (
+                <TH>
+                  <span className="sr-only">{t('common.actions')}</span>
+                </TH>
+              ) : null}
             </TR>
           </THead>
           <TBody>
@@ -157,7 +201,7 @@ export function LinesEditor({
                 <TR key={index}>
                   <TD className="font-mono">{index + 1}</TD>
                   <TD>{c.service}</TD>
-                  <TD>{c.description}</TD>
+                  {fixedServices === undefined ? <TD>{c.description}</TD> : null}
                   <TD>
                     <div className="flex items-center justify-end gap-2">
                       {c.quantity}
@@ -165,7 +209,7 @@ export function LinesEditor({
                     </div>
                   </TD>
                   <TD>{c.asked}</TD>
-                  <TD>{c.remove}</TD>
+                  {fixedServices === undefined ? <TD>{c.remove}</TD> : null}
                 </TR>
               );
             })}
@@ -179,16 +223,18 @@ export function LinesEditor({
               <li key={index} className="border-line grid gap-2 rounded-md border p-3">
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-sm">{index + 1}</span>
-                  {c.remove}
+                  {fixedServices === undefined ? c.remove : null}
                 </div>
                 <label className="grid gap-1 text-xs">
                   <span className="text-fg-muted">{t('claims.lines.service')}</span>
                   {c.service}
                 </label>
-                <label className="grid gap-1 text-xs">
-                  <span className="text-fg-muted">{t('claims.lines.description')}</span>
-                  {c.description}
-                </label>
+                {fixedServices === undefined ? (
+                  <label className="grid gap-1 text-xs">
+                    <span className="text-fg-muted">{t('claims.lines.description')}</span>
+                    {c.description}
+                  </label>
+                ) : null}
                 <div className="grid grid-cols-2 gap-2">
                   <label className="grid gap-1 text-xs">
                     <span className="text-fg-muted">
@@ -207,11 +253,13 @@ export function LinesEditor({
         </ol>
       )}
       <p className="text-fg-muted text-sm">{t('claims.lines.askedHint')}</p>
-      <div>
-        <Button variant="secondary" size="sm" onClick={() => onChange([...lines, emptyLine()])}>
-          {t('claims.lines.add')}
-        </Button>
-      </div>
+      {fixedServices === undefined ? (
+        <div>
+          <Button variant="secondary" size="sm" onClick={() => onChange([...lines, emptyLine()])}>
+            {t('claims.lines.add')}
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -13,7 +13,10 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"mime"
+	"mime/multipart"
 	"net/http"
+	"net/textproto"
 	"path"
 	"strconv"
 	"strings"
@@ -54,6 +57,13 @@ type Options struct {
 	MaxRequestBytes int64         // largest request body hashed; default 1 MiB
 	StaleInProgress time.Duration // abandoned IN_PROGRESS records are replaced after this; default 5m
 	Logger          *slog.Logger
+	// HashHeaders are included in this command's request identity. Other commands
+	// retain their existing body/path hash when this is empty.
+	HashHeaders []string
+	// BeforeStoredResult is a command-specific gate after claim's possible lock wait.
+	// It may write a fresher durable receipt or current authorization denial. Return
+	// true only when the response has been written. Ordinary commands leave it nil.
+	BeforeStoredResult func(http.ResponseWriter, *http.Request) bool
 }
 
 func (o Options) withDefaults() Options {
@@ -125,7 +135,7 @@ func Middleware(pool *pgxpool.Pool, opts Options) func(http.Handler) http.Handle
 				return
 			}
 			r.Body = io.NopCloser(bytes.NewReader(body))
-			hash := requestHash(r, scope, body)
+			hash := requestHashWithHeaders(r, scope, body, opts.HashHeaders)
 
 			ctx := r.Context()
 			tc := db.TenantContext{TenantID: scope.TenantID, ActorID: scope.ActorID}
@@ -144,6 +154,9 @@ func Middleware(pool *pgxpool.Pool, opts Options) func(http.Handler) http.Handle
 			if err != nil {
 				opts.Logger.Error("idempotency claim failed", "command", opts.CommandCode, "error", err)
 				writeProblem(w, r, http.StatusInternalServerError, "INTERNAL_ERROR", "Beklenmeyen hata")
+				return
+			}
+			if outcome != outcomeExecute && opts.BeforeStoredResult != nil && opts.BeforeStoredResult(w, r) {
 				return
 			}
 			switch outcome {
@@ -315,6 +328,10 @@ func PurgeExpired(ctx context.Context, pool *pgxpool.Pool, tenantID uuid.UUID, b
 }
 
 func requestHash(r *http.Request, scope Scope, body []byte) []byte {
+	return requestHashWithHeaders(r, scope, body, nil)
+}
+
+func requestHashWithHeaders(r *http.Request, scope Scope, body []byte, headers []string) []byte {
 	h := sha256.New()
 	h.Write([]byte(r.Method))
 	h.Write([]byte{0})
@@ -322,8 +339,57 @@ func requestHash(r *http.Request, scope Scope, body []byte) []byte {
 	h.Write([]byte{0})
 	h.Write([]byte(scope.TenantID.String()))
 	h.Write([]byte{0})
-	h.Write(canonicalBody(body))
+	h.Write(canonicalRequestBody(r, body))
+	for _, name := range headers {
+		h.Write([]byte{0})
+		h.Write([]byte(http.CanonicalHeaderKey(name)))
+		h.Write([]byte{0})
+		h.Write([]byte(strings.TrimSpace(r.Header.Get(name))))
+	}
 	return h.Sum(nil)
+}
+
+// Fingerprint exposes the exact middleware request identity to command handlers
+// that persist a receipt in their business transaction. The caller must validate
+// the complete bounded request before using it for an early durable replay.
+func Fingerprint(r *http.Request, scope Scope, body []byte, headers []string) []byte {
+	return requestHashWithHeaders(r, scope, body, headers)
+}
+
+// canonicalRequestBody ignores the transport boundary of multipart uploads while
+// preserving part order, headers, duplicate fields and every byte of file content.
+// The caller already bounded the body. Invalid forms retain their original bytes.
+func canonicalRequestBody(r *http.Request, body []byte) []byte {
+	mediaType, params, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	if err != nil || mediaType != "multipart/form-data" {
+		return canonicalBody(body)
+	}
+	type partValue struct {
+		Headers textproto.MIMEHeader
+		Body    []byte
+	}
+	var parts []partValue
+	reader := multipart.NewReader(bytes.NewReader(body), params["boundary"])
+	for {
+		part, err := reader.NextRawPart()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return body
+		}
+		content, err := io.ReadAll(part)
+		if err != nil {
+			return body
+		}
+		parts = append(parts, partValue{Headers: part.Header, Body: content})
+	}
+	encoded, err := json.Marshal(parts)
+	if err != nil {
+		return body
+	}
+	// Separate multipart representations from JSON bodies in the same key scope.
+	return append([]byte("multipart/form-data\x00"), encoded...)
 }
 
 // canonicalBody re-encodes JSON with sorted object keys so key order never changes the hash.

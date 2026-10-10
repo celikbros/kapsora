@@ -406,6 +406,9 @@ func (s *Service) applyCut(outcome *lineOutcome, action RuleAction) {
 func (s *Service) crossCheck(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
 	record ClaimRecord, outcomes []lineOutcome,
 ) error {
+	if isInpatientStayClaim(record) {
+		return s.crossCheckInpatient(ctx, tx, rc, record, outcomes)
+	}
 	// The stay's reconciliation is a fact about the case, not about any one line, so it is
 	// asked once and attached to the claim rather than repeated on every line.
 	if record.CaseID != nil {
@@ -754,6 +757,25 @@ func (s *Service) raiseWork(ctx context.Context, tx pgx.Tx, rc identity.RequestC
 func (s *Service) releaseHold(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
 	record ClaimRecord, reasonCode string,
 ) error {
+	if isInpatientStayClaim(record) {
+		plan, err := s.inpatientPlan(ctx, tx, rc, record)
+		if err != nil {
+			return err
+		}
+		if !plan.Found {
+			return fmt.Errorf("claim: inpatient stay source no longer matches claim")
+		}
+		for _, hold := range plan.Holds {
+			if _, err := s.authorizations.ReleaseUnused(ctx, tx, ReleaseRequest{
+				TenantID: rc.TenantID, ActorID: rc.Principal.ActorID,
+				AuthorizationID: hold.AuthorizationID, Quantity: maxRelease,
+				ReasonCode: reasonCode,
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
 	if record.AuthorizationID == nil {
 		return nil
 	}

@@ -270,6 +270,10 @@ Forms: two columns on ≥768px, label above control, hint below, error below hin
 `danger`, required marked with `*` and an sr-only word. Client validation gives instant
 feedback; the server's 422 field errors are mapped onto the same fields and win.
 
+Provider claim handoff: the service name and reserved quantity lead each charge row;
+quantity and asked amount sit beside them from 640px and stack below on a phone. Existing
+claim edits use the shared table from 768px and labelled line blocks below it.
+
 ## Components
 
 Built on Radix primitives (Dialog, Toast, DropdownMenu, Label) styled with the tokens;
@@ -298,6 +302,13 @@ two emphasising Açık bakiye — and it never nests inside a table.
 `batchTone`, `decisionTone`, `settlementTone`, `reimbursementTone`, each returning the
 `Badge` tone union. Every app re-exports it rather than writing its own switch, so a
 member and an operator looking at the same record see the same colour.
+
+**A workflow entry offers only reachable work.** The backoffice Health entry is a compact
+list of existing review and record destinations, selected by the active tenant's grants.
+Medical and financial decisions have separate named links; a person without either reads
+only the record lists they can access. The sidebar and home use the same visibility rule.
+The entry loads no case/report/claim records and invents no summary figures. A direct visit
+without a usable grant explains the missing access instead of offering dead links.
 
 **A section navigation** is the tab-strip rule applied one level down: the main navigation
 names the section once, `BillingNav` names its five lists — İcmal incelemesi · Ödeme
@@ -372,17 +383,46 @@ said, what a person decided, and what is still missing, in that order down the p
 opening it is reconstructing how the thing got to where it is, and a field grid makes them
 do that reconstruction themselves.
 
+**Medical approval and reserving entitlement are separate decisions.** An approved request
+keeps a distinct "Hak ayırma" section with a required operator-chosen future expiry and
+a "Hak ayır" action available only with `authorization.manage`; the provider reads only the
+reference, expiry and status. An uncertain retry keeps the same key and submitted values,
+and a successful response remains visible even while the following list is stale. A failed
+list shows its error and offers no new reservation, because unread is not empty.
+
 **Two refusals that ask for different things must not look the same.** A returned request
 is an invitation to correct something and its panel says what to fix and offers the way to
 fix it. A rejected one is finished: it says why, and offers nothing but a new request.
 Giving both the same red banner is how a correctable mistake gets read as a final refusal —
 and the person who reads it that way stops, which is the whole cost.
 
+**A provider chooses the entitlement and corrects the same request.** When several
+enrollments fit, the form asks explicitly for a plan, showing its code and validity dates;
+the candidates remain available after selection, and sending waits for a resolved check
+for the current choice. A returned request keeps its reason above the correction fields.
+The provider saves the service date and lines before submitting that same request again.
+Invalid fields explain the correction beside the input; quantities and amounts accept a
+decimal comma by normalizing the string to a dot. A stale version or uncertain save locks
+editing and offers an explicit reload, preserving local input until then. An uncertain
+submission keeps the editor frozen and retries with the same key and saved version.
+
+**A provider withdraws an undecided request with an explicit reason.** Cancellation is
+available only for an undecided request and with `service_request.cancel`. Its dialog
+names the reference and irreversible closure, offers understandable reason choices and
+an optional note, and reserves danger styling for the final command. An uncertain result
+freezes the fields and retains the submitted body, idempotency key and ETag even after
+the dialog closes and reopens; retry sends that identical command. A definite refusal or
+stale version requires an explicit reload before a new command. Confirmed cancellation
+removes the correction editor and upload controls, leaving the closed record readable.
+
 **A state is shown as it is, never as what it is about to be.** A file being scanned says
 "taranıyor" with a spinner; it does not say "yüklendi" because the upload finished. The
 download appears only where the server says `downloadable`, and where it is absent the
 screen says which state is in the way. An optimistic label on an unfinished process is a
-lie the operator only discovers by clicking.
+lie the operator only discovers by clicking. A required document stays outstanding until
+a matching linked file is `downloadable`; uploading, a scan failure, an infected file or
+purged content does not clear the missing-document notice. A later clean replacement may
+satisfy it while the rejected file remains visible as incident history.
 
 **A lost race names the winner.** When two operators reach for one work item, the loser is
 told who holds it, by name. "Somebody else took it" leaves two people clicking the same
@@ -421,6 +461,16 @@ every row does not exist — and the same rule lays out the case's encounters, w
 or a diagnosis heading is there because the field arrived. Where the financial half is what
 came, the page says so in a line at the top rather than leaving the absence to be noticed.
 
+**Provider billing starts from a financial case identity.** The case selector shows the
+member name, request reference and service date for the provider's own cases. The server
+links the clinical record, report and authorization; billing never chooses those hidden
+references. The financial editor keeps services fixed and exposes only quantity and asked
+amount, with no clinical description or add/remove controls. Decimal commas normalize as
+strings without rounding; numbers are right-aligned monospace and each invalid field has
+an associated correction message. An uncertain creation freezes the case and charges and
+retries the same payload, version and key; a definite refusal offers an explicit reload
+before editing resumes.
+
 **A column the caller may not read does not exist.** The claim and the case carry the
 provider's id and not its name, and resolving that name needs `organization.read`; without
 the permission the provider column is absent from the header and from every row, instead of
@@ -431,7 +481,10 @@ never a cell.
 **A sensitive record asks why before its clinical half opens, once per record, in memory
 only.** The server answers 428 and the screen puts a real dialog in front of the page: a
 purpose from the reference list, a reason, and the sentence that the look is recorded. The
-answer lives for the tab's lifetime and nowhere else, because a stated purpose is not a
+answer is scoped to the record, actor, active tenant and authenticated session. Resolve a
+changed scope before issuing the first read; never reuse the previous record's purpose
+while waiting for an effect. Returning to that same record in the same context keeps its
+choice. The answer lives in tab memory and nowhere else, because a stated purpose is not a
 credential to store and asking again on every refetch would turn a question into a
 click-through. Declining is a button that leads somewhere — the financial half, with a
 sentence saying why the diagnosis is not on the page — and not a dead end.
@@ -479,8 +532,7 @@ agreeing to their share of a plan, and a share they cannot see is not agreed to.
 
 **A command that costs money carries the amount on itself.** Onayla is two lines — the verb,
 then "Ödeyeceğiniz 4.940,00 TRY" in monospace beneath it — because the button is the last
-thing the thumb touches and the last place the figure can still stop someone. A cancellation
-that costs a fee says the fee in the toast it produces, for the same reason.
+thing the thumb touches and the last place the figure can still stop someone.
 
 **A countdown renders the server's deadline and nothing else.** The hold shows `holdExpiresAt`
 through a `<time role="timer">`, ticking a local clock only to redraw it, so a screen that
@@ -531,9 +583,19 @@ ters gitti" would drop the one fact that tells the member which date to change.
 **What undoing costs is answered before undoing is offered.** İptal et is not on the
 confirmed booking until the member asks "İptal edersem ne öderim" and the server's preview has
 answered in sentences — free until a date, or a fee with its amount and the nights it covers,
-and how many nights come back to the plan. Only then does the danger button appear, beside a
-"Vazgeç" that clears the preview. A destructive command whose price is discovered afterwards
-is a trap, however clearly the policy was written somewhere else.
+and how many nights come back to the plan. Policy charge nights and fee remain distinct from
+the exact service-night and entitlement-unit movement; the server's decimal strings are shown
+as supplied, without browser arithmetic. If the preview has no exact effect, it makes no
+verified movement claim. Only then does the danger button appear, beside a "Vazgeç" that clears
+the preview. After cancellation, the committed command result replaces the preview with the
+recorded actual effect inline, without a redundant success toast. A paid cancellation also
+shows the recorded member fee in that result, separately from entitlement movement.
+A later record reload may
+not contain that effect: when it is absent, show the neutral unknown state rather than
+reconstructing a historical amount from the preview or policy. The current command result
+lives in client memory; durable historical display requires an API read that returns the
+exact effect. A destructive command whose price is discovered afterwards is a trap, however
+clearly the policy was written somewhere else.
 
 **A policy is shown as labelled rows in Turkish, never as a compact code line.** The lodging
 terms read back as a definition list — free-cancellation hours, penalty kind with its value,
@@ -755,6 +817,124 @@ surface and muted text, never a warning colour: nothing is wrong, the decision i
 else's. The server refuses it anyway (403 OWN_FILE_DECISION, audited), so the note is the
 sentence, not the lock. The same note serves requests, claims, medical reports, refunds and
 balance adjustments.
+
+**An open encounter can be ended from its own row.** “Muayeneyi sonlandır” expands a
+dated form beneath the encounter table, outside its horizontal scroll area. It shows the start, requires an end no earlier
+than the start, and explains that the saved end cannot be changed here. Only one such form
+is open at a time. While a command is pending or its response is uncertain, input and
+cancellation stay locked; retry preserves its body, ETag and command key. A definitive
+conflict offers an explicit reload before a new attempt. Ending the last open encounter
+makes the existing case-close action available after the case refresh.
+
+**Reports open existing records.** The Reports landing uses the same quiet rows as Health:
+one link and one plain description for reconciliation and exports. It reads the active
+tenant's grants, adds no report request of its own, and offers no financial decision action.
+The billing tab strip shows only lists the account may open.
+
+**Billing opens a permitted list.** Home and sidebar resolve the same destination for the
+active role. Reading figures does not imply authority to review, approve or pay. Show only
+permitted commands in valid states; changing account, tenant or grants closes open forms.
+References to inaccessible member or claim pages remain plain text. Optional name and
+catalog lookups without a read grant settle to their existing fallback without a request.
+
+**The provider desk follows the active role.** Shared sign-in opens the first permitted task;
+clinical requests, financial work and reservations use their own entry screens. Hide links
+whose prerequisites are missing, and deny direct URLs before mounting record readers. Actor,
+tenant, scope or grant changes discard cached records and form state. Financial claim labels
+use the existing financial projection or plain fallback when member/catalog reads are unavailable.
+
+**Wallets reuse member discovery.** The member list offers a direct entitlement-tab link;
+its URL keeps the selected tab on reload and history navigation. Ledger movements show
+changes in each balance bucket, so a transfer with no total change is still understandable.
+
+**Pricing choices belong to pricing.** The quote form asks its own narrow lookups for active
+provider and service labels, without requiring access to directory or catalog maintenance
+screens. Search and explicit continuation keep choices bounded; loading, empty results and
+retryable failures are distinct. Member discovery still requires its own read grant. Input
+or account changes clear the previous answer; inaccessible contract references are plain text.
+
+**A health access log can stand alone.** Auditors with `audit.read` see the tenant's health
+access events without opening a member record. Each row retains the actor, person and resource
+identifiers, access type, outcome, purpose and reason. Pages load in bounded groups; the mobile
+layout presents each event as a readable card.
+
+**Management starts with tenant membership.** The user directory lists the current
+institution's memberships, with separate account/membership statuses and validity dates.
+Detail presents assigned roles, scope types and assignment validity; assignment is not an
+unconditional promise of effective access. Unbounded dates and an empty validity period
+have distinct labels. The server's tenant-user-read capability gates navigation and direct
+routes before mounting readers. Changing actor, tenant or access
+context discards the previous page's records. Credentials, contact/login identifiers and
+scope/person identifiers are not part of this view. Read-only delivery presents no inactive
+provisioning or role-change controls.
+
+**Membership suspension stays in its tenant.** A loaded ACTIVE membership offers the
+action only with the server's correlated management capability. Confirmation names the
+person and institution, explains the tenant-only effect and requires a reason and an
+explicit checkbox. Password confirmation and uncertain retries preserve the same body,
+ETag and command key; an in-progress response also retains that command. Cancelling the
+password prompt permits an identical retry. Definitive conflicts/refusals offer an
+explicit reload before a new attempt. The confirmed server membership replaces the
+detail immediately; account status and assigned-role history remain separate. Context
+changes close the form, block deferred dispatch and prevent late responses or password
+confirmation from restoring an obsolete session or directory cache.
+
+**Invitations require recipient consent.** The manager's invitation list shares the
+directory's bounded paging, compact mobile cards and explicit loading/error/empty states.
+It displays only masked contact and safe status metadata. Creating or cancelling uses
+password confirmation; uncertain retries preserve the original command key, input and
+version, while cancellation conflicts require an explicit reload. The recipient enters
+  the proof on a fixed page outside the tenant shell. Existing-account recipients sign in
+  normally, including an account with no application grants. New-account recipients can
+  review the institution while anonymous, then provide a display name, chosen password and
+  explicit consent. The code and password stay in component memory and never appear in a
+  URL, query key or browser storage. Existing-account consent names the signed-in account
+  and institution; acceptance leaves the current tenant unchanged. New-account acceptance
+  displays a selectable generated login handle, asks the recipient to retain it, and directs
+  them to ordinary login without creating a session. A separate private receipt form asks
+  for both the code and current password within 24 hours if that result was lost. Switching
+  accounts or modes clears the proof, password and pending result. The ordinary app chooser
+  lists active memberships awaiting role assignment, including when the account already has
+  access to another application. It does not send a zero-grant member to a business dashboard.
+
+**Role assignment shows the actual access.** Only the server's stronger tenant-role-management
+capability mounts grant history and assignment/removal controls. Role managers see this
+history in place of the duplicate ordinary assigned-role list. Confirmation uses role names
+and plain descriptions, identifies the person and institution, and states application,
+duration and sensitive access. Organization roles require a named qualifying provider.
+Unsupported, future or ended assignments are read-only; an ineligible membership displays
+the server's refusal in plain language. Native selects have explicit labels.
+
+Commands freeze their input, ETag and key before password confirmation. Uncertain results
+retain them after closing and reopening the dialog; conflicts require an explicit reload
+and fresh confirmation. A committed result remains visible if subsequent reads fail.
+Account, session, tenant or capability changes clear the previous context's form, cache and
+busy state and suppress delayed callbacks. Waiting screens offer explicit access refresh
+with a retryable error, without polling, automatic login or automatic tenant selection.
+
+**Privileged access is proposed before it is applied.** User detail keeps immediate
+supported assignments and privileged approval requests in separate sections. Management's
+role-change queue starts with pending requests and offers explicit terminal-history
+filters; mobile rows remain readable cards. Person names come from authorized directory
+reads, with a safe membership reference and a retry when the name cannot be loaded.
+Request evidence itself contains no names or login identifiers.
+
+Confirmation names the person, institution, actual role duties and second-person
+requirement. Pending assignment says access has not begun; pending removal says existing
+access continues. Only a committed approval result says access changed. Detail presents
+the recorded permission snapshot behind an expandable disclosure. A missing eligible
+checker is a visible pending condition. The maker gets withdrawal, the target gets no
+decision controls, and a permitted different checker gets explicit approval/rejection.
+Drift requires deliberate rejection/withdrawal and a new proposal, never automatic rebasing.
+
+All four commands retain frozen input, key and original ETag through password confirmation
+and uncertain close/reopen retries. Cancelling the password prompt keeps an explicit retry
+available. A definitive conflict needs a successful explicit reload before another attempt.
+Committed evidence remains visible when refresh fails, with a separate retry for current
+detail. Session/context changes suppress dispatch and late results, including a return to
+the previous tenant. Revocation uses server eligibility across the entire grant history;
+bounded paging and repeat-cursor checks locate the referenced grant without treating one
+history page as complete authority.
 
 ## Motion
 

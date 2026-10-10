@@ -1,5 +1,5 @@
 import type { Batch } from '@kapsora/api-client';
-import { useStepUp } from '@kapsora/auth';
+import { usePermission, useStepUp } from '@kapsora/auth';
 import { formatDate, formatMoney, useTranslation } from '@kapsora/i18n';
 import {
   Badge,
@@ -178,6 +178,8 @@ export function BatchPage() {
   const { t } = useTranslation();
   const toast = useToast();
   const stepUp = useStepUp();
+  const canEdit = usePermission('batch.create');
+  const canSubmit = usePermission('batch.submit');
   const batch = useBatch(batchId);
   const record = batch.data?.data ?? null;
   const etag = batch.data?.etag ?? '';
@@ -200,6 +202,7 @@ export function BatchPage() {
   ];
 
   async function onSubmit() {
+    if (!canSubmit) return;
     try {
       const result = await stepUp.run(() => submit.mutateAsync(etag));
       if (result) toast.notify({ tone: 'success', title: t('billing.provider.batchSubmitted') });
@@ -229,7 +232,9 @@ export function BatchPage() {
       />
       <p className="text-fg-muted text-sm">
         {formatDate(record.periodFrom)} – {formatDate(record.periodTo)} · {record.currencyCode} ·{' '}
-        {t('billing.provider.invoiceCount', { count: record.invoiceCount })}
+        {t('billing.provider.invoiceCount', {
+          count: isDraft ? record.invoices.length : record.invoiceCount,
+        })}
       </p>
 
       {isDraft ? (
@@ -259,9 +264,11 @@ export function BatchPage() {
                 <li key={inv.id} className="flex items-center gap-3 text-sm">
                   <input
                     type="checkbox"
+                    disabled={!canEdit}
                     id={`inv-${inv.id}`}
                     checked={chosen.has(inv.id)}
                     onChange={(e) => {
+                      if (!canEdit) return;
                       const next = new Set(chosen);
                       if (e.target.checked) next.add(inv.id);
                       else next.delete(inv.id);
@@ -289,42 +296,48 @@ export function BatchPage() {
             className="mt-3"
           />
           <div className="mt-3 flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() =>
-                put.mutate(
-                  { etag, body: { invoiceIds: Array.from(chosen) } },
-                  {
-                    onSuccess: () => {
-                      setPicked(null);
-                      toast.notify({ tone: 'success', title: t('billing.provider.saved') });
+            {canEdit ? (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() =>
+                  put.mutate(
+                    { etag, body: { invoiceIds: Array.from(chosen) } },
+                    {
+                      onSuccess: () => {
+                        setPicked(null);
+                        toast.notify({ tone: 'success', title: t('billing.provider.saved') });
+                      },
                     },
-                  },
-                )
-              }
-              loading={put.isPending}
-            >
-              {t('billing.provider.saveMembership')}
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => void onSubmit()}
-              loading={submit.isPending}
-              disabled={record.invoiceCount === 0}
-              data-testid="batch-submit"
-            >
-              {t('billing.provider.submitBatch')}
-            </Button>
+                  )
+                }
+                loading={put.isPending}
+              >
+                {t('billing.provider.saveMembership')}
+              </Button>
+            ) : null}
+            {canSubmit ? (
+              <Button
+                size="sm"
+                onClick={() => void onSubmit()}
+                loading={submit.isPending}
+                disabled={record.invoices.length === 0}
+                data-testid="batch-submit"
+              >
+                {t('billing.provider.submitBatch')}
+              </Button>
+            ) : null}
           </div>
-          <StepUpDialog
-            open={stepUp.required}
-            action={t('billing.provider.submitBatch')}
-            busy={stepUp.busy}
-            problem={stepUp.error}
-            onConfirm={(password) => void stepUp.confirm(password)}
-            onCancel={stepUp.cancel}
-          />
+          {canSubmit ? (
+            <StepUpDialog
+              open={stepUp.required}
+              action={t('billing.provider.submitBatch')}
+              busy={stepUp.busy}
+              problem={stepUp.error}
+              onConfirm={(password) => void stepUp.confirm(password)}
+              onCancel={stepUp.cancel}
+            />
+          ) : null}
         </Card>
       ) : (
         <DecisionsCard record={record} />

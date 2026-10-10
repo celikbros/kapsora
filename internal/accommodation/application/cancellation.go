@@ -60,6 +60,21 @@ func (s *Service) PreviewCancellation(ctx context.Context, rc identity.RequestCo
 		if err != nil {
 			return err
 		}
+		snapshot, err := decodeQuoteSnapshot(record.QuoteSnapshot)
+		if err != nil {
+			return err
+		}
+		evidence, err := s.cancellationEvidence(ctx, tx, rc, record, snapshot)
+		if err != nil {
+			return err
+		}
+		if effect := predictedCancellationEffect(evidence, quote, snapshot.CoveredNights); effect != nil {
+			quote.EntitlementEffect = effect
+			quote.ReleasedNights, err = wholeReleasedNights(effect)
+			if err != nil {
+				return err
+			}
+		}
 		out = CancellationView{Booking: view, Quote: quote}
 		return nil
 	})
@@ -234,8 +249,16 @@ func (s *Service) cancel(ctx context.Context, tx pgx.Tx, rc identity.RequestCont
 		return CancellationView{}, ErrBookingTransitionInvalid
 	}
 
-	if err := s.settleCancellation(ctx, tx, rc, record, snapshot, quote); err != nil {
+	effect, err := s.settleCancellation(ctx, tx, rc, record, snapshot, quote)
+	if err != nil {
 		return CancellationView{}, err
+	}
+	if effect != nil {
+		quote.EntitlementEffect = effect
+		quote.ReleasedNights, err = wholeReleasedNights(effect)
+		if err != nil {
+			return CancellationView{}, err
+		}
 	}
 
 	policy := record.PolicySnapshot
@@ -249,7 +272,8 @@ func (s *Service) cancel(ctx context.Context, tx pgx.Tx, rc identity.RequestCont
 		BookingID: record.ID, CancelledAt: cancelledAt, CancelledBy: rc.Principal.ActorID,
 		ReasonCode: reasonCode, PolicySnapshot: policy, Free: quote.Free,
 		PenaltyNights: quote.PenaltyNights, ReleasedNights: quote.ReleasedNights,
-		FeeAmount: quote.FeeAmount, PayerFee: quote.PayerFee, MemberFee: quote.MemberFee,
+		EntitlementEffect: effect,
+		FeeAmount:         quote.FeeAmount, PayerFee: quote.PayerFee, MemberFee: quote.MemberFee,
 		CurrencyCode: quote.CurrencyCode,
 	})
 	if err != nil {
@@ -317,40 +341,74 @@ func (s *Service) releaseCancelledInventory(ctx context.Context, tx pgx.Tx,
 // between the ledger and the settlement this system exists to make impossible.
 func (s *Service) settleCancellation(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
 	record BookingRecord, snapshot QuoteSnapshot, quote CancellationQuote,
-) error {
+) (*EntitlementEffect, error) {
 	if record.AuthorizationID == nil {
 		// A booking still waiting on a reviewer holds its nights on the hold's own
 		// reservation rather than on an authorization. Giving that back is keyed by the
 		// booking, so a cancellation and a later expiry sweep of the same one are one
 		// release.
-		return s.releaseReservationOnly(ctx, tx, rc, record, ReasonCancellationRelease)
+		return nil, s.releaseReservationOnly(ctx, tx, rc, record, ReasonCancellationRelease)
 	}
+	evidence, err := s.cancellationEvidence(ctx, tx, rc, record, snapshot)
+	if err != nil {
+		return nil, err
+	}
+	canReport := predictedCancellationEffect(evidence, quote, snapshot.CoveredNights) != nil
+	consumedService, releasedService := benefitdomain.ZeroQuantity(), benefitdomain.ZeroQuantity()
 	penalty := quote.EntitlementPenalty(snapshot.CoveredNights)
 	if penalty > 0 {
-		if _, err := s.auths.Consume(ctx, tx, BookingConsumeInput{
+		consumedText, err := s.auths.Consume(ctx, tx, BookingConsumeInput{
 			TenantID: rc.TenantID, ActorID: rc.Principal.ActorID,
 			AuthorizationID:     *record.AuthorizationID,
 			ServiceDefinitionID: snapshot.ServiceDefinitionID,
 			Nights:              fmt.Sprintf("%d", penalty),
 			Key:                 cancellationPenaltyKey(record.ID), ReasonCode: ReasonCancellationPenalty,
-		}); err != nil {
-			return err
+		})
+		if err != nil {
+			return nil, err
+		}
+		consumedService, err = benefitdomain.ParseQuantity(consumedText)
+		if err != nil {
+			return nil, fmt.Errorf("accommodation: cancellation consumed service quantity: %w", err)
 		}
 	}
 	if quote.ReleasedNights > 0 {
-		if _, err := s.auths.ReleaseUnused(ctx, tx, BookingReleaseInput{
+		releasedText, err := s.auths.ReleaseUnused(ctx, tx, BookingReleaseInput{
 			TenantID: rc.TenantID, ActorID: rc.Principal.ActorID,
 			AuthorizationID: *record.AuthorizationID,
 			Nights:          fmt.Sprintf("%d", quote.ReleasedNights),
 			ReasonCode:      ReasonCancellationRelease,
-		}); err != nil {
-			return err
+		})
+		if err != nil {
+			return nil, err
+		}
+		releasedService, err = benefitdomain.ParseQuantity(releasedText)
+		if err != nil {
+			return nil, fmt.Errorf("accommodation: cancellation released service quantity: %w", err)
+		}
+	}
+	var effect *EntitlementEffect
+	if canReport {
+		after, err := s.ledger.ReadReservation(ctx, tx, rc.TenantID, *record.EntitlementReservationID)
+		if err != nil {
+			return nil, err
+		}
+		consumedUnits := after.Consumed.Sub(evidence.reservation.Consumed)
+		releasedUnits := after.Released.Sub(evidence.reservation.Released)
+		if !consumedUnits.IsNegative() && !releasedUnits.IsNegative() && !after.Remaining().IsPositive() {
+			effect = &EntitlementEffect{
+				ConsumedServiceNights: consumedService.String(), ReleasedServiceNights: releasedService.String(),
+				ConsumedEntitlementUnits: consumedUnits.String(), ReleasedEntitlementUnits: releasedUnits.String(),
+			}
 		}
 	}
 	// The code that would have opened the room stops working in the same transaction the
 	// stay stops existing in. A cancelled booking whose voucher still redeems is a room a
 	// guest can walk into with a token this system believes in.
-	return s.auths.RevokeVouchers(ctx, tx, rc, *record.AuthorizationID, ReasonVoucherCancelled)
+	if err := s.auths.RevokeVouchers(ctx, tx, rc, *record.AuthorizationID, ReasonVoucherCancelled); err != nil {
+		return nil, err
+	}
+	return effect, nil
 }
 
 // releaseReservationOnly is giveBackRoom's ledger half, without its inventory half.
@@ -365,9 +423,16 @@ func (s *Service) releaseReservationOnly(ctx context.Context, tx pgx.Tx,
 	if record.EntitlementReservationID == nil {
 		return nil
 	}
-	quantity, err := benefitdomain.ParseQuantity(fmt.Sprintf("%d", record.Nights))
+	// The room spans every booked night, but the ledger holds only the part the
+	// plan carries. Releasing the full stay would exceed a partial reservation and
+	// strand the member's balance after the booking has already been closed.
+	reservation, err := s.ledger.ReadReservation(ctx, tx, rc.TenantID, *record.EntitlementReservationID)
 	if err != nil {
-		return fmt.Errorf("accommodation: night quantity: %w", err)
+		return err
+	}
+	quantity := reservation.Remaining()
+	if !quantity.IsPositive() {
+		return nil
 	}
 	_, err = s.ledger.Release(ctx, tx, ledger.MovementInput{
 		TenantID: rc.TenantID, ReservationID: *record.EntitlementReservationID,
@@ -375,10 +440,7 @@ func (s *Service) releaseReservationOnly(ctx context.Context, tx pgx.Tx,
 		ReasonCode: reason, ActorID: rc.Principal.ActorID,
 	})
 	switch {
-	case errors.Is(err, ledger.ErrIdempotentReplay), errors.Is(err, ledger.ErrReservationClosed),
-		errors.Is(err, ledger.ErrQuantityRemainder):
-		// The entitlement is already where it belongs. Refusing here would leave a booking
-		// nobody can cancel.
+	case errors.Is(err, ledger.ErrIdempotentReplay), errors.Is(err, ledger.ErrReservationClosed):
 		return nil
 	default:
 		return err

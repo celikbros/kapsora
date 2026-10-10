@@ -10,7 +10,7 @@ import type {
   RejectMedicalReport,
 } from '@kapsora/api-client';
 import { etagOf } from '@kapsora/api-client';
-import { useTenantId } from '@kapsora/auth';
+import { useSession, useTenantId } from '@kapsora/auth';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useOps } from '../api';
@@ -190,11 +190,13 @@ export function useClaimsOfPerson(personId: string) {
   });
 }
 
-export function useAccessLog(query: HealthAccessLogQuery) {
+export function useAccessLog(query: HealthAccessLogQuery, enabled = true) {
   const ops = useOps();
   const tenantId = useTenantId();
+  const actorId = useSession((s) => s.session?.actorId ?? null);
   return useQuery({
-    queryKey: ['health', tenantId, 'access-log', query],
+    queryKey: ['health', tenantId, actorId, 'access-log', query],
     queryFn: () => ops.health.listAccessLog(tenantId, query),
+    enabled,
   });
 }

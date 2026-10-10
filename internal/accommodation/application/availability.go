@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -183,7 +184,7 @@ func (s *Service) SearchAvailability(ctx context.Context, rc identity.RequestCon
 		return out, nil
 	}
 
-	verdict, err := s.checkEligibility(ctx, rc, in, checkIn, world)
+	verdict, err := s.checkEligibility(ctx, rc, in, checkIn, world, nil)
 	if err != nil {
 		return SearchResult{}, err
 	}
@@ -339,8 +340,9 @@ func (s *Service) loadWorld(ctx context.Context, tx pgx.Tx, rc identity.RequestC
 	}
 
 	candidates, err := s.repo.ListPriceCandidates(ctx, tx, rc.TenantID, PriceCandidateQuery{
-		ProviderProfileIDs: profileIDs, ServiceDefinitionIDs: definitionIDs,
-		CategoryIDs: categoryIDs, PackageIDs: packageIDs,
+		ProviderProfileIDs: profileIDs, PayerOrganizationIDs: payers,
+		ServiceDefinitionIDs: definitionIDs,
+		CategoryIDs:          categoryIDs, PackageIDs: packageIDs,
 		CheckIn: checkIn, LastNight: lastNight,
 	})
 	if err != nil {
@@ -357,6 +359,8 @@ func (s *Service) loadWorld(ctx context.Context, tx pgx.Tx, rc identity.RequestC
 // eligibilityVerdict is the eligibility half of the answer.
 type eligibilityVerdict struct {
 	evaluationID uuid.UUID
+	accountIDs   map[uuid.UUID]uuid.UUID
+	conversions  map[uuid.UUID]NightConversion
 	// eligibleFor says, per service definition, whether the person is eligible at all --
 	// enrolled, on a published plan version, with the service mapped to an entitlement.
 	eligibleFor map[uuid.UUID]bool
@@ -400,7 +404,7 @@ func (v eligibilityVerdict) eligibleForWholeStay(nights int) bool {
 // stay would fold the two into one INELIGIBLE and the quote could not tell a member which
 // of their nights the plan carries.
 func (s *Service) checkEligibility(ctx context.Context, rc identity.RequestContext,
-	in SearchInput, checkIn time.Time, world searchWorld,
+	in SearchInput, checkIn time.Time, world searchWorld, enrollmentID *uuid.UUID,
 ) (eligibilityVerdict, error) {
 	definitionIDs := make([]uuid.UUID, 0, len(world.roomTypes))
 	seen := make(map[uuid.UUID]bool, len(world.roomTypes))
@@ -419,7 +423,8 @@ func (s *Service) checkEligibility(ctx context.Context, rc identity.RequestConte
 		})
 	}
 	check := eligibility.CheckInput{
-		PersonID: in.PersonID, ProgramID: in.ProgramID, ServiceDate: checkIn, Items: items,
+		PersonID: in.PersonID, ProgramID: in.ProgramID, EnrollmentID: enrollmentID,
+		ServiceDate: checkIn, Items: items,
 		Context: map[string]any{"domain": "ACCOMMODATION"},
 	}
 	// A provider-scoped caller may only ask about its own organization, and the property
@@ -434,6 +439,9 @@ func (s *Service) checkEligibility(ctx context.Context, rc identity.RequestConte
 	if err != nil {
 		return eligibilityVerdict{}, err
 	}
+	if enrollmentID != nil && (result.EnrollmentID == nil || *result.EnrollmentID != *enrollmentID) {
+		return eligibilityVerdict{}, ErrEnrollmentNotFound
+	}
 
 	unitByCode := make(map[string]string, len(result.Balances))
 	for _, balance := range result.Balances {
@@ -442,6 +450,8 @@ func (s *Service) checkEligibility(ctx context.Context, rc identity.RequestConte
 
 	verdict := eligibilityVerdict{
 		evaluationID:    result.EvaluationID,
+		accountIDs:      make(map[uuid.UUID]uuid.UUID, len(definitionIDs)),
+		conversions:     make(map[uuid.UUID]NightConversion, len(definitionIDs)),
 		eligibleFor:     make(map[uuid.UUID]bool, len(definitionIDs)),
 		remainingNights: make(map[uuid.UUID]int, len(definitionIDs)),
 		remainingMoney:  make(map[uuid.UUID]benefitdomain.Quantity, len(definitionIDs)),
@@ -452,6 +462,9 @@ func (s *Service) checkEligibility(ctx context.Context, rc identity.RequestConte
 		}
 		definitionID := definitionIDs[item.Index]
 		verdict.eligibleFor[definitionID] = item.Outcome == eligibility.ItemEligible
+		if item.Outcome == eligibility.ItemEligible && item.AccountID != uuid.Nil {
+			verdict.accountIDs[definitionID] = item.AccountID
+		}
 		if item.AvailableQuantity == nil || item.EntitlementCode == nil {
 			continue
 		}
@@ -462,7 +475,15 @@ func (s *Service) checkEligibility(ctx context.Context, rc identity.RequestConte
 		code := *item.EntitlementCode
 		unit := unitByCode[code]
 		if unit == domain.UnitNight {
-			verdict.remainingNights[definitionID] = wholeNights(available)
+			if item.UnitType != domain.UnitNight || !item.UnitFactor.IsPositive() ||
+				item.DefinitionID == uuid.Nil || item.AccountID == uuid.Nil || result.PlanVersionID == nil {
+				return eligibilityVerdict{}, errors.New("accommodation: NIGHT eligibility lacks selected mapping metadata")
+			}
+			verdict.remainingNights[definitionID] = nightsFromUnits(available, item.UnitFactor, world.nights)
+			verdict.conversions[definitionID] = NightConversion{
+				PlanVersionID: *result.PlanVersionID, DefinitionID: item.DefinitionID,
+				AccountID: item.AccountID, UnitType: item.UnitType, UnitFactor: item.UnitFactor.String(),
+			}
 		} else {
 			verdict.remainingMoney[definitionID] = available
 		}
@@ -473,6 +494,23 @@ func (s *Service) checkEligibility(ctx context.Context, rc identity.RequestConte
 		}
 	}
 	return verdict, nil
+}
+
+// nightsFromUnits compares each whole service night in exact ledger units. Division at
+// six decimals can round an incomplete night up, so the stay length bounds this loop.
+func nightsFromUnits(available, factor benefitdomain.Quantity, stayNights int) int {
+	if !factor.IsPositive() || !available.IsPositive() || stayNights <= 0 {
+		return 0
+	}
+	covered := 0
+	for covered < stayNights {
+		candidate := benefitdomain.MustQuantity(strconv.Itoa(covered + 1)).Mul(factor)
+		if candidate.Cmp(available) > 0 {
+			break
+		}
+		covered++
+	}
+	return covered
 }
 
 // wholeNights is how many whole nights a balance carries. A half night is not a night
@@ -509,6 +547,20 @@ func wholeNights(q benefitdomain.Quantity) int {
 func (s *Service) quoteRoomType(world searchWorld, property AvailabilityProperty,
 	room AvailabilityRoomType, verdict eligibilityVerdict,
 ) (*QuoteView, string) {
+	view, _, reason := s.quoteRoomTypeWithSelection(world, property, room, verdict)
+	return view, reason
+}
+
+// quoteSelection is private hold metadata from the price that won the check-in night.
+// It never enters the quote sent to a member or the pricing ladder.
+type quoteSelection struct {
+	ContractVersionID uuid.UUID
+	HoldMinutes       *int32
+}
+
+func (s *Service) quoteRoomTypeWithSelection(world searchWorld, property AvailabilityProperty,
+	room AvailabilityRoomType, verdict eligibilityVerdict,
+) (*QuoteView, quoteSelection, string) {
 	eligible := verdict.eligibleFor[room.ServiceDefinitionID]
 	coveredNights := verdict.remainingNights[room.ServiceDefinitionID]
 	money, hasMoney := verdict.remainingMoney[room.ServiceDefinitionID]
@@ -525,6 +577,7 @@ func (s *Service) quoteRoomType(world searchWorld, property AvailabilityProperty
 	items := make([]pricing.Item, 0, len(world.stayDates))
 	currency := ""
 	reason := ""
+	var firstNight quoteSelection
 	// The nights the plan is applied to, counted as they are decided rather than inferred
 	// afterwards from the figures. A night the plan covers whose split happens to leave the
 	// payer nothing is still a night drawn from the count, and reading the count back off
@@ -553,7 +606,7 @@ func (s *Service) quoteRoomType(world searchWorld, property AvailabilityProperty
 		}
 
 		request.ServiceDate = night
-		rows, details := applicableCandidates(world.candidates[property.ProviderProfileID], night)
+		rows, candidates := applicableCandidates(world.candidates[property.ProviderProfileID], night)
 		result := selection.Select(request, rows)
 		if result.Winner == nil {
 			item.NoPriceReason = string(result.Reason)
@@ -563,8 +616,14 @@ func (s *Service) quoteRoomType(world searchWorld, property AvailabilityProperty
 			items = append(items, item)
 			continue
 		}
-		detail := details[result.Winner.PriceItemID]
-		price, err := priceOf(detail)
+		winner := candidates[result.Winner.PriceItemID]
+		if i == 0 {
+			firstNight = quoteSelection{
+				ContractVersionID: winner.Candidate.ContractVersionID,
+				HoldMinutes:       winner.HoldMinutes,
+			}
+		}
+		price, err := priceOf(winner.Detail)
 		if err != nil {
 			if reason == "" {
 				reason = ReasonPriceFormulaUnknown
@@ -575,8 +634,8 @@ func (s *Service) quoteRoomType(world searchWorld, property AvailabilityProperty
 		}
 		switch {
 		case currency == "":
-			currency = detail.CurrencyCode
-		case currency != detail.CurrencyCode:
+			currency = winner.Detail.CurrencyCode
+		case currency != winner.Detail.CurrencyCode:
 			if reason == "" {
 				reason = ReasonCurrencyMismatch
 			}
@@ -586,17 +645,17 @@ func (s *Service) quoteRoomType(world searchWorld, property AvailabilityProperty
 	}
 
 	if reason != "" {
-		return nil, reason
+		return nil, quoteSelection{}, reason
 	}
 	if currency == "" {
-		return nil, ReasonPriceNotFound
+		return nil, quoteSelection{}, ReasonPriceNotFound
 	}
 
 	result := pricing.Calculate(items, pricingapp.MinorUnits(currency))
 	if result.Outcome == pricing.OutcomeReviewRequired {
 		// A line nobody could price makes the whole stay unquotable, and the calculation
 		// has already zeroed the split rather than showing a number that is not an answer.
-		return nil, unpriceableReason(result)
+		return nil, quoteSelection{}, unpriceableReason(result)
 	}
 
 	view := &QuoteView{
@@ -614,7 +673,7 @@ func (s *Service) quoteRoomType(world searchWorld, property AvailabilityProperty
 			PayerAmount: line.Payer.String(), MemberAmount: line.Member.String(),
 		})
 	}
-	return view, ""
+	return view, firstNight, ""
 }
 
 // applicableCandidates narrows the loaded prices to the ones whose contract version was
@@ -622,10 +681,10 @@ func (s *Service) quoteRoomType(world searchWorld, property AvailabilityProperty
 // its WHERE; the range query cannot, because a stay may straddle two versions, so the
 // filter is here and the specificity ladder that follows it is untouched.
 func applicableCandidates(candidates []PriceCandidate, night time.Time) (
-	[]selection.Candidate, map[uuid.UUID]contractapp.PriceDetail,
+	[]selection.Candidate, map[uuid.UUID]PriceCandidate,
 ) {
 	rows := make([]selection.Candidate, 0, len(candidates))
-	details := make(map[uuid.UUID]contractapp.PriceDetail, len(candidates))
+	details := make(map[uuid.UUID]PriceCandidate, len(candidates))
 	for _, candidate := range candidates {
 		if !candidate.VersionValidFrom.IsZero() && night.Before(candidate.VersionValidFrom) {
 			continue
@@ -634,7 +693,7 @@ func applicableCandidates(candidates []PriceCandidate, night time.Time) (
 			continue
 		}
 		rows = append(rows, candidate.Candidate)
-		details[candidate.Candidate.PriceItemID] = candidate.Detail
+		details[candidate.Candidate.PriceItemID] = candidate
 	}
 	return rows, details
 }

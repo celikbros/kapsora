@@ -39,6 +39,7 @@ export function PersonListPage() {
   const navigate = useNavigate();
   const search = useSearch({ from: '/app/people' });
   const canManage = usePermission('member.manage');
+  const canReadEntitlements = usePermission('entitlement.read');
   const canSearchIdentifier = usePermission('member.identifier.search');
   const [q, setQ] = useState(search.q ?? '');
   const [identifierOpen, setIdentifierOpen] = useState(false);
@@ -188,6 +189,7 @@ export function PersonListPage() {
                 <TH>{t('people.columns.displayName')}</TH>
                 <TH>{t('people.columns.identifier')}</TH>
                 <TH>{t('people.columns.status')}</TH>
+                {canReadEntitlements ? <TH>{t('people.columns.wallet')}</TH> : null}
               </TR>
             </THead>
             <TBody>
@@ -212,6 +214,19 @@ export function PersonListPage() {
                       {t(`people.statuses.${person.status}`)}
                     </Badge>
                   </TD>
+                  {canReadEntitlements ? (
+                    <TD>
+                      <Link
+                        to="/people/$personId"
+                        params={{ personId: person.id }}
+                        search={{ tab: 'entitlements' }}
+                        data-testid="person-wallet-link"
+                        className="text-primary font-medium underline-offset-2 hover:underline"
+                      >
+                        {t('people.columns.wallet')}
+                      </Link>
+                    </TD>
+                  ) : null}
                 </TR>
               ))}
             </TBody>

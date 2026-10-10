@@ -2284,11 +2284,13 @@ UPDATE claim.claim
        -- a BOOKING or REIMBURSEMENT source exactly where it was, because a header patch on
        -- a lodging claim has nothing to say about where that claim came from.
        source_type       = CASE
+                               WHEN source_type = 'INPATIENT_STAY' THEN source_type
                                WHEN $4::uuid IS NOT NULL THEN 'HEALTH_CASE'
                                WHEN source_type = 'HEALTH_CASE' THEN NULL
                                ELSE source_type
                            END,
        source_id         = CASE
+                               WHEN source_type = 'INPATIENT_STAY' THEN source_id
                                WHEN $4::uuid IS NOT NULL THEN $4::uuid
                                WHEN source_type = 'HEALTH_CASE' THEN NULL
                                ELSE source_id
@@ -2299,6 +2301,7 @@ UPDATE claim.claim
  WHERE tenant_id = $8
    AND id = $9
    AND status IN ('DRAFT', 'RETURNED')
+   AND (source_type IS DISTINCT FROM 'INPATIENT_STAY' OR case_id = $4::uuid)
    AND row_version = $10
 `
 

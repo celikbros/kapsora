@@ -14,12 +14,12 @@
  * Every one of them asserts a figure or a code. A test that only asserted "no error" would
  * pass against a handler that answered zeroes.
  */
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { createKapsoraClient, randomId, type KapsoraClient } from '../client';
 import { createOperations } from '../operations';
 import { ApiError, unwrap, type Problem } from '../problem';
-import { fromMicros, toMicros, type Decimal } from './data';
+import { fromMicros, toMicros, type Decimal, type StoredDocument } from './data';
 import { createMockServer } from './node';
 
 const { api, server } = createMockServer({ organizationsPerTenant: 6 });
@@ -30,6 +30,19 @@ const DAY_MS = 86_400_000;
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
 afterEach(() => api.reset());
 afterAll(() => server.close());
+
+beforeEach(() => {
+  // Kaan's shared M6 world seed intentionally has two active health plans in one program.
+  // Most tests below exercise lodging inventory and accounting after a plan has been chosen,
+  // so suspend the alternate fixture plan for those cases. Coherence regressions add or
+  // reactivate candidates explicitly and still exercise the ambiguity refusal.
+  const person = api.world.people.find((p) => p.firstName === 'Kaan' && p.lastName === 'Aydemir');
+  if (!person) return;
+  const active = api.world.enrollments.filter(
+    (e) => e.personId === person.id && e.status === 'ACTIVE',
+  );
+  for (const enrollment of active.slice(1)) enrollment.status = 'SUSPENDED';
+});
 
 function client(): KapsoraClient {
   return createKapsoraClient({ baseUrl: BASE, csrfToken: () => api.session?.csrfToken ?? null });
@@ -653,13 +666,21 @@ function freeNight(roomTypeId: string, from = 60): string {
   throw new Error('fixture: no free three-night window');
 }
 
-function holdBody(personId: string, roomTypeId: string, checkIn: string, nights = 2, adults = 2) {
+function holdBody(
+  personId: string,
+  roomTypeId: string,
+  checkIn: string,
+  nights = 2,
+  adults = 2,
+  programId?: string,
+) {
   return {
     personId,
     roomTypeId,
     checkIn,
     checkOut: addDays(checkIn, nights),
     adults,
+    ...(programId ? { programId } : {}),
   };
 }
 
@@ -673,6 +694,50 @@ function createHold(s: Session, body: ReturnType<typeof holdBody>) {
 }
 
 describe('the hold', () => {
+  it('refuses ambiguous same-program funding before creating a hold or waitlist entry', async () => {
+    const s = await signIn('reservation.a');
+    const room = roomTypeByCode('STD_DBL');
+    const person = personByFirstName('Kaan');
+    const enrollment = api.world.enrollments.find(
+      (e) => e.tenantId === s.tenantId && e.personId === person.id && e.status === 'ACTIVE',
+    )!;
+    api.world.enrollments.push({ ...enrollment, id: api.world.nextId() });
+    const checkIn = freeNight(room.id);
+    const before = {
+      bookings: api.world.bookings.length,
+      waitlistEntries: api.world.waitlistEntries.length,
+      inventory: structuredClone(api.world.inventoryDays),
+    };
+
+    const holdRefusal = await refusal(
+      createHold(s, holdBody(person.id, room.id, checkIn, 2, 2, enrollment.programId)),
+    );
+    expect(holdRefusal.status).toBe(422);
+    expect(holdRefusal.code).toBe('ENROLLMENT_MULTIPLE');
+
+    const waitlistRefusal = await refusal(
+      unwrap(
+        s.c.POST('/api/v1/accommodation/waitlist', {
+          params: { header: { ...tenant(s), 'Idempotency-Key': key() } },
+          body: {
+            personId: person.id,
+            propertyId: room.propertyId,
+            roomTypeId: room.id,
+            checkIn,
+            checkOut: addDays(checkIn, 2),
+            adults: 2,
+            programId: enrollment.programId,
+          },
+        }),
+      ),
+    );
+    expect(waitlistRefusal.status).toBe(422);
+    expect(waitlistRefusal.code).toBe('ENROLLMENT_MULTIPLE');
+    expect(api.world.bookings).toHaveLength(before.bookings);
+    expect(api.world.waitlistEntries).toHaveLength(before.waitlistEntries);
+    expect(api.world.inventoryDays).toEqual(before.inventory);
+  });
+
   /**
    * The acceptance criterion of the package, as far as a mock can carry it: the room is set
    * aside on every night of the stay, the countdown is a real one, and the frozen quote adds
@@ -1191,6 +1256,50 @@ async function confirmedStay(
 }
 
 describe('cancelling a stay', () => {
+  it('reports the approved half night and converted unit in preview and recorded result', async () => {
+    const s = await signIn('admin.a');
+    const booking = await confirmedStay(
+      s,
+      personByFirstName('Kaan').id,
+      roomTypeByCode('STD_DBL').id,
+      2,
+      64,
+    );
+    const stored = api.world.bookings.find((row) => row.id === booking.id)!;
+    stored.approvedServiceNights = '0.500000';
+    stored.entitlementUnitFactor = '2.000000';
+    const preview = (
+      await unwrap(
+        s.c.POST('/api/v1/accommodation/bookings/{bookingId}/cancellation-preview', {
+          params: { header: tenant(s), path: { bookingId: booking.id } },
+        }),
+      )
+    ).data;
+    expect(preview.quote.free).toBe(true);
+    expect(preview.quote.releasedNights).toBe(2);
+    expect(preview.quote.entitlementEffect).toEqual({
+      consumedServiceNights: '0.000000',
+      releasedServiceNights: '0.500000',
+      consumedEntitlementUnits: '0.000000',
+      releasedEntitlementUnits: '1.000000',
+    });
+    const result = (
+      await unwrap(
+        s.c.POST('/api/v1/accommodation/bookings/{bookingId}/cancel', {
+          params: {
+            header: { ...tenant(s), 'Idempotency-Key': key() },
+            path: { bookingId: booking.id },
+          },
+          body: {},
+        }),
+      )
+    ).data;
+    expect(result.quote.entitlementEffect).toEqual(preview.quote.entitlementEffect);
+    expect(result.cancellation.entitlementEffect).toEqual(preview.quote.entitlementEffect);
+    expect(result.quote.feeAmount).toBe('0.000000');
+    expect(result.cancellation.policySnapshot).toEqual(stored.policySnapshot);
+  });
+
   /**
    * The acceptance criterion of WP-I6-03: the fee is what the booking's own frozen policy
    * says, and the row that records it carries that policy.
@@ -1397,11 +1506,194 @@ describe('check-in and check-out', () => {
 });
 
 describe('a no-show', () => {
+  it.each([
+    ['own clean evidence', 201],
+    ['scanning evidence', 201],
+    ['own duplicate', 201],
+    ['pending booking', 404],
+    ['other provider target', 404],
+    ['other provider document', 404],
+    ['health document', 404],
+    ['restricted document', 404],
+    ['purged canonical', 404],
+    ['foreign canonical', 404],
+    ['health canonical', 404],
+    ['unknown target', 404],
+    ['absent scope', 404],
+    ['empty scope', 404],
+    ['wrong type', 403],
+    ['wrong aggregate', 403],
+    ['sets permission', 403],
+    ['missing grant', 403],
+  ] as const)('limits the desk evidence grant: %s', async (kind, status) => {
+    const admin = await signIn('admin.a');
+    const booking = await confirmedStay(
+      admin,
+      personByFirstName('Kaan').id,
+      roomTypeByCode('STD_DBL').id,
+    );
+    const property = api.world.properties.find((p) => p.id === booking.propertyId)!;
+    const template = api.world.documents.find(
+      (d) => d.scanStatus === 'CLEAN' && d.bucket === 'secure' && !d.purgedAt,
+    )!;
+    const doc: StoredDocument = {
+      ...template,
+      id: api.world.nextId(),
+      tenantId: admin.tenantId,
+      ownerOrganizationId: property.providerOrganizationId,
+      classification: 'INTERNAL',
+      duplicateOfDocumentId: null,
+      purgedAt: null,
+    };
+    api.world.documents.push(doc);
+    const desk = await signIn('reservation.a');
+    const membership = api.session!.account.memberships.find((m) => m.tenantCode === 'DEMO_A')!;
+    if (kind === 'missing grant')
+      membership.permissions = membership.permissions.filter(
+        (permission) => permission !== 'document.booking_evidence.link',
+      );
+    if (kind === 'absent scope') membership.scopes = [];
+    if (kind === 'empty scope') membership.scopes = [{ type: 'ORGANIZATION', id: null }];
+    if (kind === 'pending booking')
+      api.world.bookings.find((b) => b.id === booking.id)!.status = 'PENDING_APPROVAL';
+    if (kind === 'other provider target') property.providerOrganizationId = api.world.nextId();
+    if (kind === 'other provider document') doc.ownerOrganizationId = api.world.nextId();
+    if (kind === 'health document') doc.classification = 'HEALTH';
+    if (kind === 'scanning evidence') {
+      doc.scanStatus = 'SCANNING';
+      doc.bucket = 'quarantine';
+    }
+    if (kind === 'restricted document')
+      api.world.documentLinks.push({
+        ...api.world.documentLinks[0]!,
+        id: api.world.nextId(),
+        documentId: doc.id,
+        tenantId: desk.tenantId,
+        requiredPermission: 'health.clinical.read',
+      });
+    if (
+      kind === 'own duplicate' ||
+      kind === 'purged canonical' ||
+      kind === 'foreign canonical' ||
+      kind === 'health canonical'
+    ) {
+      const canonical = { ...doc, id: api.world.nextId() };
+      if (kind === 'purged canonical') canonical.purgedAt = new Date().toISOString();
+      if (kind === 'foreign canonical') canonical.ownerOrganizationId = api.world.nextId();
+      if (kind === 'health canonical') canonical.classification = 'HEALTH';
+      api.world.documents.push(canonical);
+      doc.duplicateOfDocumentId = canonical.id;
+    }
+    const result = await desk.c.POST('/api/v1/documents/{documentId}/links', {
+      params: {
+        header: { ...tenant(desk), 'Idempotency-Key': key() },
+        path: { documentId: doc.id },
+      },
+      body: {
+        aggregateType: kind === 'wrong aggregate' ? 'MEDICAL_REPORT' : 'BOOKING',
+        aggregateId: kind === 'unknown target' ? randomId() : booking.id,
+        documentTypeCode: kind === 'wrong type' ? 'INVOICE' : 'NO_SHOW_EVIDENCE',
+        ...(kind === 'sets permission' ? { requiredPermission: 'health.clinical.read' } : {}),
+      },
+    });
+    expect(result.response.status).toBe(status);
+    const links = api.world.documentLinks.filter(
+      (l) => l.documentId === doc.id && l.aggregateId === booking.id,
+    );
+    expect(links).toHaveLength(status === 201 ? 1 : 0);
+    if (status === 201) {
+      const removed = await desk.c.DELETE('/api/v1/documents/{documentId}/links/{linkId}', {
+        params: { header: tenant(desk), path: { documentId: doc.id, linkId: links[0]!.id } },
+      });
+      expect(removed.response.status).toBe(403);
+      expect(api.world.documentLinks.some((l) => l.id === links[0]!.id)).toBe(true);
+    }
+  });
+
+  it.each([
+    ['own provider', true],
+    ['tenant document', true],
+    ['retained duplicate', true],
+    ['wrong type', false],
+    ['other provider', false],
+    ['quarantine', false],
+    ['purged object', false],
+    ['purged canonical', false],
+    ['foreign canonical', false],
+  ] as const)('validates evidence: %s', async (kind, allowed) => {
+    const admin = await signIn('admin.a');
+    const booking = await confirmedStay(
+      admin,
+      personByFirstName('Kaan').id,
+      roomTypeByCode('STD_DBL').id,
+    );
+    const property = api.world.properties.find((p) => p.id === booking.propertyId)!;
+    const template = api.world.documents.find(
+      (d) => d.scanStatus === 'CLEAN' && d.bucket === 'secure' && !d.purgedAt,
+    )!;
+    const doc: StoredDocument = {
+      ...template,
+      id: api.world.nextId(),
+      tenantId: admin.tenantId,
+      ownerOrganizationId: property.providerOrganizationId,
+      duplicateOfDocumentId: null,
+      purgedAt: null,
+    };
+    api.world.documents.push(doc);
+    const link = {
+      ...api.world.documentLinks[0]!,
+      id: api.world.nextId(),
+      tenantId: admin.tenantId,
+      documentId: doc.id,
+      aggregateType: 'BOOKING',
+      aggregateId: booking.id,
+      documentTypeCode: kind === 'wrong type' ? 'INVOICE' : 'NO_SHOW_EVIDENCE',
+    };
+    api.world.documentLinks.push(link);
+    if (kind === 'tenant document') doc.ownerOrganizationId = null;
+    if (kind === 'other provider') doc.ownerOrganizationId = api.world.nextId();
+    if (kind === 'quarantine') doc.bucket = 'quarantine';
+    if (kind === 'purged object') doc.purgedAt = new Date().toISOString();
+    if (
+      kind === 'retained duplicate' ||
+      kind === 'purged canonical' ||
+      kind === 'foreign canonical'
+    ) {
+      const canonical = { ...doc, id: api.world.nextId() };
+      if (kind === 'purged canonical') canonical.purgedAt = new Date().toISOString();
+      if (kind === 'foreign canonical') canonical.ownerOrganizationId = api.world.nextId();
+      api.world.documents.push(canonical);
+      doc.duplicateOfDocumentId = canonical.id;
+    }
+    const desk = await signIn('reservation.a');
+    const call = unwrap(
+      desk.c.POST('/api/v1/accommodation/bookings/{bookingId}/no-show', {
+        params: {
+          header: { ...tenant(desk), 'Idempotency-Key': key() },
+          path: { bookingId: booking.id },
+        },
+        body: { at: `${addDays(booking.checkIn, 2)}T12:00:00Z`, evidenceDocumentId: doc.id },
+      }),
+    );
+    if (allowed) expect((await call).data.report.status).toBe('REPORTED');
+    else expect((await refusal(call)).code).toBe('NO_SHOW_EVIDENCE_REQUIRED');
+    expect(api.world.noShows.filter((n) => n.bookingId === booking.id)).toHaveLength(
+      allowed ? 1 : 0,
+    );
+    expect(api.world.bookings.find((b) => b.id === booking.id)?.status).toBe('CONFIRMED');
+  });
+
   /**
    * The rule the member is protected by: a report costs them nothing, and the person who
    * filed it may not be the person who decides it.
    */
   it('leaves the booking alone until a second person confirms it', async () => {
+    const manager = api.world.accounts.find((a) => a.username === 'admin.a')!;
+    for (const membership of manager.memberships) {
+      membership.permissions = membership.permissions.filter(
+        (p) => p !== 'accommodation.booking.manage',
+      );
+    }
     const payer = await signIn('admin.a');
     const seeded = api.world.noShows[0]!;
     const booking = api.world.bookings.find((b) => b.id === seeded.bookingId)!;
@@ -1457,7 +1749,80 @@ describe('a no-show', () => {
   });
 });
 
+it('refuses a different hotel clerk reviewing the reported no-show', async () => {
+  const desk = await signIn('reservation.a');
+  const report = api.world.noShows.find((n) => n.status === 'REPORTED')!;
+  report.reportedByActorId = randomId();
+  const booking = api.world.bookings.find((b) => b.id === report.bookingId)!;
+  const before = structuredClone({ report, booking });
+  const denied = await refusal(
+    unwrap(
+      desk.c.POST('/api/v1/accommodation/bookings/{bookingId}/no-show/review', {
+        params: {
+          header: { ...tenant(desk), 'Idempotency-Key': key() },
+          path: { bookingId: booking.id },
+        },
+        body: { status: 'CONFIRMED' },
+      }),
+    ),
+  );
+  expect(denied.code).toBe('PERMISSION_DENIED');
+  expect({ report, booking }).toEqual(before);
+});
+
 describe('the waiting list', () => {
+  it('keeps an unfunded selected program waiting rather than spending another program', async () => {
+    const s = await signIn('reservation.a');
+    const person = personByFirstName('Kaan');
+    const room = roomTypeByCode('STD_DBL');
+    const checkIn = freeNight(room.id, 64);
+    const funded = api.world.enrollments.find(
+      (e) => e.tenantId === s.tenantId && e.personId === person.id && e.status === 'ACTIVE',
+    )!;
+    const program = api.world.programs.find((p) => p.id === funded.programId)!;
+    const unfundedProgram = { ...program, id: api.world.nextId(), code: 'UNFUNDED' };
+    api.world.programs.push(unfundedProgram);
+    const plan = api.world.plans.find((p) => p.id === funded.planId)!;
+    const unfundedPlan = {
+      ...plan,
+      id: api.world.nextId(),
+      programId: unfundedProgram.id,
+      code: 'UNFUNDED',
+    };
+    api.world.plans.push(unfundedPlan);
+    const unfunded = {
+      ...funded,
+      id: api.world.nextId(),
+      programId: unfundedProgram.id,
+      planId: unfundedPlan.id,
+    };
+    api.world.enrollments.push(unfunded);
+    const joined = (
+      await unwrap(
+        s.c.POST('/api/v1/accommodation/waitlist', {
+          params: { header: { ...tenant(s), 'Idempotency-Key': key() } },
+          body: {
+            personId: person.id,
+            propertyId: room.propertyId,
+            roomTypeId: room.id,
+            checkIn,
+            checkOut: addDays(checkIn, 3),
+            adults: 2,
+            programId: unfundedProgram.id,
+          },
+        }),
+      )
+    ).data;
+    expect(joined.enrollmentId).toBe(unfunded.id);
+    await unwrap(s.c.GET('/api/v1/accommodation/waitlist', { params: { header: tenant(s) } }));
+    const row = api.world.waitlistEntries.find((e) => e.id === joined.id)!;
+    expect(row.status).toBe('WAITING');
+    expect(row.offeredBookingId).toBeNull();
+    expect(
+      api.world.bookings.filter((b) => b.personId === person.id && b.checkIn === checkIn),
+    ).toEqual([]);
+  });
+
   /**
    * The acceptance criterion of the queue: a freed room reaches the front of it without
    * anybody watching, and priority beats arrival order.

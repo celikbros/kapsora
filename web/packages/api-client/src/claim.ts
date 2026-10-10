@@ -90,6 +90,38 @@ export function claimOperations(client: KapsoraClient) {
   });
 
   return {
+    async listCaseSources(tenantId: string, cursor?: string) {
+      return (
+        await unwrap(
+          client.GET('/api/v1/claims/case-sources', {
+            params: { header: read(tenantId), query: { limit: 50, ...(cursor ? { cursor } : {}) } },
+          }),
+        )
+      ).data;
+    },
+    async getCaseSource(tenantId: string, caseId: string) {
+      const { data, response } = await unwrap(
+        client.GET('/api/v1/claims/case-sources/{caseId}', {
+          params: { header: read(tenantId), path: { caseId } },
+        }),
+      );
+      return versioned(data, response);
+    },
+    async createFromCase(
+      tenantId: string,
+      caseId: string,
+      body: components['schemas']['CreateClaimFromCase'],
+      etag: string,
+      key: string,
+    ) {
+      const { data, response } = await unwrap(
+        client.POST('/api/v1/claims/case-sources/{caseId}', {
+          params: { header: command(tenantId, etag, key), path: { caseId } },
+          body,
+        }),
+      );
+      return versioned(data, response);
+    },
     /**
      * Claims newest first. The financial half keeps every figure, decision and reason code
      * and drops the line description, `diagnosisId`, `medicalReportId` and

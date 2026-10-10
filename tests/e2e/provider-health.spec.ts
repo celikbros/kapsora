@@ -11,11 +11,11 @@ async function login(page: Page, username: string) {
 /**
  * The health vertical from the provider's desk: a case is opened for a member by name, an
  * encounter is recorded with a diagnosis chosen from ICD-10, a report is drafted and its
- * submission refused honestly while its file is not clean, and a claim is drafted from the
- * case and submitted. In-app navigation throughout: a full page load starts a new mock
- * session.
+ * submission refused honestly while its file is not clean. An unlinked case cannot start
+ * the new billing handoff; the billing clerk then submits an existing claim draft. In-app navigation
+ * throughout: a full page load starts a new mock session.
  */
-test('a provider opens a case, records a diagnosis, drafts a report and submits a claim', async ({
+test('clinical staff records care, then billing excludes an unready case and submits a draft', async ({
   page,
 }) => {
   await page.goto('/');
@@ -32,7 +32,11 @@ test('a provider opens a case, records a diagnosis, drafts a report and submits 
   await page.getByLabel(/^İlgili hizmet/).selectOption({ index: 1 });
   await page.getByRole('button', { name: 'Vakayı aç' }).click();
   await expect(page).toHaveURL(/\/cases\/[0-9a-f-]+$/);
+  const caseId = page.url().split('/').at(-1)!;
   await expect(page.getByTestId('case-status')).toHaveText('Açık');
+  await expect(page.getByTestId('case-claims-card')).toContainText(
+    'Claim kayıtlarını görmek için ek yetki gerekir.',
+  );
 
   // An encounter, then its diagnosis: the code is found by name and shown by code.
   await page.getByRole('button', { name: 'Muayene ekle' }).click();
@@ -67,21 +71,33 @@ test('a provider opens a case, records a diagnosis, drafts a report and submits 
   await page.getByRole('button', { name: 'Gönder' }).click();
   await expect(page.getByTestId('report-status')).toHaveText('Taslak');
 
-  // Back on the case, the billing side: a claim drafted from the case and submitted.
+  // Clinical staff can review the report but cannot enter the billing desk.
   await page.getByRole('link', { name: 'Vaka', exact: true }).first().click();
   await expect(page.getByTestId('case-reports')).toContainText('MR-');
+  await expect(page.getByTestId('case-claims-card')).toContainText(
+    'Claim kayıtlarını görmek için ek yetki gerekir.',
+  );
+  await expect(page.getByRole('link', { name: 'Yeni claim' })).toHaveCount(0);
+  await expect(rail.getByRole('link', { name: "Claim'ler", exact: true })).toHaveCount(0);
+
+  // The billing clerk sees only billable sources. This new case has no approved request
+  // or authorization/report, so it must be absent from the source choices.
+  await page.getByRole('button', { name: 'Çıkış yap' }).click();
+  await login(page, 'billing.a');
+  await rail.getByRole('link', { name: "Claim'ler", exact: true }).click();
   await page.getByRole('link', { name: 'Yeni claim' }).click();
   await expect(page).toHaveURL(/\/claims\/new/);
+  await expect(page.locator('select[name="caseSource"]')).toBeEnabled();
+  await expect(page.locator(`select[name="caseSource"] option[value="${caseId}"]`)).toHaveCount(0);
+  await expect(page.getByTestId('case-claim-form')).toHaveCount(0);
+  // Keep submission coverage using a seeded draft with established associations.
+  await rail.getByRole('link', { name: "Claim'ler", exact: true }).click();
   await page
-    .getByRole('combobox', { name: /^Hizmet/ })
+    .getByTestId('claim-table')
+    .locator('tr[data-status="DRAFT"]')
     .first()
-    .selectOption({ index: 1 });
-  await page
-    .getByLabel(/^İstenen tutar/)
-    .first()
-    .fill('450');
-  await page.getByRole('button', { name: 'Taslağı oluştur' }).click();
-  await expect(page).toHaveURL(/\/claims\/[0-9a-f-]+$/);
+    .getByRole('link')
+    .click();
   await expect(page.getByTestId('claim-status')).toHaveText('Taslak');
   await page.getByRole('button', { name: 'Gönder' }).click();
   await expect(page.getByTestId('claim-status')).not.toHaveText('Taslak');

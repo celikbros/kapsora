@@ -1,5 +1,11 @@
 import type { ApiError } from '@kapsora/api-client';
-import { afterSignIn, browser, safeReturnTo, useSessionStore } from '@kapsora/auth';
+import {
+  afterSignIn,
+  browser,
+  pendingOrganizationNames,
+  safeReturnTo,
+  useSessionStore,
+} from '@kapsora/auth';
 import { useTranslation } from '@kapsora/i18n';
 import {
   Button,
@@ -63,6 +69,16 @@ export function LoginPage() {
         return;
       }
       const target = safeReturnTo(search.returnTo, '/');
+      // Invitations are deliberately outside every tenant/app shell. A recipient with no
+      // existing grants must still reach the fixed proof-entry page after ordinary login.
+      if (target === '/invitation') {
+        await navigate({ to: '/invitation' });
+        return;
+      }
+      if (pendingOrganizationNames(state.me?.tenants ?? []).length > 0) {
+        await navigate({ to: '/auth/apps', search: { returnTo: target } });
+        return;
+      }
       // The single sign-in: an account whose only app is another one goes there, one with
       // several chooses, one with none is told (APP_CHOOSER_PATH).
       const next = HANDS_OVER

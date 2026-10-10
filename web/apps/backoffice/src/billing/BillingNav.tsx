@@ -1,3 +1,4 @@
+import { useSession } from '@kapsora/auth';
 import { useTranslation } from '@kapsora/i18n';
 import { Link } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
@@ -10,6 +11,8 @@ import { useEffect, useRef } from 'react';
  */
 export function BillingNav() {
   const { t } = useTranslation();
+  const permissions = useSession((s) => s.activeTenant?.permissions);
+  const has = (permission: string) => permissions?.includes(permission) ?? false;
   const strip = useRef<HTMLElement>(null);
   // On a phone the strip scrolls; the list the reader is on is scrolled into view so the
   // underline that says where they are is never off the edge.
@@ -32,21 +35,31 @@ export function BillingNav() {
       className="border-line flex min-w-0 overflow-x-auto border-b"
       data-testid="billing-nav"
     >
-      <Link to="/billing/batches" className={tab}>
-        {t('billing.office.batchesTitle')}
-      </Link>
-      <Link to="/billing/settlements" className={tab}>
-        {t('billing.office.settlementsTitle')}
-      </Link>
-      <Link to="/billing/reimbursements" className={tab}>
-        {t('billing.office.reimbursementsTitle')}
-      </Link>
-      <Link to="/billing/reconciliation" className={tab}>
-        {t('billing.report.reconciliationTitle')}
-      </Link>
-      <Link to="/billing/exports" className={tab}>
-        {t('billing.report.exportsTitle')}
-      </Link>
+      {has('invoice.read') ? (
+        <Link to="/billing/batches" className={tab}>
+          {t('billing.office.batchesTitle')}
+        </Link>
+      ) : null}
+      {has('settlement.read') ? (
+        <Link to="/billing/settlements" className={tab}>
+          {t('billing.office.settlementsTitle')}
+        </Link>
+      ) : null}
+      {has('claim.financial.review') ? (
+        <Link to="/billing/reimbursements" className={tab}>
+          {t('billing.office.reimbursementsTitle')}
+        </Link>
+      ) : null}
+      {has('report.read') ? (
+        <Link to="/billing/reconciliation" className={tab}>
+          {t('billing.report.reconciliationTitle')}
+        </Link>
+      ) : null}
+      {has('report.read') ? (
+        <Link to="/billing/exports" className={tab}>
+          {t('billing.report.exportsTitle')}
+        </Link>
+      ) : null}
     </nav>
   );
 }

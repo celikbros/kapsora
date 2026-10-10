@@ -45,6 +45,8 @@ export function makeIdFactory(
 
 export interface MockAccount {
   actorId: string;
+  actorType?: Schemas['TenantUser']['actorType'];
+  actorStatus?: Schemas['TenantUser']['actorStatus'];
   username: string;
   displayName: string;
   email: string;
@@ -56,9 +58,18 @@ export interface MockAccount {
    * slice is on the server.
    */
   memberships: {
+    /** IAM grant identity and system role for role-management mock projections. */
+    grantId?: string;
+    roleCode?: string;
+    isSystemRole?: boolean;
+    /** Membership without any role assignment, created only by explicit invitation consent. */
+    membershipOnly?: boolean;
     tenantCode: string;
     permissions: string[];
     scopes?: { type: string; id: string | null }[];
+    validFrom?: string | null;
+    validTo?: string | null;
+    validityEmpty?: boolean;
   }[];
 }
 
@@ -1187,6 +1198,10 @@ export interface StoredBooking {
   status: Schemas['BookingStatus'];
   holdExpiresAt: string | null;
   entitlementReservationId: string | null;
+  /** Frozen service quantity adopted by authorization; a test may set a smaller approval. */
+  approvedServiceNights?: string;
+  /** The entitlement conversion frozen when the hold was placed. */
+  entitlementUnitFactor?: string;
   serviceRequestId: string | null;
   authorizationId: string | null;
   voucherId: string | null;
@@ -1273,6 +1288,7 @@ export interface StoredCancellation {
   free: boolean;
   penaltyNights: number;
   releasedNights: number;
+  entitlementEffect?: Schemas['CancellationQuote']['entitlementEffect'];
   feeAmount: Decimal;
   payerFee: Decimal;
   memberFee: Decimal;
@@ -1431,6 +1447,7 @@ const ADMIN_PERMISSIONS = [
   'rule.draft',
   'rule.publish',
   'pricing.quote',
+  // admin.a also holds PROGRAM_MANAGER on the real server; bulk membership is its job.
   'import.execute',
   // M4 (migrations 000027-000029).
   'worklist.read',
@@ -1459,6 +1476,7 @@ const ADMIN_PERMISSIONS = [
   // The back office books for a member who telephoned. `booking.manage` and not
   // `booking.create`: the first is holding a room for somebody else, which is exactly what a
   // desk does, and the second is a member booking for themselves.
+  'accommodation.no_show.review',
   'accommodation.booking.manage',
 ];
 const REVIEWER_PERMISSIONS = [
@@ -1497,6 +1515,7 @@ const REVIEWER_PERMISSIONS = [
 const PROVIDER_PERMISSIONS = [
   'member.read',
   'eligibility.check',
+  'catalog.read',
   'service_request.read',
   'service_request.create',
   'service_request.submit',
@@ -1511,14 +1530,6 @@ const PROVIDER_PERMISSIONS = [
   'document.read',
   'document.link',
   'pricing.quote',
-  'organization.read',
-  'catalog.read',
-  'provider.read',
-  // The provider's billing side (WP-I5-04): raise, send, and take back a claim.
-  'claim.read',
-  'claim.create',
-  'claim.submit',
-  'claim.cancel',
 ];
 
 /**
@@ -1553,6 +1564,7 @@ const MEDICAL_REVIEWER_PERMISSIONS = [
   'member.read',
   'service_request.read',
   'service_request.review',
+  'authorization.manage',
   'health.case.read',
   'health.clinical.read',
   'health.sensitive.read',
@@ -1561,9 +1573,9 @@ const MEDICAL_REVIEWER_PERMISSIONS = [
   'claim.read',
   'claim.medical.review',
   'document.read',
+  'document.link',
   'worklist.read',
   'worklist.claim',
-  'audit.read',
 ];
 
 /**
@@ -1647,6 +1659,7 @@ const PROVIDER_BILLING_PERMISSIONS = [
   'batch.submit',
   'settlement.read',
   'fiscal.edocument.read',
+  'document.upload',
   'document.read',
   // WP-I7-05 §2.2 and WP-I7-06 §2.1.4: the provider reads its own cari ekstre and exports
   // it — scoped to its organization, watermarked, audited per download. Never
@@ -1691,6 +1704,7 @@ const PROVIDER_RESERVATION_PERMISSIONS = [
   // The desk reports a no-show with evidence, so it uploads and reads documents.
   'document.read',
   'document.upload',
+  'document.booking_evidence.link',
 ];
 
 const ORG_PREFIXES = [
@@ -1813,7 +1827,7 @@ export interface StoredClaim {
    * What the claim came from (migration 000043). Null together with `sourceId` on a claim
    * raised by hand against nothing, which is an ordinary claim.
    */
-  sourceType: Schemas['ClaimSourceType'] | null;
+  sourceType: Schemas['ClaimSourceType'] | 'INPATIENT_STAY' | null;
   sourceId: string | null;
   caseId: string | null;
   fulfilmentId: string | null;
@@ -1849,6 +1863,7 @@ export interface StoredClaimVersion {
    * What the submit decided about routing and what it found, frozen. `financialRequired` is
    * what makes "medical first, then financial" survive the medical stage.
    */
+  contractAmounts?: Record<number, string | null>;
   financialRequired: boolean;
   exceptions: Schemas['ClaimException'][];
   createdAt: string;
@@ -1925,12 +1940,24 @@ export interface StoredClaimAdjustment {
 }
 
 /**
- * The hold a claim draws on, as much of it as the claim needs. WP-I4-02 has no mock surface of
- * its own — nothing in this file serves /api/v1/authorizations — so this is the smallest honest
+ * The hold a claim draws on, as much of it as the claim needs. The request authorization mock is separate from
+ * these historical claim fixtures, which retain their own small consumption
  * stand-in: an approved quantity per service and what has been drawn from it. It exists so the
  * one rule the claim owns can be exercised, which is that an over-consumption is an exception
  * and **nothing moves**, not even the part that was left.
  */
+/** Frozen mock receipt for one inpatient claim line and authorization. */
+export interface StoredClaimLineAllocation {
+  tenantId: string;
+  versionId: string;
+  lineId: string;
+  authorizationId: string;
+  order: number;
+  plannedQuantity: string;
+  appliedQuantity: string;
+  idempotencyKey: string;
+}
+
 export interface StoredClaimAuthorization {
   id: string;
   tenantId: string;
@@ -2368,6 +2395,7 @@ export interface MockWorld {
   claimLineDecisions: StoredClaimLineDecision[];
   claimAdjustments: StoredClaimAdjustment[];
   claimAuthorizations: StoredClaimAuthorization[];
+  claimLineAllocations: StoredClaimLineAllocation[];
   // M6.
   /**
    * The accommodation vertical (WP-I6-01): the buildings, the kinds of room in them and the
@@ -5241,8 +5269,9 @@ export function buildWorld(
   const claimLineDecisions: StoredClaimLineDecision[] = [];
   const claimAdjustments: StoredClaimAdjustment[] = [];
 
-  // The hold two of the claims draw on. WP-I4-02 has no mock surface, so this is the claim's
-  // own minimal stand-in; see StoredClaimAuthorization.
+  // Historical hold used by two claim fixtures, independent of the request-screen mock;
+  // see StoredClaimAuthorization.
+  const claimLineAllocations: StoredClaimLineAllocation[] = [];
   const claimAuthorizations: StoredClaimAuthorization[] = [
     {
       id: nextId(-30 * 86_400_000),
@@ -7340,6 +7369,7 @@ export function buildWorld(
     claimLineDecisions,
     claimAdjustments,
     claimAuthorizations,
+    claimLineAllocations,
     properties,
     roomTypes,
     inventoryDays,

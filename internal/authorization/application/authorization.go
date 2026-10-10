@@ -32,9 +32,21 @@ type NewAuthorizationInput struct {
 	// the authorization must have exactly one line — one hold cannot be split across two
 	// lines drawing on two accounts — and no RESERVE movement is posted at all.
 	AdoptReservationID *uuid.UUID
+	AdoptedNight       *AdoptedNightEvidence
 	// AdoptReservationExpiresAt is how far the adopted hold's deadline is moved out. It
 	// is only ever moved later, by the ledger.
 	AdoptReservationExpiresAt *time.Time
+}
+
+// AdoptedNightEvidence is the booking's private, frozen conversion, verified against
+// the existing reservation before an authorization item is written.
+type AdoptedNightEvidence struct {
+	BookingID           uuid.UUID
+	ServiceDefinitionID uuid.UUID
+	DefinitionID        uuid.UUID
+	AccountID           uuid.UUID
+	UnitFactor          benefitdomain.Quantity
+	ReservedUnits       benefitdomain.Quantity
 }
 
 // ExtendInput is the extend command.
@@ -148,7 +160,7 @@ func (s *Service) create(ctx context.Context, tx pgx.Tx, rc identity.RequestCont
 ) (AuthorizationView, error) {
 	scope := scopeOf(rc)
 	if existing, err := s.repo.GetAuthorizationByKey(ctx, tx, rc.TenantID, in.IdempotencyKey); err == nil {
-		return s.loadAuthorization(ctx, tx, rc.TenantID, existing)
+		return s.reloadAuthorization(ctx, tx, rc.TenantID, existing.ID, scope)
 	} else if !errors.Is(err, ErrAuthorizationNotFound) {
 		return AuthorizationView{}, err
 	}
@@ -197,12 +209,23 @@ func (s *Service) create(ctx context.Context, tx pgx.Tx, rc identity.RequestCont
 		// The caller that adopts is the one that placed the hold, and it placed one.
 		return AuthorizationView{}, ErrAdoptionNotSingleLine
 	}
+	if in.AdoptedNight != nil {
+		e := in.AdoptedNight
+		if in.AdoptReservationID == nil || len(lines) != 1 || e.BookingID == uuid.Nil ||
+			e.ServiceDefinitionID != lines[0].item.ServiceDefinitionID || e.DefinitionID == uuid.Nil ||
+			e.AccountID == uuid.Nil || !e.UnitFactor.IsPositive() || !e.ReservedUnits.IsPositive() ||
+			lines[0].quantity.Mul(e.UnitFactor).Cmp(e.ReservedUnits) > 0 {
+			return AuthorizationView{}, ErrAdoptedReservationTooSmall
+		}
+		lines[0].factor = e.UnitFactor
+	}
 	for _, line := range lines {
 		itemID, err := s.repo.CreateAuthorizationItem(ctx, tx, rc.TenantID, NewAuthorizationItemRow{
 			AuthorizationID: record.ID, RequestItemID: line.item.ID,
 			ServiceDefinitionID: line.item.ServiceDefinitionID,
 			ApprovedQuantity:    line.quantity, ApprovedAmount: line.amount,
-			MemberAmount: memberAmountOf(in.MemberAmounts, line.item.LineNo),
+			EntitlementUnitFactor: line.factor,
+			MemberAmount:          memberAmountOf(in.MemberAmounts, line.item.LineNo),
 		})
 		if err != nil {
 			return AuthorizationView{}, err
@@ -251,13 +274,34 @@ func (s *Service) holdFor(ctx context.Context, tx pgx.Tx, rc identity.RequestCon
 		if err != nil {
 			return uuid.Nil, err
 		}
+		if e := in.AdoptedNight; e != nil {
+			if existing.AccountID != e.AccountID || existing.ReferenceType != ledger.ReferenceBooking ||
+				existing.ReferenceID != e.BookingID || existing.Quantity.Cmp(e.ReservedUnits) != 0 {
+				return uuid.Nil, ErrAdoptedReservationTooSmall
+			}
+		}
 		// The adopted hold has to cover what this line promises. A reviewer who approved
 		// fewer nights than were held leaves the surplus on the hold, which the booking
 		// gives back at check-out; one who approved more than was ever held would be
 		// promising entitlement nobody reserved, and that is refused here rather than
 		// discovered at consumption.
-		if existing.Remaining().Cmp(line.quantity) < 0 {
+		if existing.Remaining().Cmp(line.quantity.Mul(line.factor)) < 0 {
 			return uuid.Nil, ErrAdoptedReservationTooSmall
+		}
+		if e := in.AdoptedNight; e != nil {
+			// A reviewer can approve fewer nights than the booking held. Return the
+			// unapproved entitlement units now; later lifecycle releases are bounded
+			// by the approved service quantity and cannot account for this surplus.
+			surplus := existing.Remaining().Sub(line.quantity.Mul(line.factor))
+			if surplus.IsPositive() {
+				if _, err := s.ledger.Release(ctx, tx, ledger.MovementInput{
+					TenantID: rc.TenantID, ReservationID: existing.ID, Quantity: surplus,
+					Key:        "booking-unapproved:" + e.BookingID.String(),
+					ReasonCode: "BOOKING_UNAPPROVED", ActorID: rc.Principal.ActorID,
+				}); err != nil {
+					return uuid.Nil, err
+				}
+			}
 		}
 		return existing.ID, nil
 	}
@@ -265,7 +309,7 @@ func (s *Service) holdFor(ctx context.Context, tx pgx.Tx, rc identity.RequestCon
 	// authorization may draw on the same account, and the ledger's uniqueness on
 	// (reference type, reference id, account) would fold them into a single hold.
 	reservation, err := s.ledger.Reserve(ctx, tx, ledger.ReserveInput{
-		TenantID: rc.TenantID, AccountID: accountID, Quantity: line.quantity,
+		TenantID: rc.TenantID, AccountID: accountID, Quantity: line.quantity.Mul(line.factor),
 		ReferenceType: ledger.ReferenceAuthorization, ReferenceID: itemID,
 		Key: reserveKey(itemID), ReasonCode: "AUTHORIZATION",
 		ActorID: rc.Principal.ActorID,
@@ -284,7 +328,7 @@ func (s *Service) replay(ctx context.Context, rc identity.RequestContext, key st
 		if err != nil {
 			return err
 		}
-		view, err := s.loadAuthorization(ctx, tx, rc.TenantID, record)
+		view, err := s.reloadAuthorization(ctx, tx, rc.TenantID, record.ID, scopeOf(rc))
 		out = view
 		return err
 	})
@@ -320,6 +364,7 @@ func (s *Service) createWithReference(ctx context.Context, tx pgx.Tx, rc identit
 type approvedLine struct {
 	item     RequestItemRecord
 	quantity benefitdomain.Quantity
+	factor   benefitdomain.Quantity
 	amount   *benefitdomain.Quantity
 }
 
@@ -342,7 +387,7 @@ func (s *Service) approvedLines(ctx context.Context, tx pgx.Tx, tenantID uuid.UU
 		if err != nil || !quantity.IsPositive() {
 			continue
 		}
-		line := approvedLine{item: item, quantity: quantity}
+		line := approvedLine{item: item, quantity: quantity, factor: benefitdomain.MustQuantity("1")}
 		if item.ApprovedAmount != "" {
 			amount, err := benefitdomain.ParseQuantity(item.ApprovedAmount)
 			if err != nil {
@@ -358,11 +403,9 @@ func (s *Service) approvedLines(ctx context.Context, tx pgx.Tx, tenantID uuid.UU
 	return out, nil
 }
 
-// accountsFor maps every line onto the entitlement account it will be held against. The
-// convention is the one WP-I4-01's submit gate already uses: the service definition's own
-// code names the entitlement, because there is no catalogue-to-entitlement table yet. A
-// line that maps onto nothing fails the whole authorization rather than being promised
-// against a balance nobody chose.
+// accountsFor selects the exact definition in the request's plan, then a spendable
+// account for that enrollment (or its principal's shared account). Service codes are
+// only a legacy fallback when the plan has no explicit mapping for the service.
 func (s *Service) accountsFor(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 	request RequestRecord, lines []approvedLine,
 ) (map[uuid.UUID]uuid.UUID, error) {
@@ -370,7 +413,7 @@ func (s *Service) accountsFor(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID
 	for _, line := range lines {
 		ids = append(ids, line.item.ServiceDefinitionID)
 	}
-	codes, err := s.repo.ServiceDefinitionCodes(ctx, tx, tenantID, ids)
+	targets, err := s.repo.ResolveEntitlements(ctx, tx, tenantID, request.EnrollmentID, request.ServiceDate, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -378,19 +421,29 @@ func (s *Service) accountsFor(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID
 	if err != nil {
 		return nil, err
 	}
-	byCode := make(map[string]uuid.UUID, len(accounts))
+	byDefinition := make(map[uuid.UUID]ledger.Account)
 	for _, account := range accounts {
-		if _, seen := byCode[account.Definition.Code]; !seen {
-			byCode[account.Definition.Code] = account.ID
+		if account.Status != ledger.AccountOpen || (account.EnrollmentID != request.EnrollmentID && !account.Shared) {
+			continue
+		}
+		best, ok := byDefinition[account.Definition.ID]
+		cmp := account.Balances.Available.Cmp(best.Balances.Available)
+		if !ok || cmp > 0 || (cmp == 0 && (best.Shared && !account.Shared || best.Shared == account.Shared && account.ID.String() < best.ID.String())) {
+			byDefinition[account.Definition.ID] = account
 		}
 	}
 	out := make(map[uuid.UUID]uuid.UUID, len(lines))
-	for _, line := range lines {
-		accountID, ok := byCode[codes[line.item.ServiceDefinitionID]]
+	for i := range lines {
+		target, ok := targets[lines[i].item.ServiceDefinitionID]
 		if !ok {
 			return nil, ErrAccountNotFound
 		}
-		out[line.item.ID] = accountID
+		account, ok := byDefinition[target.DefinitionID]
+		if !ok {
+			return nil, ErrAccountNotFound
+		}
+		lines[i].factor = target.Factor
+		out[lines[i].item.ID] = account.ID
 	}
 	return out, nil
 }
@@ -505,8 +558,22 @@ func (s *Service) releaseHolds(ctx context.Context, tx pgx.Tx, tenantID, actorID
 		if !remaining.IsPositive() {
 			continue
 		}
+		draw, err := entitlementConsumption(item, remaining)
+		if err != nil {
+			return benefitdomain.Quantity{}, err
+		}
+		// A discharge may already have returned part of this hold. Cancellation and
+		// expiry release only what the ledger still holds, in entitlement units.
+		held, err := s.repo.ReservationRemaining(ctx, tx, tenantID, *item.ReservationID)
+		if err != nil {
+			return benefitdomain.Quantity{}, err
+		}
+		draw = draw.Min(held)
+		if !draw.IsPositive() {
+			continue
+		}
 		_, err = s.ledger.Release(ctx, tx, ledger.MovementInput{
-			TenantID: tenantID, ReservationID: *item.ReservationID, Quantity: remaining,
+			TenantID: tenantID, ReservationID: *item.ReservationID, Quantity: draw,
 			Key: releaseKey(item.ID, reason), ReasonCode: reason, ActorID: actorID,
 		})
 		switch {
@@ -558,4 +625,53 @@ func memberAmountOf(amounts map[int]string, lineNo int) benefitdomain.Quantity {
 		return benefitdomain.ZeroQuantity()
 	}
 	return value
+}
+
+// CreateInTx reserves a hold in the caller's tenant transaction. The caller must roll
+// back its transaction if this fails, including on a unique-key collision.
+func (s *Service) CreateInTx(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
+	in NewAuthorizationInput,
+) (AuthorizationView, error) {
+	if in.IdempotencyKey == "" {
+		return AuthorizationView{}, ErrIdempotencyKeyRequired
+	}
+	validFrom := s.now().UTC()
+	if in.ValidFrom != nil {
+		validFrom = in.ValidFrom.UTC()
+	}
+	if err := domain.ValidateNewAuthorization(domain.NewAuthorization{
+		ValidFrom: validFrom, ValidTo: in.ValidTo, MemberAmounts: in.MemberAmounts,
+	}); err != nil {
+		return AuthorizationView{}, err
+	}
+	return s.create(ctx, tx, rc, in, validFrom)
+}
+
+// ExtendValidityInTx advances an active authorization in the caller's transaction.
+// A repeated end date is accepted only while the authorization remains active.
+func (s *Service) ExtendValidityInTx(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
+	id uuid.UUID, validTo time.Time, reasonCode string,
+) error {
+	scope := scopeOf(rc)
+	current, err := s.repo.LockAuthorization(ctx, tx, rc.TenantID, id, scope)
+	if err != nil {
+		return err
+	}
+	if current.Status != domain.StatusActive {
+		return ErrAuthorizationNotActive
+	}
+	if !validTo.After(current.ValidTo) {
+		return nil
+	}
+	if err := domain.ValidateExtension(current.ValidTo, validTo, reasonCode, nil); err != nil {
+		return err
+	}
+	if err := s.repo.ExtendAuthorization(ctx, tx, rc.TenantID, id, validTo.UTC(),
+		actorPtr(rc.Principal.ActorID), current.RowVersion); err != nil {
+		return err
+	}
+	return s.record(ctx, tx, rc, "authorization.extend", "authorization", id, map[string]any{
+		"from_valid_to": current.ValidTo.UTC().Format(time.RFC3339),
+		"valid_to":      validTo.UTC().Format(time.RFC3339), "reason_code": reasonCode,
+	})
 }

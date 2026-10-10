@@ -3,6 +3,37 @@ export type { ClientOptions, KapsoraClient } from './client';
 export { ApiError, NETWORK_ERROR, networkProblem, toProblem, unwrap } from './problem';
 export type { FieldError, Problem } from './problem';
 export { createOperations, organizationOperations, sessionOperations } from './operations';
+export { adminOperations } from './admin';
+export type {
+  TenantUser,
+  TenantUserPage,
+  TenantUserDetail,
+  TenantMembershipStatus,
+  TenantUserQuery,
+  SuspendTenantUserReasonCode,
+  TenantInvitation,
+  TenantInvitationPage,
+  TenantInvitationQuery,
+  CreateTenantInvitationRequest,
+  InspectInvitationResponse,
+  AcceptExistingInvitationResponse,
+  AcceptNewInvitationResponse,
+  RoleAssignmentOption,
+  RoleAssignmentOrganizationPage,
+  TenantRoleGrant,
+  TenantRoleGrantPage,
+  TenantRoleGrantResult,
+  AssignTenantRoleGrantRequest,
+  RevokeTenantRoleGrantRequest,
+  PrivilegedRoleAssignmentOption,
+  RoleChangeEligibility,
+  CreateRoleChangeRequest,
+  RoleChangeRequest,
+  RoleChangeRequestDetail,
+  RoleChangeRequestPage,
+  RoleChangeCommandResult,
+  RoleChangeQuery,
+} from './admin';
 export type {
   CreateOrganizationRequest,
   Operations,
@@ -17,6 +48,8 @@ export type {
   UpdateOrganizationRequest,
   UserContext,
 } from './operations';
+export { authorizationOperations } from './authorization';
+export type { Authorization, CreateAuthorization, AuthorizationListQuery } from './authorization';
 export type { Versioned } from './versioned';
 export {
   isValidTCKN,
@@ -246,6 +279,9 @@ export type {
   PriceQuoteItem,
   PriceQuoteOutcome,
   PriceQuoteRequestItem,
+  PriceOptionQuery,
+  PriceProviderOptionPage,
+  PriceServiceOptionPage,
 } from './pricing';
 export { serviceRequestOperations } from './servicerequest';
 export type {
@@ -319,6 +355,7 @@ export type {
   AccessPurpose,
   CloseHealthCase,
   CreateEncounter,
+  EndEncounter,
   CreateHealthCase,
   Diagnosis,
   DiagnosisInput,

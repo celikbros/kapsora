@@ -7,6 +7,7 @@ package sqlcgen
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -56,6 +57,88 @@ func (q *Queries) AddRolePermissionCounted(ctx context.Context, arg AddRolePermi
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const canManageTenantUsers = `-- name: CanManageTenantUsers :one
+SELECT EXISTS (
+  SELECT 1 FROM iam.tenant_membership m
+  JOIN iam.actor a ON a.id = m.actor_id
+  JOIN iam.access_grant g ON g.tenant_id = m.tenant_id AND g.tenant_membership_id = m.id
+  JOIN iam.role_permission rp ON rp.tenant_id = g.tenant_id AND rp.role_id = g.role_id
+ WHERE m.tenant_id = $1 AND m.id = $2 AND m.actor_id = $3
+   AND a.status = 'ACTIVE' AND m.membership_status = 'ACTIVE' AND m.valid_period @> CURRENT_DATE
+   AND g.scope_type = 'TENANT' AND g.valid_period @> clock_timestamp()
+   AND rp.permission_code = 'identity.user.manage'
+)
+`
+
+type CanManageTenantUsersParams struct {
+	TenantID uuid.UUID
+	ID       uuid.UUID
+	ActorID  uuid.UUID
+}
+
+func (q *Queries) CanManageTenantUsers(ctx context.Context, arg CanManageTenantUsersParams) (bool, error) {
+	row := q.db.QueryRow(ctx, canManageTenantUsers, arg.TenantID, arg.ID, arg.ActorID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const canReadTenantUsers = `-- name: CanReadTenantUsers :one
+
+SELECT EXISTS (
+  SELECT 1 FROM iam.tenant_membership m
+  JOIN iam.actor a ON a.id = m.actor_id
+  JOIN iam.access_grant g ON g.tenant_id = m.tenant_id AND g.tenant_membership_id = m.id
+  JOIN iam.role_permission rp ON rp.tenant_id = g.tenant_id AND rp.role_id = g.role_id
+ WHERE m.tenant_id = $1 AND m.id = $2 AND m.actor_id = $3
+   AND a.status = 'ACTIVE' AND m.membership_status = 'ACTIVE' AND m.valid_period @> CURRENT_DATE
+   AND g.scope_type = 'TENANT' AND g.valid_period @> clock_timestamp()
+   AND rp.permission_code = 'identity.user.read'
+)
+`
+
+type CanReadTenantUsersParams struct {
+	TenantID uuid.UUID
+	ID       uuid.UUID
+	ActorID  uuid.UUID
+}
+
+// Authorization queries (WP-I1-02): memberships, permission resolution, roles, grants and
+// tenant provisioning. Membership lookups run under db.WithActorTx (policy
+// actor_self_membership); everything tenant-owned runs under db.WithTenantTx.
+// Management Users reads: each query runs under db.WithTenantTx. The permission and
+// TENANT scope must belong to the same active grant; flattened request-context fields
+// cannot establish this correlation.
+func (q *Queries) CanReadTenantUsers(ctx context.Context, arg CanReadTenantUsersParams) (bool, error) {
+	row := q.db.QueryRow(ctx, canReadTenantUsers, arg.TenantID, arg.ID, arg.ActorID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const countOtherUsableTenantUserManagers = `-- name: CountOtherUsableTenantUserManagers :one
+SELECT count(DISTINCT m.id) FROM iam.tenant_membership m
+  JOIN iam.actor a ON a.id = m.actor_id
+  JOIN iam.access_grant g ON g.tenant_id = m.tenant_id AND g.tenant_membership_id = m.id
+  JOIN iam.role_permission rp ON rp.tenant_id = g.tenant_id AND rp.role_id = g.role_id
+ WHERE m.tenant_id = $1 AND m.id <> $2
+   AND a.status = 'ACTIVE' AND m.membership_status = 'ACTIVE' AND m.valid_period @> CURRENT_DATE
+   AND g.scope_type = 'TENANT' AND g.valid_period @> clock_timestamp()
+   AND rp.permission_code = 'identity.user.manage'
+`
+
+type CountOtherUsableTenantUserManagersParams struct {
+	TenantID uuid.UUID
+	ID       uuid.UUID
+}
+
+func (q *Queries) CountOtherUsableTenantUserManagers(ctx context.Context, arg CountOtherUsableTenantUserManagersParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countOtherUsableTenantUserManagers, arg.TenantID, arg.ID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
 }
 
 const createAccessGrant = `-- name: CreateAccessGrant :one
@@ -248,7 +331,6 @@ func (q *Queries) FindAccessGrant(ctx context.Context, arg FindAccessGrantParams
 }
 
 const findActiveMembership = `-- name: FindActiveMembership :one
-
 SELECT m.id, m.tenant_id, t.code, t.display_name, t.status, t.default_locale, t.default_time_zone
   FROM iam.tenant_membership m
   JOIN platform.tenant t ON t.id = m.tenant_id
@@ -274,9 +356,6 @@ type FindActiveMembershipRow struct {
 	DefaultTimeZone string
 }
 
-// Authorization queries (WP-I1-02): memberships, permission resolution, roles, grants and
-// tenant provisioning. Membership lookups run under db.WithActorTx (policy
-// actor_self_membership); everything tenant-owned runs under db.WithTenantTx.
 func (q *Queries) FindActiveMembership(ctx context.Context, arg FindActiveMembershipParams) (FindActiveMembershipRow, error) {
 	row := q.db.QueryRow(ctx, findActiveMembership, arg.ActorID, arg.TenantID)
 	var i FindActiveMembershipRow
@@ -369,6 +448,79 @@ func (q *Queries) GetTenantIDByCode(ctx context.Context, code string) (uuid.UUID
 	var id uuid.UUID
 	err := row.Scan(&id)
 	return id, err
+}
+
+const getTenantUser = `-- name: GetTenantUser :one
+SELECT m.id, a.display_name, a.actor_type, a.status AS actor_status,
+       m.membership_status,
+       CASE WHEN isempty(m.valid_period) OR lower_inf(m.valid_period) OR lower(m.valid_period) = '-infinity'::date
+            THEN '' ELSE lower(m.valid_period)::text END AS valid_from,
+       CASE WHEN isempty(m.valid_period) OR upper_inf(m.valid_period) OR upper(m.valid_period) = 'infinity'::date
+            THEN '' ELSE upper(m.valid_period)::text END AS valid_to,
+       isempty(m.valid_period) AS validity_empty, m.created_at, m.row_version
+  FROM iam.tenant_membership m JOIN iam.actor a ON a.id = m.actor_id
+ WHERE m.tenant_id = $1 AND m.id = $2
+`
+
+type GetTenantUserParams struct {
+	TenantID uuid.UUID
+	ID       uuid.UUID
+}
+
+type GetTenantUserRow struct {
+	ID               uuid.UUID
+	DisplayName      string
+	ActorType        string
+	ActorStatus      string
+	MembershipStatus string
+	ValidFrom        string
+	ValidTo          string
+	ValidityEmpty    bool
+	CreatedAt        time.Time
+	RowVersion       int64
+}
+
+func (q *Queries) GetTenantUser(ctx context.Context, arg GetTenantUserParams) (GetTenantUserRow, error) {
+	row := q.db.QueryRow(ctx, getTenantUser, arg.TenantID, arg.ID)
+	var i GetTenantUserRow
+	err := row.Scan(
+		&i.ID,
+		&i.DisplayName,
+		&i.ActorType,
+		&i.ActorStatus,
+		&i.MembershipStatus,
+		&i.ValidFrom,
+		&i.ValidTo,
+		&i.ValidityEmpty,
+		&i.CreatedAt,
+		&i.RowVersion,
+	)
+	return i, err
+}
+
+const isUsableTenantUserManager = `-- name: IsUsableTenantUserManager :one
+SELECT EXISTS (
+  SELECT 1 FROM iam.tenant_membership m
+  JOIN iam.actor a ON a.id = m.actor_id
+  JOIN iam.access_grant g ON g.tenant_id = m.tenant_id AND g.tenant_membership_id = m.id
+  JOIN iam.role_permission rp ON rp.tenant_id = g.tenant_id AND rp.role_id = g.role_id
+ WHERE m.tenant_id = $1 AND m.id = $2
+   AND a.status = 'ACTIVE' AND m.membership_status = 'ACTIVE' AND m.valid_period @> CURRENT_DATE
+   AND g.scope_type = 'TENANT' AND g.valid_period @> clock_timestamp()
+   AND rp.permission_code = 'identity.user.manage'
+)
+`
+
+type IsUsableTenantUserManagerParams struct {
+	TenantID uuid.UUID
+	ID       uuid.UUID
+}
+
+func (q *Queries) IsUsableTenantUserManager(ctx context.Context, arg IsUsableTenantUserManagerParams) (bool, error) {
+	row := q.db.QueryRow(ctx, isUsableTenantUserManager, arg.TenantID, arg.ID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }
 
 const listGrantsForMembership = `-- name: ListGrantsForMembership :many
@@ -494,6 +646,178 @@ func (q *Queries) ListPermissionCodes(ctx context.Context) ([]string, error) {
 	return items, nil
 }
 
+const listTenantUserRoles = `-- name: ListTenantUserRoles :many
+SELECT role.code, role.name, role.is_system_role, g.scope_type,
+       CASE WHEN lower_inf(g.valid_period) OR lower(g.valid_period) = '-infinity'::timestamptz
+            THEN '' ELSE to_char(lower(g.valid_period) AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') END AS valid_from,
+       CASE WHEN upper_inf(g.valid_period) OR upper(g.valid_period) = 'infinity'::timestamptz
+            THEN '' ELSE to_char(upper(g.valid_period) AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') END AS valid_to,
+       isempty(g.valid_period) AS validity_empty
+  FROM iam.access_grant g
+  JOIN iam.role role ON role.tenant_id = g.tenant_id AND role.id = g.role_id
+ WHERE g.tenant_id = $1 AND g.tenant_membership_id = $2
+ ORDER BY role.code, lower(g.valid_period), g.id
+`
+
+type ListTenantUserRolesParams struct {
+	TenantID           uuid.UUID
+	TenantMembershipID uuid.UUID
+}
+
+type ListTenantUserRolesRow struct {
+	Code          string
+	Name          string
+	IsSystemRole  bool
+	ScopeType     string
+	ValidFrom     interface{}
+	ValidTo       interface{}
+	ValidityEmpty bool
+}
+
+func (q *Queries) ListTenantUserRoles(ctx context.Context, arg ListTenantUserRolesParams) ([]ListTenantUserRolesRow, error) {
+	rows, err := q.db.Query(ctx, listTenantUserRoles, arg.TenantID, arg.TenantMembershipID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListTenantUserRolesRow
+	for rows.Next() {
+		var i ListTenantUserRolesRow
+		if err := rows.Scan(
+			&i.Code,
+			&i.Name,
+			&i.IsSystemRole,
+			&i.ScopeType,
+			&i.ValidFrom,
+			&i.ValidTo,
+			&i.ValidityEmpty,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTenantUsers = `-- name: ListTenantUsers :many
+SELECT m.id, a.display_name, a.actor_type, a.status AS actor_status,
+       m.membership_status,
+       CASE WHEN isempty(m.valid_period) OR lower_inf(m.valid_period) OR lower(m.valid_period) = '-infinity'::date
+            THEN '' ELSE lower(m.valid_period)::text END AS valid_from,
+       CASE WHEN isempty(m.valid_period) OR upper_inf(m.valid_period) OR upper(m.valid_period) = 'infinity'::date
+            THEN '' ELSE upper(m.valid_period)::text END AS valid_to,
+       isempty(m.valid_period) AS validity_empty, m.created_at, m.row_version
+  FROM iam.tenant_membership m JOIN iam.actor a ON a.id = m.actor_id
+ WHERE m.tenant_id = $1
+   AND ($2::text IS NULL OR m.membership_status = $2)
+   AND ($3::timestamptz IS NULL
+        OR (m.created_at, m.id) < ($3::timestamptz, $4::uuid))
+ ORDER BY m.created_at DESC, m.id DESC
+ LIMIT $5
+`
+
+type ListTenantUsersParams struct {
+	TenantID         uuid.UUID
+	MembershipStatus *string
+	AfterAt          *time.Time
+	AfterID          uuid.NullUUID
+	PageLimit        int32
+}
+
+type ListTenantUsersRow struct {
+	ID               uuid.UUID
+	DisplayName      string
+	ActorType        string
+	ActorStatus      string
+	MembershipStatus string
+	ValidFrom        string
+	ValidTo          string
+	ValidityEmpty    bool
+	CreatedAt        time.Time
+	RowVersion       int64
+}
+
+func (q *Queries) ListTenantUsers(ctx context.Context, arg ListTenantUsersParams) ([]ListTenantUsersRow, error) {
+	rows, err := q.db.Query(ctx, listTenantUsers,
+		arg.TenantID,
+		arg.MembershipStatus,
+		arg.AfterAt,
+		arg.AfterID,
+		arg.PageLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListTenantUsersRow
+	for rows.Next() {
+		var i ListTenantUsersRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.DisplayName,
+			&i.ActorType,
+			&i.ActorStatus,
+			&i.MembershipStatus,
+			&i.ValidFrom,
+			&i.ValidTo,
+			&i.ValidityEmpty,
+			&i.CreatedAt,
+			&i.RowVersion,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const lockTenantForUserManagement = `-- name: LockTenantForUserManagement :one
+SELECT id FROM platform.tenant WHERE id = $1 FOR UPDATE
+`
+
+func (q *Queries) LockTenantForUserManagement(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, lockTenantForUserManagement, id)
+	var id_2 uuid.UUID
+	err := row.Scan(&id_2)
+	return id_2, err
+}
+
+const lockTenantUserForSuspension = `-- name: LockTenantUserForSuspension :one
+SELECT id, actor_id, membership_status, row_version
+  FROM iam.tenant_membership
+ WHERE tenant_id = $1 AND id = $2 FOR UPDATE
+`
+
+type LockTenantUserForSuspensionParams struct {
+	TenantID uuid.UUID
+	ID       uuid.UUID
+}
+
+type LockTenantUserForSuspensionRow struct {
+	ID               uuid.UUID
+	ActorID          uuid.UUID
+	MembershipStatus string
+	RowVersion       int64
+}
+
+func (q *Queries) LockTenantUserForSuspension(ctx context.Context, arg LockTenantUserForSuspensionParams) (LockTenantUserForSuspensionRow, error) {
+	row := q.db.QueryRow(ctx, lockTenantUserForSuspension, arg.TenantID, arg.ID)
+	var i LockTenantUserForSuspensionRow
+	err := row.Scan(
+		&i.ID,
+		&i.ActorID,
+		&i.MembershipStatus,
+		&i.RowVersion,
+	)
+	return i, err
+}
+
 const seedIdentifierType = `-- name: SeedIdentifierType :exec
 INSERT INTO party.identifier_type (tenant_id, code, display_name, is_sensitive, uniqueness_scope)
 VALUES ($1, $2, $3, $4, $5)
@@ -580,4 +904,23 @@ func (q *Queries) SeedRelationshipType(ctx context.Context, arg SeedRelationship
 		arg.IsDirectional,
 	)
 	return err
+}
+
+const suspendTenantUser = `-- name: SuspendTenantUser :one
+UPDATE iam.tenant_membership SET membership_status = 'SUSPENDED'
+ WHERE tenant_id = $1 AND id = $2 AND membership_status = 'ACTIVE' AND row_version = $3
+ RETURNING row_version
+`
+
+type SuspendTenantUserParams struct {
+	TenantID   uuid.UUID
+	ID         uuid.UUID
+	RowVersion int64
+}
+
+func (q *Queries) SuspendTenantUser(ctx context.Context, arg SuspendTenantUserParams) (int64, error) {
+	row := q.db.QueryRow(ctx, suspendTenantUser, arg.TenantID, arg.ID, arg.RowVersion)
+	var row_version int64
+	err := row.Scan(&row_version)
+	return row_version, err
 }

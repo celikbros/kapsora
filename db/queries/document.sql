@@ -290,3 +290,26 @@ SELECT EXISTS (
                        AND l.aggregate_type = h.aggregate_type
                        AND l.aggregate_id = h.aggregate_id)))
 ) AS held;
+
+-- name: BookingEvidenceLinkAllowed :one
+-- A narrow desk grant never becomes tenant-wide when organization scope is absent.
+-- Linking can precede scanning; reportNoShow separately requires retained CLEAN bytes.
+SELECT EXISTS (
+    SELECT 1
+      FROM accommodation.booking b
+      JOIN accommodation.property p ON p.tenant_id = b.tenant_id AND p.id = b.property_id
+      JOIN document.object o ON o.tenant_id = b.tenant_id AND o.id = sqlc.arg('document_id')
+      JOIN document.object stored ON stored.tenant_id = o.tenant_id
+           AND stored.id = COALESCE(o.duplicate_of_object_id, o.id)
+     WHERE b.tenant_id = sqlc.arg('tenant_id') AND b.id = sqlc.arg('booking_id')
+       AND b.status = 'CONFIRMED'
+       AND p.provider_organization_id = ANY(sqlc.arg('scope_ids')::uuid[])
+       AND o.owner_tenant_organization_id = p.provider_organization_id
+       AND stored.owner_tenant_organization_id = p.provider_organization_id
+       AND o.classification <> 'HEALTH' AND stored.classification <> 'HEALTH'
+       AND o.purged_at IS NULL AND stored.purged_at IS NULL
+       AND NOT EXISTS (
+           SELECT 1 FROM document.link l WHERE l.tenant_id = o.tenant_id
+             AND l.object_id IN (o.id, stored.id) AND l.required_permission IS NOT NULL
+       )
+) AS allowed;

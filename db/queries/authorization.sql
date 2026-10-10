@@ -72,6 +72,26 @@ SELECT a.id, a.request_id, a.authorization_reference, a.valid_from, a.valid_to, 
  WHERE a.tenant_id = sqlc.arg('tenant_id')
    AND a.idempotency_key = sqlc.arg('idempotency_key');
 
+-- name: BookingOrphanEvidence :one
+-- The terminal booking is already locked by the caller. Lock its original reservation
+-- while checking whether the promise ever crossed into use or another booking link.
+SELECT r.entitlement_account_id, r.reference_type, r.reference_id,
+       r.quantity::text AS quantity, r.consumed_quantity::text AS consumed_quantity,
+       r.released_quantity::text AS released_quantity, r.status,
+       (SELECT count(*) FROM accommodation.booking b
+         WHERE b.tenant_id = r.tenant_id AND b.authorization_id = sqlc.arg('authorization_id')) AS booking_links,
+       (SELECT count(*) FROM service.fulfilment f
+         WHERE f.tenant_id = r.tenant_id AND f.authorization_id = sqlc.arg('authorization_id')) AS fulfilments,
+       (SELECT count(*) FROM service.voucher v
+         WHERE v.tenant_id = r.tenant_id AND v.authorization_id = sqlc.arg('authorization_id')
+           AND v.status = 'REDEEMED') AS redeemed_vouchers,
+       (SELECT count(*) FROM benefit.entitlement_ledger l
+         WHERE l.tenant_id = r.tenant_id AND l.reservation_id = r.id
+           AND l.movement_type = 'CONSUME') AS consumption_movements
+  FROM benefit.entitlement_reservation r
+ WHERE r.tenant_id = sqlc.arg('tenant_id') AND r.id = sqlc.arg('reservation_id')
+ FOR UPDATE OF r;
+
 -- name: ListAuthorizations :many
 -- Keyset pagination on (created_at DESC, id DESC); the caller asks for limit+1 rows to
 -- learn whether a next page exists.
@@ -164,10 +184,11 @@ UPDATE service.authorization
 -- a reference. The reservation id is written back by SetAuthorizationItemReservation.
 INSERT INTO service.authorization_item (
     tenant_id, authorization_id, request_item_id, service_definition_id,
-    approved_quantity, approved_amount, member_amount)
+    approved_quantity, approved_amount, member_amount, entitlement_unit_factor)
 VALUES (sqlc.arg('tenant_id'), sqlc.arg('authorization_id'), sqlc.arg('request_item_id'),
         sqlc.arg('service_definition_id'), sqlc.arg('approved_quantity')::text::numeric,
-        sqlc.narg('approved_amount')::text::numeric, sqlc.arg('member_amount')::text::numeric)
+        sqlc.narg('approved_amount')::text::numeric, sqlc.arg('member_amount')::text::numeric,
+        sqlc.arg('entitlement_unit_factor')::text::numeric)
 RETURNING id, created_at, row_version;
 
 -- name: SetAuthorizationItemReservation :execrows
@@ -182,6 +203,7 @@ SELECT id, authorization_id, request_item_id, service_definition_id,
        member_amount::text AS member_amount,
        entitlement_reservation_id,
        consumed_quantity::text AS consumed_quantity,
+       entitlement_unit_factor::text AS entitlement_unit_factor,
        row_version
   FROM service.authorization_item
  WHERE tenant_id = sqlc.arg('tenant_id')
@@ -197,6 +219,7 @@ SELECT id, authorization_id, request_item_id, service_definition_id,
        member_amount::text AS member_amount,
        entitlement_reservation_id,
        consumed_quantity::text AS consumed_quantity,
+       entitlement_unit_factor::text AS entitlement_unit_factor,
        row_version
   FROM service.authorization_item
  WHERE tenant_id = sqlc.arg('tenant_id')

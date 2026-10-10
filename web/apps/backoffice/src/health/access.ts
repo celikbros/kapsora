@@ -1,4 +1,5 @@
 import { ApiError, type AccessContext, type AccessPurpose } from '@kapsora/api-client';
+import { useSession } from '@kapsora/auth';
 import { useCallback, useState } from 'react';
 
 /**
@@ -27,20 +28,29 @@ export const ACCESS_PURPOSES: AccessPurpose[] = [
 ];
 
 export function useAccessState(resourceId: string) {
-  const [state, setState] = useState<AccessState>(() => remembered.get(resourceId) ?? {});
+  const sessionScope = useSession((s) =>
+    s.session && s.activeTenant
+      ? `${s.session.actorId}:${s.session.expiresAt}:${s.activeTenant.tenant.id}`
+      : '',
+  );
+  const key = `${sessionScope}:${resourceId}`;
+  const [selection, setSelection] = useState(() => ({ key, state: remembered.get(key) ?? {} }));
+  // Resolve the new scope during render, before a query can send the previous purpose.
+  // An effect would be too late: the first read could already disclose clinical data.
+  const state = selection.key === key ? selection.state : (remembered.get(key) ?? {});
   const grant = useCallback(
     (purpose: AccessPurpose, reason: string) => {
       const next: AccessState = reason.trim() ? { purpose, reason: reason.trim() } : { purpose };
-      remembered.set(resourceId, next);
-      setState(next);
+      remembered.set(key, next);
+      setSelection({ key, state: next });
     },
-    [resourceId],
+    [key],
   );
   const decline = useCallback(() => {
     const next: AccessState = { declined: true };
-    remembered.set(resourceId, next);
-    setState(next);
-  }, [resourceId]);
+    remembered.set(key, next);
+    setSelection({ key, state: next });
+  }, [key]);
   return { state, grant, decline };
 }
 

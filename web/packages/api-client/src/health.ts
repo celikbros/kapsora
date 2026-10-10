@@ -19,6 +19,7 @@ export type HealthAccessEvent = components['schemas']['HealthAccessEvent'];
 export type HealthAccessLogPage = components['schemas']['HealthAccessLogPage'];
 export type CreateHealthCase = components['schemas']['CreateHealthCase'];
 export type CloseHealthCase = components['schemas']['CloseHealthCase'];
+export type EndEncounter = components['schemas']['EndEncounter'];
 export type CreateEncounter = components['schemas']['CreateEncounter'];
 export type PutEncounterDiagnoses = components['schemas']['PutEncounterDiagnoses'];
 
@@ -222,6 +223,22 @@ export function healthOperations(client: KapsoraClient) {
       const r = await unwrap(
         client.POST('/api/v1/health-cases/{caseId}/encounters', {
           params: { header: create(tenantId, idempotencyKey), path: { caseId } },
+          body,
+        }),
+      );
+      return versioned(r.data, r.response);
+    },
+
+    async endEncounter(
+      tenantId: string,
+      encounterId: string,
+      etag: string,
+      body: EndEncounter,
+      idempotencyKey: string = randomId(),
+    ): Promise<Versioned<Encounter>> {
+      const r = await unwrap(
+        client.POST('/api/v1/encounters/{encounterId}/end', {
+          params: { header: command(tenantId, etag, idempotencyKey), path: { encounterId } },
           body,
         }),
       );

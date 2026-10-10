@@ -42,12 +42,12 @@ func RoleTemplates() []RoleTemplate {
 			Description: "Program, plan taslağı, hak sahibi ve enrollment yönetimi.",
 			Permissions: []string{"organization.read", "member.read", "member.manage", "member.relationship.manage", "membership.manage",
 				"member.contact.read", "member.contact.manage",
-				"enrollment.manage", "eligibility.check", "program.read", "program.manage", "plan.manage",
+				"enrollment.manage", "import.execute", "eligibility.check", "program.read", "program.manage", "plan.manage",
 				"entitlement.read", "entitlement.mapping.manage",
 				"catalog.read", "catalog.manage", "pricing.quote", "authorization.manage", "fulfilment.record",
 				"voucher.redeem", "claim.read", "report.read", "report.export",
 				"worklist.read", "worklist.claim",
-				"accommodation.property.read", "accommodation.waitlist.manage",
+				"accommodation.property.read", "accommodation.waitlist.manage", "accommodation.no_show.review",
 				"notification.read"}},
 		{Code: "PLAN_PUBLISHER", Name: "Plan Onaylayıcı", Scope: ScopeTenant,
 			Description: "Plan sürümü yayınlar ve hak düzeltmelerini onaylar (checker).",
@@ -115,7 +115,8 @@ func RoleTemplates() []RoleTemplate {
 				"provider.practitioner.manage"}},
 		{Code: "PROVIDER_STAFF", Name: "Sağlayıcı Kayıt/Klinik", Scope: ScopeOrganization,
 			Description: "Hak sorgusu, hizmet talebi, sağlık vakası, belge ve hizmet kaydı.",
-			Permissions: []string{"member.read", "eligibility.check", "service_request.read", "service_request.create",
+			// Service selection and ICD-10 lookup need catalog read access; no maintenance grant.
+			Permissions: []string{"member.read", "eligibility.check", "catalog.read", "service_request.read", "service_request.create",
 				"service_request.submit", "service_request.cancel", "fulfilment.record", "voucher.redeem",
 				"health.case.read", "health.case.manage", "health.clinical.read", "health.medical_report.manage",
 				"document.upload", "document.read", "document.link", "pricing.quote"}},
@@ -123,7 +124,7 @@ func RoleTemplates() []RoleTemplate {
 			Description: "Claim, dış fatura, icmal ve settlement takibi; klinik belgeye minimum erişim.",
 			Permissions: []string{"claim.read", "claim.create", "claim.submit", "claim.cancel",
 				"invoice.read", "invoice.manage", "batch.create",
-				"batch.submit", "settlement.read", "fiscal.edocument.read", "document.read",
+				"batch.submit", "settlement.read", "fiscal.edocument.read", "document.upload", "document.read",
 				// WP-I7-05 §2.2: the provider reads its own cari ekstre -- what it billed, what the
 				// payer decided, what was settled and what is still open -- and, per WP-I7-06
 				// §2.1.4, exports it. The export is scoped to the caller's organization by the
@@ -141,9 +142,11 @@ func RoleTemplates() []RoleTemplate {
 			Description: "Konaklama kontenjanı, rezervasyon, check-in/out; sağlık verisine erişemez.",
 			// document.read and document.upload: a no-show is reported with evidence, and the
 			// desk that reports it is the one that has the evidence (WP-I6-03 §2.4).
+			// The narrow evidence grant excludes generic linking, unlinking and clinical data.
 			Permissions: []string{"accommodation.property.read", "accommodation.inventory.manage",
 				"accommodation.booking.manage", "accommodation.waitlist.manage",
-				"member.read", "eligibility.check", "document.read", "document.upload"}},
+				"member.read", "eligibility.check", "document.read", "document.upload",
+				"document.booking_evidence.link"}},
 		// The sponsor's own HR user. It exists so the acceptance criterion of WP-I5-01 has a
 		// subject: this is the role that may see that a member has an open health case, and
 		// may never see what the case is about. health.clinical.read is absent on purpose,

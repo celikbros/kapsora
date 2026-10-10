@@ -1,4 +1,4 @@
-import { useTenantId } from '@kapsora/auth';
+import { usePermission, useSession, useTenantId } from '@kapsora/auth';
 import { useQuery } from '@tanstack/react-query';
 
 import { useOps } from '../api';
@@ -11,13 +11,16 @@ import { useOps } from '../api';
 export function usePersonName(personId: string | null | undefined): string | null | undefined {
   const ops = useOps();
   const tenantId = useTenantId();
+  const actorId = useSession((state) => state.session?.actorId ?? '');
+  const canRead = usePermission('member.read');
   const q = useQuery({
-    queryKey: ['claims', tenantId, 'person-name', personId ?? ''],
+    queryKey: ['claims', tenantId, 'person-name', actorId, personId ?? ''],
     queryFn: () => ops.people.get(tenantId, personId!),
-    enabled: Boolean(personId),
+    enabled: canRead && Boolean(personId),
     staleTime: 5 * 60_000,
     retry: false,
   });
+  if (!canRead) return null;
   if (q.isPending && q.fetchStatus !== 'idle') return undefined;
   return q.data?.data.displayName ?? null;
 }
@@ -27,13 +30,16 @@ export function useOrganizationName(
 ): string | null | undefined {
   const ops = useOps();
   const tenantId = useTenantId();
+  const actorId = useSession((state) => state.session?.actorId ?? '');
+  const canRead = usePermission('organization.read');
   const q = useQuery({
-    queryKey: ['claims', tenantId, 'organization-name', organizationId ?? ''],
+    queryKey: ['claims', tenantId, 'organization-name', actorId, organizationId ?? ''],
     queryFn: () => ops.organizations.get(tenantId, organizationId!),
-    enabled: Boolean(organizationId),
+    enabled: canRead && Boolean(organizationId),
     staleTime: 5 * 60_000,
     retry: false,
   });
+  if (!canRead) return null;
   if (q.isPending && q.fetchStatus !== 'idle') return undefined;
   return q.data?.data.displayName ?? null;
 }

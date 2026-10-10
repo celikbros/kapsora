@@ -697,6 +697,76 @@ export function healthHandlers(api: MockApi): HttpHandler[] {
       });
     }),
 
+    http.post(`${ANY}/api/v1/encounters/:encounterId/end`, async ({ request, params }) => {
+      await wait(api);
+      const g = guardTenant(api, request, PERMISSION_CASE_MANAGE, true);
+      if ('error' in g) return g.error;
+      if (!hasPermission(api, g.session, g.tenantId, PERMISSION_CLINICAL_READ))
+        return problem(api, 403, 'PERMISSION_DENIED', 'Bu i\u015flem i\u00e7in yetkiniz yok');
+      const missing = requireIdempotencyKey(api, request);
+      if (missing) return missing;
+      const encounter = world().encounters.find(
+        (e) => e.id === pathParam(params, 'encounterId') && e.tenantId === g.tenantId,
+      );
+      if (!encounter) return encounterNotFound(api);
+      const row = findCase(g.session, g.tenantId, encounter.caseId);
+      if (!row) return encounterNotFound(api);
+      const body = await readJson<Schemas['EndEncounter']>(request);
+      const key = `encounter-end:${g.tenantId}:${g.session.account.actorId}:${encounter.id}:${request.headers.get('Idempotency-Key')}`;
+      const fingerprint = JSON.stringify(body);
+      const replay = api.replay(key);
+      if (replay) {
+        const saved = replay.body as { fingerprint: string; response: Schemas['Encounter'] };
+        if (saved.fingerprint !== fingerprint)
+          return problem(
+            api,
+            409,
+            'IDEMPOTENCY_KEY_REUSED',
+            'Komut anahtar\u0131 farkl\u0131 i\u00e7erikle kullan\u0131lamaz',
+          );
+        return HttpResponse.json(saved.response, { headers: { ...NO_STORE, ETag: replay.etag! } });
+      }
+      const expected = parseIfMatch(request.headers.get('If-Match'));
+      if (expected === null || expected < 1)
+        return problem(
+          api,
+          428,
+          'IF_MATCH_REQUIRED',
+          'If-Match ba\u015fl\u0131\u011f\u0131 gerekli',
+        );
+      if (row.status === 'CLOSED')
+        return problem(api, 409, 'HEALTH_CASE_CLOSED', 'Sa\u011fl\u0131k vakas\u0131 kapal\u0131');
+      if (encounter.endedAt)
+        return problem(
+          api,
+          409,
+          'ENCOUNTER_ALREADY_ENDED',
+          'Muayene zaten sonland\u0131r\u0131lm\u0131\u015f',
+        );
+      if (encounter.rowVersion !== expected)
+        return problem(api, 412, 'ETAG_MISMATCH', 'Kay\u0131t bu arada de\u011fi\u015fti');
+      if (
+        !body?.endedAt ||
+        !Number.isFinite(Date.parse(body.endedAt)) ||
+        Date.parse(body.endedAt) < Date.parse(encounter.startedAt)
+      )
+        return validationFailed(api, [
+          {
+            field: 'endedAt',
+            code: 'RANGE',
+            message: 'Ge\u00e7erli bir biti\u015f zaman\u0131 giriniz.',
+          },
+        ]);
+      encounter.endedAt = body.endedAt;
+      encounter.rowVersion += 1;
+      const projection = decide(g.session, g.tenantId, row, accessRequest(request)).projection;
+      const response = projectEncounter(encounter, projection);
+      api.rememberIdempotent(key, 200, { fingerprint, response }, etagOf(encounter.rowVersion));
+      return HttpResponse.json(response, {
+        headers: { ...NO_STORE, ETag: etagOf(encounter.rowVersion) },
+      });
+    }),
+
     http.get(`${ANY}/api/v1/encounters/:encounterId`, async ({ request, params }) => {
       await wait(api);
       const g = guardTenant(api, request, PERMISSION_CASE_READ, false);

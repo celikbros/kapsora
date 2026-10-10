@@ -214,3 +214,23 @@ func (a *Authorizations) Lines(ctx context.Context, tx pgx.Tx, tenantID,
 	}
 	return out, nil
 }
+
+func (a *Authorizations) CancellationEvidence(ctx context.Context, tx pgx.Tx,
+	tenantID, authorizationID, requestID, personID, bookingID, reservationID,
+	serviceDefinitionID uuid.UUID,
+) (*accommodationapp.BookingCancellationEvidence, error) {
+	evidence, err := a.svc.BookingCancellationEvidence(ctx, tx,
+		authorizationapp.BookingCancellationEvidenceInput{
+			TenantID: tenantID, AuthorizationID: authorizationID, RequestID: requestID,
+			PersonID: personID, BookingID: bookingID, ReservationID: reservationID,
+			ServiceDefinitionID: serviceDefinitionID,
+		})
+	if err != nil || evidence == nil {
+		return nil, err
+	}
+	return &accommodationapp.BookingCancellationEvidence{
+		Approved: evidence.Approved, Consumed: evidence.Consumed,
+		Remaining: evidence.Remaining, UnitFactor: evidence.UnitFactor,
+		Reservation: evidence.Reservation,
+	}, nil
+}

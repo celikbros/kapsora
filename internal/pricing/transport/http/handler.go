@@ -54,15 +54,17 @@ func NewHandler(svc *application.Service, deny Denier, logger *slog.Logger) *Han
 // from a different question under a reused key. Wrapping the route in the middleware would
 // keep a second copy of the response in system.idempotency_record and answer from there.
 func (h *Handler) Routes(r chi.Router) {
+	r.Get("/options/providers", h.ListProviderOptions)
+	r.Get("/options/services", h.ListServiceOptions)
 	r.Post("/quotes", h.CreatePriceQuote)
 	r.Get("/quotes/{priceQuoteId}", h.GetPriceQuote)
 }
 
 // require resolves the request context or writes the denial through the auditing denier.
-func (h *Handler) require(w http.ResponseWriter, r *http.Request, permission string) (identity.RequestContext, bool) {
-	rc, err := identity.Require(r.Context(), permission)
+func (h *Handler) require(w http.ResponseWriter, r *http.Request) (identity.RequestContext, bool) {
+	rc, err := identity.Require(r.Context(), PermissionQuote)
 	if err != nil {
-		h.deny.Deny(w, r, err, permission)
+		h.deny.Deny(w, r, err, PermissionQuote)
 		return identity.RequestContext{}, false
 	}
 	return rc, true
@@ -110,6 +112,8 @@ func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) 
 		problem(w, r, http.StatusConflict, "pricing/quote-retry", "PRICE_QUOTE_RETRY",
 			"Teklif hesaplanırken veriler değişti",
 			"Teklif tek bir tutarlı okuma üzerinde hesaplanır; isteği aynen yeniden gönderin.")
+	case errors.Is(err, httpx.ErrInvalidCursor):
+		problem(w, r, http.StatusBadRequest, "generic/cursor-invalid", "CURSOR_INVALID", "Sayfa imleci geçersiz", "")
 	default:
 		// A pricing error never carries personal data: this module reads ids, codes,
 		// dates and quantities, and both snapshots are filtered before they are written.
@@ -153,8 +157,8 @@ func problem(w http.ResponseWriter, r *http.Request, status int, typ, code, titl
 	})
 }
 
-func writeJSON(w http.ResponseWriter, status int, body any) {
+func writeJSON(w http.ResponseWriter, body any) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
+	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(body)
 }

@@ -13,7 +13,6 @@ import (
 	benefitdomain "github.com/celikbros/kapsora/internal/benefit/domain"
 	"github.com/celikbros/kapsora/internal/health/domain"
 	"github.com/celikbros/kapsora/internal/identity"
-	"github.com/celikbros/kapsora/internal/platform/db"
 	"github.com/celikbros/kapsora/internal/platform/outbox"
 )
 
@@ -100,10 +99,9 @@ func systemContext(tenantID uuid.UUID) identity.RequestContext {
 	return identity.RequestContext{TenantID: tenantID}
 }
 
-// decisionSubject finds what this decision belongs to: an admission, an extension of one, or
-// neither. It reads without locking, because the writes that follow take their own locks and
-// hold them for as long as they need — and one of the steps between is an authorization,
-// which opens a transaction of its own and must not be waited on with a row lock held.
+// decisionSubject locates the stay or extension named by a request. Its short
+// transaction releases the lookup lock before the decision transaction begins;
+// the latter locks and rereads the parent stay before any funding or transition.
 func (s *Service) decisionSubject(ctx context.Context, rc identity.RequestContext,
 	requestID uuid.UUID,
 ) (*StayRecord, *StayExtensionRecord, error) {
@@ -138,149 +136,147 @@ func (s *Service) decisionSubject(ctx context.Context, rc identity.RequestContex
 	return stay, extension, nil
 }
 
-// applyStayDecision is the admission half: a hold for the days the reviewer approved and the
-// stay in AUTHORIZED, or the stay in REJECTED with no hold at all.
+// applyStayDecision locks and rereads the admission before funding it. The hold,
+// transition and audit record commit together; cancellation can never strand a hold.
 func (s *Service) applyStayDecision(ctx context.Context, rc identity.RequestContext,
-	stay StayRecord, status string,
+	observed StayRecord, status string,
 ) error {
-	if stay.Status != domain.StayRequested {
-		// A redelivery of a decision that has already been applied, or a stay somebody
-		// cancelled while the event sat in the queue. Either way there is nothing to do:
-		// the stay has moved on and moving it again would undo whatever moved it.
+	if status != requestRejected && status != requestApproved && status != requestPartiallyApproved {
 		return nil
 	}
-	switch {
-	case status == requestRejected:
-		return s.withTx(ctx, rc, func(ctx context.Context, tx pgx.Tx) error {
+	return s.withTx(ctx, rc, func(ctx context.Context, tx pgx.Tx) error {
+		stay, err := s.stayRepo.LockStay(ctx, tx, rc.TenantID, observed.ID, Scope{})
+		if err != nil {
+			return err
+		}
+		if stay.Status != domain.StayRequested {
+			return nil
+		}
+		if status == requestRejected {
 			moved, err := s.stayRepo.RejectStay(ctx, tx, rc.TenantID, stay.ID, nil)
-			if err != nil || !moved {
+			if err != nil {
 				return err
+			}
+			if !moved {
+				return ErrStayTransitionInvalid
 			}
 			return s.recordStay(ctx, tx, rc, "inpatient_stay.reject", stay,
 				map[string]any{"source": "SERVICE_REQUEST_DECISION"})
+		}
+		hold, err := s.authorizations.CreateForRequestInTx(ctx, tx, rc, StayAuthorizationInput{
+			RequestID: stay.ServiceRequestID, ValidFrom: stay.AdmissionAt,
+			ValidTo: stay.ExpectedDischargeAt, IdempotencyKey: stayAuthorizationKey(stay.ID),
 		})
-	case status != requestApproved && status != requestPartiallyApproved:
-		// A return or a cancellation. The request is going round again and the admission
-		// is still waiting for somebody to decide it.
-		return nil
-	}
-
-	// The hold, in the authorization module's own transaction. The key is the stay, so a
-	// redelivered event finds the authorization the first delivery created rather than
-	// reserving the same days twice.
-	hold, err := s.authorizations.CreateForRequest(ctx, rc, StayAuthorizationInput{
-		RequestID: stay.ServiceRequestID, ValidFrom: stay.AdmissionAt,
-		ValidTo: stay.ExpectedDischargeAt, IdempotencyKey: stayAuthorizationKey(stay.ID),
-	})
-	if err != nil {
-		return fmt.Errorf("health: authorize stay %s: %w", stay.ID, err)
-	}
-	return s.withTx(ctx, rc, func(ctx context.Context, tx pgx.Tx) error {
+		if err != nil {
+			return fmt.Errorf("health: authorize stay %s: %w", stay.ID, err)
+		}
 		moved, err := s.stayRepo.AuthorizeStay(ctx, tx, rc.TenantID, stay.ID, hold.ID,
 			parseDays(hold.ApprovedDays).String(), nil)
-		if err != nil || !moved {
+		if err != nil {
 			return err
 		}
+		if !moved {
+			return ErrStayTransitionInvalid
+		}
 		return s.recordStay(ctx, tx, rc, "inpatient_stay.authorize", stay, map[string]any{
-			"authorization":   hold.ID,
-			"authorized_days": parseDays(hold.ApprovedDays).String(),
-			"source":          "SERVICE_REQUEST_DECISION",
+			"authorization": hold.ID, "authorized_days": parseDays(hold.ApprovedDays).String(),
+			"source": "SERVICE_REQUEST_DECISION",
 		})
 	})
 }
 
-// applyExtensionDecision is the extension half. An approval does two things to the promise
-// and they are both needed: the added days are reserved by the extension's own authorization,
-// and the original authorization's validity is moved forward so the window covers them. Doing
-// only the first would hold days inside a promise that expires before they are used; doing
-// only the second would extend a window over days nobody reserved.
-//
-// The order is deliberate and it is the order that survives a redelivery. The hold is taken
-// first, under a key derived from the extension. The validity is moved second, and the port
-// skips an authorization that already ends late enough, so running it again is a no-op rather
-// than a refusal. The extension is marked approved last, under a REQUESTED predicate — so if
-// anything above failed, the next delivery starts again from the top and finds the extension
-// still waiting.
+// applyExtensionDecision takes the parent stay lock first, then the extension lock.
+// Discharge and cancellation use the same parent lock, so a decision cannot fund a
+// closed stay or lose the race after checking its status.
 func (s *Service) applyExtensionDecision(ctx context.Context, rc identity.RequestContext,
-	extension StayExtensionRecord, status string,
+	observed StayExtensionRecord, status string,
 ) error {
-	if extension.Status != domain.ExtensionRequested {
+	if status != requestRejected && status != requestApproved && status != requestPartiallyApproved {
 		return nil
-	}
-	if status == requestRejected {
-		return s.withTx(ctx, rc, func(ctx context.Context, tx pgx.Tx) error {
-			moved, err := s.stayRepo.RejectExtension(ctx, tx, rc.TenantID, extension.ID, nil)
-			if err != nil || !moved {
-				return err
-			}
-			// The stay itself is untouched: a refused extension changes nothing about the
-			// admission that was already approved.
-			return s.record(ctx, tx, rc, "stay_extension.reject", domain.AggregateStayExtension,
-				extension.ID, map[string]any{
-					"stay": extension.StayID, "sequence_no": extension.SequenceNo,
-					"source": "SERVICE_REQUEST_DECISION",
-				})
-		})
-	}
-	if status != requestApproved && status != requestPartiallyApproved {
-		return nil
-	}
-
-	stay, err := s.stayOf(ctx, rc, extension.StayID)
-	if err != nil {
-		return err
-	}
-	hold, err := s.authorizations.CreateForRequest(ctx, rc, StayAuthorizationInput{
-		RequestID: extension.ServiceRequestID, ValidFrom: stay.ExpectedDischargeAt,
-		ValidTo:        stay.ExpectedDischargeAt.AddDate(0, 0, extension.AdditionalDays),
-		IdempotencyKey: extensionAuthorizationKey(extension.ID),
-	})
-	if err != nil {
-		return fmt.Errorf("health: authorize stay extension %s: %w", extension.ID, err)
-	}
-	approved := parseDays(hold.ApprovedDays)
-	// The date arithmetic uses the days that were actually approved, not the days that were
-	// asked for: a reviewer who granted two of the three extra days has moved the discharge
-	// two days, and a window three days long would promise a day nobody reserved.
-	newExpected := stay.ExpectedDischargeAt.AddDate(0, 0, wholeDays(approved))
-	if stay.AuthorizationID != nil {
-		if err := s.authorizations.ExtendValidity(ctx, rc, *stay.AuthorizationID,
-			newExpected, extendReasonCode); err != nil {
-			return fmt.Errorf("health: extend the authorization of stay %s: %w", stay.ID, err)
-		}
 	}
 	return s.withTx(ctx, rc, func(ctx context.Context, tx pgx.Tx) error {
-		moved, err := s.stayRepo.ApproveExtension(ctx, tx, rc.TenantID, extension.ID, hold.ID, nil)
-		if err != nil || !moved {
+		stay, err := s.stayRepo.LockStay(ctx, tx, rc.TenantID, observed.StayID, Scope{})
+		if err != nil {
 			return err
 		}
-		// Only inside the same transaction as the approval, and only when the approval
-		// actually moved the row: adding days is the one write here that is not idempotent
-		// on its own, and the predicate above is what makes it run once.
-		if _, err := s.stayRepo.AddAuthorizedDays(ctx, tx, rc.TenantID, stay.ID,
-			approved.String(), newExpected, nil); err != nil {
+		extension, err := s.stayRepo.LockExtensionByRequest(ctx, tx, rc.TenantID, observed.ServiceRequestID)
+		if err != nil {
 			return err
+		}
+		if extension.ID != observed.ID || extension.StayID != stay.ID {
+			return ErrStayTransitionInvalid
+		}
+		if extension.Status != domain.ExtensionRequested {
+			return nil
+		}
+		if stay.Status != domain.StayAuthorized && stay.Status != domain.StayAdmitted {
+			// A legacy closed stay may still have a REQUESTED extension from before
+			// discharge cancelled pending extensions. Resolve it here, under the
+			// parent lock, without funding it or retrying this event forever.
+			if stay.Status == domain.StayDischarged || stay.Status == domain.StayCancelled || stay.Status == domain.StayRejected {
+				cancelled, err := s.stayRepo.CancelExtensions(ctx, tx, rc.TenantID, stay.ID, nil)
+				if err != nil {
+					return err
+				}
+				return s.record(ctx, tx, rc, "stay_extension.cancel_late", domain.AggregateStayExtension,
+					extension.ID, map[string]any{"stay": stay.ID, "cancelled_extensions": cancelled,
+						"source": "SERVICE_REQUEST_DECISION"})
+			}
+			return ErrStayTransitionInvalid
+		}
+		if status == requestRejected {
+			moved, err := s.stayRepo.RejectExtension(ctx, tx, rc.TenantID, extension.ID, nil)
+			if err != nil {
+				return err
+			}
+			if !moved {
+				return ErrStayTransitionInvalid
+			}
+			return s.record(ctx, tx, rc, "stay_extension.reject", domain.AggregateStayExtension,
+				extension.ID, map[string]any{
+					"stay": stay.ID, "sequence_no": extension.SequenceNo,
+					"source": "SERVICE_REQUEST_DECISION",
+				})
+		}
+		if stay.AuthorizationID == nil {
+			return ErrStayTransitionInvalid
+		}
+		hold, err := s.authorizations.CreateForRequestInTx(ctx, tx, rc, StayAuthorizationInput{
+			RequestID: extension.ServiceRequestID, ValidFrom: stay.ExpectedDischargeAt,
+			ValidTo:        stay.ExpectedDischargeAt.AddDate(0, 0, extension.AdditionalDays),
+			IdempotencyKey: extensionAuthorizationKey(extension.ID),
+		})
+		if err != nil {
+			return fmt.Errorf("health: authorize stay extension %s: %w", extension.ID, err)
+		}
+		approved := parseDays(hold.ApprovedDays)
+		newExpected := stay.ExpectedDischargeAt.AddDate(0, 0, wholeDays(approved))
+		if err := s.authorizations.ExtendValidityInTx(ctx, tx, rc, *stay.AuthorizationID,
+			newExpected, extendReasonCode); err != nil {
+			return fmt.Errorf("health: extend authorization of stay %s: %w", stay.ID, err)
+		}
+		moved, err := s.stayRepo.ApproveExtension(ctx, tx, rc.TenantID, extension.ID, hold.ID, nil)
+		if err != nil {
+			return err
+		}
+		if !moved {
+			return ErrStayTransitionInvalid
+		}
+		moved, err = s.stayRepo.AddAuthorizedDays(ctx, tx, rc.TenantID, stay.ID,
+			approved.String(), newExpected, nil)
+		if err != nil {
+			return err
+		}
+		if !moved {
+			return ErrStayTransitionInvalid
 		}
 		return s.record(ctx, tx, rc, "stay_extension.approve", domain.AggregateStayExtension,
 			extension.ID, map[string]any{
-				"stay": extension.StayID, "sequence_no": extension.SequenceNo,
+				"stay": stay.ID, "sequence_no": extension.SequenceNo,
 				"authorization": hold.ID, "additional_days": approved.String(),
 				"source": "SERVICE_REQUEST_DECISION",
 			})
 	})
-}
-
-// stayOf reads a stay outside any command, for the subscriber. The scope is empty: the worker
-// acts for the tenant rather than for a provider.
-func (s *Service) stayOf(ctx context.Context, rc identity.RequestContext, id uuid.UUID) (StayRecord, error) {
-	var out StayRecord
-	err := db.WithTenantTx(ctx, s.pool, db.TenantContext{TenantID: rc.TenantID},
-		func(ctx context.Context, tx pgx.Tx) error {
-			record, err := s.stayRepo.GetStay(ctx, tx, rc.TenantID, id, Scope{})
-			out = record
-			return err
-		})
-	return out, err
 }
 
 // stayAuthorizationKey and extensionAuthorizationKey are the idempotency keys the two holds

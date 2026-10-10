@@ -1,18 +1,29 @@
 package documenthttp
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
 	kapsorav1 "github.com/celikbros/kapsora/api/generated/kapsorav1"
 	"github.com/celikbros/kapsora/internal/document/application"
+	"github.com/celikbros/kapsora/internal/identity"
 )
 
 // LinkDocument implements linkDocument.
 func (h *Handler) LinkDocument(w http.ResponseWriter, r *http.Request) {
-	rc, ok := h.require(w, r, PermissionLink)
-	if !ok {
-		return
+	rc, err := identity.Require(r.Context(), PermissionLink)
+	bookingEvidenceOnly := err != nil
+	if bookingEvidenceOnly {
+		if !rc.Has(application.PermissionBookingEvidenceLink) {
+			h.require(w, r, PermissionLink)
+			return
+		}
+		var ok bool
+		rc, ok = h.require(w, r, application.PermissionBookingEvidenceLink)
+		if !ok {
+			return
+		}
 	}
 	id, ok := h.pathUUID(w, r, "documentId", application.ErrObjectNotFound)
 	if !ok {
@@ -33,7 +44,16 @@ func (h *Handler) LinkDocument(w http.ResponseWriter, r *http.Request) {
 		in.RequiredPermission = *body.RequiredPermission
 	}
 
-	link, err := h.svc.LinkDocument(r.Context(), rc, id, in)
+	var link application.LinkRecord
+	if bookingEvidenceOnly {
+		link, err = h.svc.LinkBookingEvidence(r.Context(), rc, id, in)
+	} else {
+		link, err = h.svc.LinkDocument(r.Context(), rc, id, in)
+	}
+	if errors.Is(err, identity.ErrPermissionDenied) {
+		h.deny.Deny(w, r, err, application.PermissionBookingEvidenceLink)
+		return
+	}
 	if err != nil {
 		h.writeError(w, r, err)
 		return

@@ -10,6 +10,31 @@ export interface AppServices {
   queryClient: QueryClient;
 }
 
+/** A command and its cached reads belong to one exact authorization context. */
+function sessionFingerprint(token: string | null): string {
+  if (!token) return '';
+  let hash = 0xcbf29ce484222325n;
+  for (let i = 0; i < token.length; i += 1) {
+    hash ^= BigInt(token.charCodeAt(i));
+    hash = (hash * 0x100000001b3n) & 0xffffffffffffffffn;
+  }
+  return hash.toString(16).padStart(16, '0');
+}
+
+export function directoryContextKey(state: ReturnType<SessionStore['getState']>): string {
+  return [
+    state.session?.actorId ?? '',
+    sessionFingerprint(state.csrfToken),
+    state.session?.expiresAt ?? '',
+    state.activeTenant?.tenant.id ?? '',
+    state.activeTenant?.canReadTenantUsers === true ? 'allowed' : 'denied',
+    state.activeTenant?.canManageTenantUsers === true ? 'manage' : 'read',
+    state.activeTenant?.canManageTenantRoles === true ? 'roles' : 'no-roles',
+    state.activeTenant?.permissions.join('|') ?? '',
+    JSON.stringify(state.activeTenant?.scopes ?? []),
+  ].join(':');
+}
+
 /** Builds the client, the session store and the query client wired together. */
 export function createServices(
   options: { baseUrl?: string; fetch?: typeof fetch } = {},
@@ -27,6 +52,28 @@ export function createServices(
     defaultOptions: {
       queries: { retry: 1, staleTime: 15_000, refetchOnWindowFocus: false },
     },
+  });
+  let previousDirectoryContext = directoryContextKey(store.getState());
+  store.subscribe((state) => {
+    const current = directoryContextKey(state);
+    if (current === previousDirectoryContext) return;
+    previousDirectoryContext = current;
+    void queryClient.cancelQueries({ queryKey: ['admin-users'] });
+    queryClient.removeQueries({ queryKey: ['admin-users'] });
+    void queryClient.cancelQueries({ queryKey: ['admin-invitations'] });
+    queryClient.removeQueries({ queryKey: ['admin-invitations'] });
+    void queryClient.cancelQueries({ queryKey: ['admin-role-grants'] });
+    queryClient.removeQueries({ queryKey: ['admin-role-grants'] });
+    void queryClient.cancelQueries({ queryKey: ['admin-role-options'] });
+    queryClient.removeQueries({ queryKey: ['admin-role-options'] });
+    void queryClient.cancelQueries({ queryKey: ['admin-role-organizations'] });
+    queryClient.removeQueries({ queryKey: ['admin-role-organizations'] });
+    void queryClient.cancelQueries({ queryKey: ['admin-role-changes'] });
+    queryClient.removeQueries({ queryKey: ['admin-role-changes'] });
+    void queryClient.cancelQueries({ queryKey: ['admin-role-change-options'] });
+    queryClient.removeQueries({ queryKey: ['admin-role-change-options'] });
+    void queryClient.cancelQueries({ queryKey: ['admin-role-change-eligibility'] });
+    queryClient.removeQueries({ queryKey: ['admin-role-change-eligibility'] });
   });
   return { ops, store, queryClient };
 }

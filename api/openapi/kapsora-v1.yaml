@@ -73,6 +73,876 @@ tags:
   - name: Reports
     description: Cari ekstre, günlük mutabakat, operasyon panosu ve filigranlı dışa aktarma
 paths:
+  /api/v1/admin/invitations:
+    get:
+      tags: [Identity]
+      operationId: listTenantInvitations
+      description: Read the current tenant's masked invitations with a correlated TENANT identity.user.read grant.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/TenantInvitationStatus'
+      responses:
+        '200':
+          description: Masked invitation page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantInvitationPage'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Identity]
+      operationId: createTenantInvitation
+      description: Invite by contact without looking up or linking a global account. Requires correlated TENANT identity.user.manage and fresh password step-up. The secret is delivered by the restricted invitation worker only.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTenantInvitationRequest'
+      responses:
+        '200':
+          description: Invitation summary; never includes the code or raw contact
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantInvitation'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '503':
+          description: Restricted invitation delivery is disabled
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/admin/invitations/{invitationId}:
+    get:
+      tags: [Identity]
+      operationId: getTenantInvitation
+      description: Return the masked invitation summary for a manager with tenant-scoped identity.user.read access.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: invitationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Masked invitation summary
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantInvitation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/admin/invitations/{invitationId}/cancel:
+    post:
+      tags: [Identity]
+      operationId: cancelTenantInvitation
+      description: Cancel a pending invitation with fresh password step-up. The request body is empty.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - name: invitationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Cancelled invitation summary
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantInvitation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/Conflict'
+        '428':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/invitations/inspect:
+    post:
+      tags: [Identity]
+      operationId: inspectInvitation
+      description: An authenticated account proves a pasted code before any tenant details are returned. No active tenant is required.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InspectInvitationRequest'
+      responses:
+        '200':
+          description: Valid invitation and tenant display
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InspectInvitationResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/invitations/accept-existing:
+    post:
+      tags: [Identity]
+      operationId: acceptExistingInvitation
+      description: The signed-in account explicitly consents to a zero-grant tenant membership. No automatic tenant switch or session change occurs. An exact retry by the same actor returns the safe result.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcceptExistingInvitationRequest'
+      responses:
+        '200':
+          description: Joined tenant awaiting role assignment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptExistingInvitationResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/v1/invitations/inspect-new:
+    post:
+      tags: [Identity]
+      operationId: inspectNewInvitation
+      security: []
+      description: Anonymous proof inspection for a pending invitation. Requires the configured invitation origin, JSON media type and X-Invitation-Request; all terminal outcomes are unavailable. No session is loaded and every response is no-store.
+      parameters:
+        - $ref: '#/components/parameters/InvitationRequestMarker'
+        - $ref: '#/components/parameters/InvitationOrigin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InspectInvitationRequest'
+      responses:
+        '200':
+          description: Valid pending invitation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InspectInvitationResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/invitations/accept-new:
+    post:
+      tags: [Identity]
+      operationId: acceptNewInvitation
+      security: []
+      description: Anonymous consent and chosen-password creation of one active zero-grant account and membership. Requires the configured invitation origin, JSON media type and X-Invitation-Request. Returns no session or cookie; exact retry requires the current password. Every response is no-store.
+      parameters:
+        - $ref: '#/components/parameters/InvitationRequestMarker'
+        - $ref: '#/components/parameters/InvitationOrigin'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcceptNewInvitationRequest'
+      responses:
+        '200':
+          description: New account and tenant membership awaiting role assignment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptNewInvitationResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/invitations/acceptance-receipt:
+    post:
+      tags: [Identity]
+      operationId: recoverNewInvitationAcceptance
+      security: []
+      description: Private 24-hour receipt recovery using the invitation proof and accepted actor's current password. Requires the configured invitation origin, JSON media type and X-Invitation-Request. Returns no session or cookie; every response is no-store.
+      parameters:
+        - $ref: '#/components/parameters/InvitationRequestMarker'
+        - $ref: '#/components/parameters/InvitationOrigin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvitationAcceptanceReceiptRequest'
+      responses:
+        '200':
+          description: Previously accepted new account outcome
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptNewInvitationResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/admin/users:
+    get:
+      tags: [Identity]
+      operationId: listTenantUsers
+      description: |
+        Read-only tenant membership directory. Requires identity.user.read on a currently
+        valid TENANT-scoped grant for the caller's active membership. Organization-scoped
+        grants never authorize this endpoint. Rows contain no login or contact identifiers.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/TenantMembershipStatus'
+      responses:
+        '200':
+          description: Current tenant membership page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantUserPage'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/v1/admin/users/{membershipId}:
+    get:
+      tags: [Identity]
+      operationId: getTenantUser
+      description: |
+        Tenant-owned membership and assigned role metadata, including future and expired
+        assignments. Assignment does not by itself assert currently effective access.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: membershipId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Tenant membership and assignments
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantUserDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/admin/users/{membershipId}/suspend:
+    post:
+      tags: [Identity]
+      operationId: suspendTenantUser
+      description: |
+        Suspend one ACTIVE tenant membership without changing the global actor, credentials,
+        sessions, grants or any other tenant membership. Requires an active TENANT-scoped
+        identity.user.manage grant on the caller's current membership and password step-up.
+        A retry with the same idempotency key and request returns the recorded response.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - name: membershipId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuspendTenantUserRequest'
+      responses:
+        '200':
+          description: Suspended tenant membership and assigned roles
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantUserDetail'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Self-suspension, last usable tenant manager, invalid state or altered idempotency key
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: Membership ETag no longer matches
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '428':
+          description: If-Match is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/admin/role-assignment-options:
+    get:
+      tags: [Identity]
+      operationId: listRoleAssignmentOptions
+      description: Supported non-privileged system role candidates with exact persisted template permissions; requires current TENANT user.read and role.manage authority.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      responses:
+        '200':
+          description: Available role candidates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleAssignmentOptions'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/v1/admin/role-assignment-organizations:
+    get:
+      tags: [Identity]
+      operationId: listRoleAssignmentOrganizations
+      description: Active in-tenant provider relationships eligible for organization-scoped role assignment.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Provider relationship page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleAssignmentOrganizationPage'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/v1/admin/users/{membershipId}/role-grants:
+    get:
+      tags: [Identity]
+      operationId: listTenantUserRoleGrants
+      description: Allowlisted grant history and current assignment eligibility, using membership aggregate ETag.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/RoleAssignmentMembershipId'
+      responses:
+        '200':
+          description: Grant history page
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantRoleGrantPage'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Identity]
+      operationId: assignTenantUserRoleGrant
+      description: Assign one supported role to an active zero-access human membership, until revoked or membership expiry. Requires fresh password step-up.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/RoleAssignmentMembershipId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignTenantRoleGrantRequest'
+      responses:
+        '200':
+          description: Committed grant and new membership version
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantRoleGrantResult'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            Named domain codes: SELF_ROLE_CHANGE_FORBIDDEN, ROLE_CONFIGURATION_UNSUPPORTED,
+            ROLE_ASSIGNMENT_UNSUPPORTED, MEMBERSHIP_STATE_CONFLICT, EXISTING_ACCESS_CONFLICT,
+            GRANT_STATE_CONFLICT, LAST_TENANT_MANAGER, LAST_TENANT_ROLE_MANAGER.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: Membership ETag no longer matches
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '428':
+          description: If-Match is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '415':
+          description: JSON content type is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/admin/users/{membershipId}/role-grants/{grantId}/revoke:
+    post:
+      tags: [Identity]
+      operationId: revokeTenantUserRoleGrant
+      description: End one current supported grant while retaining its history. Requires fresh password step-up.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/RoleAssignmentMembershipId'
+        - name: grantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevokeTenantRoleGrantRequest'
+      responses:
+        '200':
+          description: Ended grant and new membership version
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantRoleGrantResult'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            Named domain codes: SELF_ROLE_CHANGE_FORBIDDEN, ROLE_CONFIGURATION_UNSUPPORTED,
+            ROLE_ASSIGNMENT_UNSUPPORTED, MEMBERSHIP_STATE_CONFLICT, EXISTING_ACCESS_CONFLICT,
+            GRANT_STATE_CONFLICT, LAST_TENANT_MANAGER, LAST_TENANT_ROLE_MANAGER.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: Membership ETag no longer matches
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '428':
+          description: If-Match is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '415':
+          description: JSON content type is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/admin/privileged-role-assignment-options:
+    get:
+      tags: [Identity]
+      operationId: listPrivilegedRoleAssignmentOptions
+      description: Exact configured privileged TENANT role candidates; requires current correlated tenant user.read and role.manage authority.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      responses:
+        '200':
+          description: Privileged role candidate catalog
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PrivilegedRoleAssignmentOptions'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/admin/users/{membershipId}/role-change-eligibility:
+    get:
+      tags: [Identity]
+      operationId: getTenantUserRoleChangeEligibility
+      description: Target aggregate eligibility and eligible sole-grant revoke IDs; ETag is the membership aggregate version.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RoleAssignmentMembershipId'
+      responses:
+        '200':
+          description: Current target eligibility
+          headers:
+            ETag:
+              schema: {type: string}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RoleChangeEligibility'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /api/v1/admin/users/{membershipId}/role-change-requests:
+    post:
+      tags: [Identity]
+      operationId: createTenantUserRoleChangeRequest
+      description: Propose a privileged assignment or revocation; access remains unchanged until approval by another authorized human.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RoleAssignmentMembershipId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateRoleChangeRequest'}
+      responses:
+        '201':
+          description: Pending request; target grant and version unchanged
+          headers:
+            ETag:
+              schema: {type: string}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RoleChangeCommandResult'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409':
+          description: ROLE_CHANGE_PENDING_EXISTS, ROLE_CHANGE_TARGET_CHANGED, ROLE_CHANGE_CONFIGURATION_CHANGED, SELF_ROLE_CHANGE_FORBIDDEN, ROLE_ASSIGNMENT_UNSUPPORTED, EXISTING_ACCESS_CONFLICT, MEMBERSHIP_STATE_CONFLICT or IDEMPOTENCY_KEY_REUSED.
+          content:
+            application/problem+json:
+              schema: {$ref: '#/components/schemas/Problem'}
+        '412':
+          description: Target membership ETag mismatch
+          content:
+            application/problem+json:
+              schema: {$ref: '#/components/schemas/Problem'}
+        '428':
+          description: If-Match is required
+          content:
+            application/problem+json:
+              schema: {$ref: '#/components/schemas/Problem'}
+        '415':
+          description: JSON content type is required
+          content:
+            application/problem+json:
+              schema: {$ref: '#/components/schemas/Problem'}
+  /api/v1/admin/role-change-requests:
+    get:
+      tags: [Identity]
+      operationId: listRoleChangeRequests
+      description: Bounded request history; list rows omit permission snapshots and live action eligibility.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: status
+          in: query
+          schema: {type: string, enum: [PENDING, APPROVED, REJECTED, CANCELLED], default: PENDING}
+        - name: membershipId
+          in: query
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Request page
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RoleChangeRequestPage'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/admin/role-change-requests/{requestId}:
+    get:
+      tags: [Identity]
+      operationId: getRoleChangeRequest
+      description: Static proposal evidence and current action eligibility; refresh before approval.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RoleChangeRequestId'
+      responses:
+        '200':
+          description: Request detail
+          headers:
+            ETag:
+              schema: {type: string}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RoleChangeRequestDetail'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /api/v1/admin/role-change-requests/{requestId}/approve:
+    post:
+      tags: [Identity]
+      operationId: approveRoleChangeRequest
+      description: A distinct authorized checker atomically applies the frozen proposal.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RoleChangeRequestId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ApproveRoleChangeRequest'}
+      responses:
+        '200':
+          description: Approved request and committed grant effect
+          headers:
+            ETag:
+              schema: {type: string}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RoleChangeCommandResult'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409':
+          description: ROLE_CHANGE_NOT_PENDING, ROLE_CHANGE_TARGET_CHANGED, ROLE_CHANGE_CONFIGURATION_CHANGED, ROLE_CHANGE_MAKER_UNAUTHORIZED, EXISTING_ACCESS_CONFLICT, MEMBERSHIP_STATE_CONFLICT, LAST_TENANT_MANAGER, LAST_TENANT_ROLE_MANAGER or IDEMPOTENCY_KEY_REUSED.
+          content:
+            application/problem+json:
+              schema: {$ref: '#/components/schemas/Problem'}
+        '412':
+          description: Request ETag mismatch
+          content:
+            application/problem+json:
+              schema: {$ref: '#/components/schemas/Problem'}
+        '428':
+          description: If-Match is required
+          content:
+            application/problem+json:
+              schema: {$ref: '#/components/schemas/Problem'}
+        '415':
+          description: JSON content type is required
+          content:
+            application/problem+json:
+              schema: {$ref: '#/components/schemas/Problem'}
+  /api/v1/admin/role-change-requests/{requestId}/reject:
+    post:
+      tags: [Identity]
+      operationId: rejectRoleChangeRequest
+      description: A distinct authorized checker closes a pending request without changing access.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RoleChangeRequestId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RejectRoleChangeRequest'}
+      responses:
+        '200':
+          description: Rejected request; target access unchanged
+          headers:
+            ETag:
+              schema: {type: string}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RoleChangeCommandResult'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409':
+          description: ROLE_CHANGE_NOT_PENDING or IDEMPOTENCY_KEY_REUSED.
+          content:
+            application/problem+json:
+              schema: {$ref: '#/components/schemas/Problem'}
+        '412':
+          description: Request ETag mismatch
+          content:
+            application/problem+json:
+              schema: {$ref: '#/components/schemas/Problem'}
+        '428':
+          description: If-Match is required
+          content:
+            application/problem+json:
+              schema: {$ref: '#/components/schemas/Problem'}
+        '415':
+          description: JSON content type is required
+          content:
+            application/problem+json:
+              schema: {$ref: '#/components/schemas/Problem'}
+  /api/v1/admin/role-change-requests/{requestId}/cancel:
+    post:
+      tags: [Identity]
+      operationId: cancelRoleChangeRequest
+      description: The original currently authorized maker withdraws a pending request without changing access.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RoleChangeRequestId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CancelRoleChangeRequest'}
+      responses:
+        '200':
+          description: Cancelled request; target access unchanged
+          headers:
+            ETag:
+              schema: {type: string}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RoleChangeCommandResult'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409':
+          description: ROLE_CHANGE_NOT_PENDING or IDEMPOTENCY_KEY_REUSED.
+          content:
+            application/problem+json:
+              schema: {$ref: '#/components/schemas/Problem'}
+        '412':
+          description: Request ETag mismatch
+          content:
+            application/problem+json:
+              schema: {$ref: '#/components/schemas/Problem'}
+        '428':
+          description: If-Match is required
+          content:
+            application/problem+json:
+              schema: {$ref: '#/components/schemas/Problem'}
+        '415':
+          description: JSON content type is required
+          content:
+            application/problem+json:
+              schema: {$ref: '#/components/schemas/Problem'}
   /health/live:
     get:
       tags: [Health]
@@ -6036,6 +6906,70 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /api/v1/pricing/options/providers:
+    get:
+      tags: [Pricing]
+      operationId: listPriceProviderOptions
+      description: Active provider profiles available when composing a quote. Requires pricing.quote. Organization-scoped callers see only matching providers. These options do not promise a matching contract or price.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: q
+          in: query
+          schema: {type: string, minLength: 2, maxLength: 120}
+        - name: cursor
+          in: query
+          schema: {type: string}
+        - name: limit
+          in: query
+          schema: {type: integer, minimum: 1, maximum: 100, default: 50}
+      responses:
+        '200':
+          description: Provider input options
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceProviderOptionPage'
+        '400':
+          description: Invalid cursor
+          content:
+            application/problem+json:
+              schema: {$ref: '#/components/schemas/Problem'}
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/pricing/options/services:
+    get:
+      tags: [Pricing]
+      operationId: listPriceServiceOptions
+      description: Active tenant service definitions available when composing a quote. Requires pricing.quote. The options are normal service metadata and do not promise provider or contract eligibility.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: q
+          in: query
+          schema: {type: string, minLength: 2, maxLength: 120}
+        - name: cursor
+          in: query
+          schema: {type: string}
+        - name: limit
+          in: query
+          schema: {type: integer, minimum: 1, maximum: 100, default: 50}
+      responses:
+        '200':
+          description: Service input options
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceServiceOptionPage'
+        '400':
+          description: Invalid cursor
+          content:
+            application/problem+json:
+              schema: {$ref: '#/components/schemas/Problem'}
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
   /api/v1/pricing/quotes:
     post:
       tags: [Pricing]
@@ -7427,6 +8361,15 @@ paths:
         document may be linked to several records, which is what stops the same file being
         uploaded once per place it is needed.
 
+        Requires document.link. A caller holding only document.booking_evidence.link may
+        instead attach NO_SHOW_EVIDENCE to a CONFIRMED BOOKING at a provider in its explicit
+        organization scope. Both the document and its canonical object must belong to that
+        provider, be retained and non-HEALTH, with no permission-restricted existing link.
+        Scanning may still be in progress; reporting the no-show separately requires CLEAN
+        evidence. This narrow grant cannot set requiredPermission or remove links, and
+        cannot attach another document type or target another kind of record. Inaccessible
+        documents and booking targets both answer DOCUMENT_NOT_FOUND.
+
         requiredPermission narrows who may download through the link. Every link on a
         document is checked, so attaching a file to a clinical record makes it clinical
         everywhere rather than only when reached from that record.
@@ -8228,6 +9171,59 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+  /api/v1/encounters/{encounterId}/end:
+    post:
+      tags: [Clinical]
+      operationId: endEncounter
+      description: |
+        Ends an open encounter without changing its clinical content. Requires
+        health.case.manage and health.clinical.read within the provider scope.
+        The case must be open; endedAt cannot precede startedAt. The encounter ETag
+        prevents stale updates. Replaying the same idempotency key returns the same result;
+        a fresh command for an already ended encounter is refused.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/EncounterId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EndEncounter'
+      responses:
+        '200':
+          description: Encounter ended
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Encounter'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: The encounter changed since the caller read it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match is missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /api/v1/encounters/{encounterId}/diagnoses:
     get:
       tags: [Clinical]
@@ -8285,9 +9281,11 @@ paths:
       tags: [Clinical]
       operationId: putEncounterDiagnoses
       description: |
-        Replaces the encounter's diagnoses as a whole: the set is the unit, and a diagnosis
-        id is not something anything else hangs off. A second PRIMARY is refused with 422 —
-        every downstream rule asks "what was this for" and expects one answer.
+        Replaces the encounter's diagnoses as a whole. A diagnosis referenced by an
+        inpatient stay or claim line cannot be removed through this operation; the request
+        is refused with 409 DIAGNOSIS_IN_USE and the stored set remains unchanged. Correct
+        the dependent clinical record before replacing that diagnosis. A second PRIMARY is
+        refused with 422; every downstream rule expects one answer.
 
         `sensitive` is not accepted from the caller. It is read from each code value's own
         category in the catalogue, and the case's sensitivity is recomputed from the
@@ -9478,6 +10476,108 @@ paths:
         '422':
           $ref: '#/components/responses/ValidationError'
 
+  /api/v1/claims/case-sources:
+    get:
+      tags: [Claims]
+      operationId: listClaimCaseSources
+      description: Financial-only outpatient and discharged inpatient handoff candidates; requires claim.create and provider scope. No clinical fields.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Candidate cases with an active authorization and no existing non-cancelled claim
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimCaseSourcePage'
+        '400':
+          description: Invalid cursor
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/v1/claims/case-sources/{caseId}:
+    get:
+      tags: [Claims]
+      operationId: getClaimCaseSource
+      description: Returns financial service choices, never diagnosis or report references. Incomplete or ambiguous clinical handoffs are refused.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/CaseId'
+      responses:
+        '200':
+          description: Financial source and available service quantities
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimCaseSourceDetail'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    post:
+      tags: [Claims]
+      operationId: createClaimFromCase
+      description: |
+        Requires claim.create. Locks and rechecks the scoped source, derives its person,
+        program, enrollment, provider, authorization, diagnosis and report associations
+        inside the create transaction. Requires one unambiguous primary diagnosis. When
+        a report is associated with the case/service, exactly one approved in-window report
+        must resolve. Inpatient cases require one discharged stay, use its admission diagnosis
+        when present, and bill its actual days in full; original and approved extension holds
+        are allocated internally. The caller supplies only service, quantity and requested amount. One non-cancelled claim per case through this path;
+        retry with the same idempotency key. Financial projection is always returned.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/CaseId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateClaimFromCase'
+      responses:
+        '201':
+          description: Linked draft created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: Stale version
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+
   /api/v1/claims:
     get:
       tags: [Claims]
@@ -10255,6 +11355,8 @@ paths:
         provider organization carries no tax identity to invoice against,
         `CURRENCY_NOT_SINGLE` when the lines are not all in one currency, and
         `LINE_NOT_DECIDED` when a line of the current version still has no decision.
+        A decided inpatient claim without its complete consumption receipt returns 409
+        CLAIM_INPATIENT_ALLOCATION_MISSING instead of a readiness result.
 
         Only an APPROVED or PARTIALLY_APPROVED claim has an answer; anything else is 409
         CLAIM_NOT_DECIDED, because "is this invoiceable" is not a question about a draft.
@@ -10274,7 +11376,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           description: |
-            The claim has not been decided. CLAIM_NOT_DECIDED.
+            The claim has not been decided (CLAIM_NOT_DECIDED), or an inpatient claim
+            lacks its complete consumption receipt (CLAIM_INPATIENT_ALLOCATION_MISSING).
           content:
             application/problem+json:
               schema:
@@ -11005,7 +12108,9 @@ paths:
         '422':
           description: |
             The dates, the party or the guest list are outside what a stay may be.
-            VALIDATION_FAILED, OCCUPANCY_EXCEEDED, ENROLLMENT_NOT_FOUND.
+            VALIDATION_FAILED, OCCUPANCY_EXCEEDED, ENROLLMENT_NOT_FOUND or
+            ENROLLMENT_MULTIPLE. The latter means more than one active enrollment matches
+            the first night and optional program, so no funding choice was made.
           content:
             application/problem+json:
               schema:
@@ -11494,9 +12599,11 @@ paths:
 
         Two refusals happen here. A report before the check-in window has closed is
         NO_SHOW_TOO_EARLY: a guest who is late is not a guest who did not come. And a report
-        with no **clean** document linked to the booking is NO_SHOW_EVIDENCE_REQUIRED - a
-        claim that costs a member money and rests on nothing is a claim nobody can review, and
-        a link to a file still in quarantine is not a document a reviewer can open.
+        with no usable NO_SHOW_EVIDENCE document linked to the booking is
+        NO_SHOW_EVIDENCE_REQUIRED. Both the linked object and its canonical stored object
+        must be CLEAN, in the secure bucket, retained, and owned by the property's provider
+        or the tenant. A wrong document type, foreign provider, quarantined object or purged
+        canonical copy cannot support a fee review.
 
         The assessed fee comes from the frozen policy's no-show rate applied to the member's
         own share, and `payerAmount + memberAmount == assessedFeeAmount` exactly. It is a claim
@@ -11549,9 +12656,11 @@ paths:
 
         **The reviewer may not be the reporter.** It is refused with NO_SHOW_SAME_ACTOR, and a
         CHECK on the row refuses it again whatever reaches the table. The two sides are told
-        apart by scope: a provider clerk holds `accommodation.booking.manage` on an
-        ORGANIZATION grant and a payer reviewer holds it tenant-wide, and only the second is a
-        second pair of eyes.
+        apart by scope: the payer holds `accommodation.no_show.review` tenant-wide.
+        Legacy tenant-wide `accommodation.booking.manage` is also accepted. Provider and member
+        apps, PERSON bindings and any non-TENANT scope are refused with PERMISSION_DENIED,
+        even when the caller holds either permission. System PROGRAM_MANAGER receives only
+        the narrow review permission, not booking or inventory management.
 
         The three answers do three different things. CONFIRMED closes the booking as NO_SHOW,
         frees the room for the rest of the allotment, consumes what the policy's rate says off
@@ -11700,7 +12809,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Problem'
         '422':
-          description: VALIDATION_FAILED, PERSON_REQUIRED or ENROLLMENT_NOT_FOUND.
+          description: |
+            VALIDATION_FAILED, PERSON_REQUIRED, ENROLLMENT_NOT_FOUND or
+            ENROLLMENT_MULTIPLE. More than one active enrollment within the optional
+            program also refuses a queue entry.
           content:
             application/problem+json:
               schema:
@@ -13839,6 +14951,21 @@ components:
           scopes:
             kapsora.api: Call KAPSORA APIs
   parameters:
+    InvitationRequestMarker:
+      name: X-Invitation-Request
+      in: header
+      required: true
+      description: Must be exactly 1 on anonymous invitation requests.
+      schema:
+        type: string
+        const: '1'
+    InvitationOrigin:
+      name: Origin
+      in: header
+      required: true
+      description: Must exactly match the origin of the configured invitation link base.
+      schema:
+        type: string
     AppHeader:
       name: X-Kapsora-App
       in: header
@@ -13893,6 +15020,20 @@ components:
       description: Optimistic concurrency token returned as ETag.
       schema:
         type: string
+    RoleAssignmentMembershipId:
+      name: membershipId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    RoleChangeRequestId:
+      name: requestId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     Cursor:
       name: cursor
       in: query
@@ -14508,6 +15649,21 @@ components:
           type: array
           items:
             type: string
+        canReadTenantUsers:
+          type: boolean
+          description: |
+            Server-computed Management Users capability. True only when identity.user.read
+            belongs to an active TENANT-scoped grant in this tenant and the request uses
+            the backoffice or unrestricted app context; flattened permissions and scopes
+            cannot establish that correlation.
+        canManageTenantUsers:
+          type: boolean
+          description: |
+            True only when identity.user.manage belongs to an active TENANT-scoped grant
+            in this tenant and the request uses backoffice or unrestricted app context.
+        canManageTenantRoles:
+          type: boolean
+          description: True only when current TENANT grants correlate identity.user.read and identity.role.manage on this active membership in backoffice or unrestricted app context.
         scopes:
           type: array
           items:
@@ -14520,6 +15676,590 @@ components:
               id:
                 type: [string, 'null']
                 format: uuid
+    TenantInvitationStatus:
+      type: string
+      enum: [PENDING, ACCEPTED, CANCELLED, EXPIRED]
+    TenantInvitationDeliveryStatus:
+      type: string
+      enum: [QUEUED, SENT, FAILED, CANCELLED]
+    TenantInvitation:
+      type: object
+      additionalProperties: false
+      required: [invitationId, maskedRecipient, status, createdAt, expiresAt, rowVersion, deliveryStatus]
+      properties:
+        invitationId:
+          type: string
+          format: uuid
+        maskedRecipient:
+          type: string
+        status:
+          $ref: '#/components/schemas/TenantInvitationStatus'
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        rowVersion:
+          type: integer
+          format: int64
+          minimum: 1
+        deliveryStatus:
+          $ref: '#/components/schemas/TenantInvitationDeliveryStatus'
+    TenantInvitationPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TenantInvitation'
+        nextCursor:
+          type: [string, 'null']
+    CreateTenantInvitationRequest:
+      type: object
+      additionalProperties: false
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+    InspectInvitationRequest:
+      type: object
+      additionalProperties: false
+      required: [code]
+      properties:
+        code:
+          type: string
+          minLength: 75
+          maxLength: 160
+    InspectInvitationResponse:
+      type: object
+      additionalProperties: false
+      required: [tenantDisplayName, invitationStatus, expiresAt]
+      properties:
+        tenantDisplayName:
+          type: string
+        invitationStatus:
+          $ref: '#/components/schemas/TenantInvitationStatus'
+        expiresAt:
+          type: string
+          format: date-time
+    AcceptExistingInvitationRequest:
+      type: object
+      additionalProperties: false
+      required: [code, confirmed]
+      properties:
+        code:
+          type: string
+          minLength: 75
+          maxLength: 160
+        confirmed:
+          type: boolean
+          const: true
+    AcceptExistingInvitationResponse:
+      type: object
+      additionalProperties: false
+      required: [tenantId, tenantDisplayName, membershipId, membershipStatus, accessPending]
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        tenantDisplayName:
+          type: string
+        membershipId:
+          type: string
+          format: uuid
+        membershipStatus:
+          type: string
+          const: ACTIVE
+        accessPending:
+          type: boolean
+          description: True when the accepted membership currently has no effective role permissions.
+    AcceptNewInvitationRequest:
+      type: object
+      additionalProperties: false
+      required: [code, displayName, password, confirmed]
+      properties:
+        code:
+          type: string
+          minLength: 75
+          maxLength: 160
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 200
+        password:
+          type: string
+          format: password
+          minLength: 12
+          maxLength: 1024
+          writeOnly: true
+        confirmed:
+          type: boolean
+          const: true
+    InvitationAcceptanceReceiptRequest:
+      type: object
+      additionalProperties: false
+      required: [code, password]
+      properties:
+        code:
+          type: string
+          minLength: 75
+          maxLength: 160
+        password:
+          type: string
+          format: password
+          maxLength: 1024
+          writeOnly: true
+    AcceptNewInvitationResponse:
+      type: object
+      additionalProperties: false
+      required: [tenantId, tenantDisplayName, membershipId, membershipStatus, accessPending, loginHandle, recoveryExpiresAt]
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        tenantDisplayName:
+          type: string
+        membershipId:
+          type: string
+          format: uuid
+        membershipStatus:
+          type: string
+          const: ACTIVE
+        accessPending:
+          type: boolean
+        loginHandle:
+          type: string
+          pattern: '^k_[0-9a-f]{32}$'
+        recoveryExpiresAt:
+          type: string
+          format: date-time
+    TenantMembershipStatus:
+      type: string
+      enum: [PENDING, ACTIVE, SUSPENDED, REVOKED]
+    TenantUser:
+      type: object
+      additionalProperties: false
+      required: [id, displayName, actorType, actorStatus, membershipStatus, validFrom, validTo, validityEmpty, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Tenant membership ID; never a global actor ID.
+        displayName:
+          type: string
+        actorType:
+          type: string
+          enum: [HUMAN, SERVICE_ACCOUNT, SYSTEM]
+        actorStatus:
+          type: string
+          enum: [INVITED, ACTIVE, SUSPENDED, CLOSED]
+        membershipStatus:
+          $ref: '#/components/schemas/TenantMembershipStatus'
+        validFrom:
+          type: [string, 'null']
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+        validityEmpty:
+          type: boolean
+          description: True when the stored membership period contains no dates.
+        rowVersion:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Concurrency version; use the detail ETag for suspension's If-Match.
+    SuspendTenantUserRequest:
+      type: object
+      additionalProperties: false
+      required: [reasonCode]
+      properties:
+        reasonCode:
+          type: string
+          enum: [ACCESS_REVIEW, STAFF_DEPARTURE, SECURITY_CONCERN]
+    RoleAssignmentOption:
+      type: object
+      additionalProperties: false
+      required: [code, name, description, scopeType, permissionCodes, hasSensitivePermissions]
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        scopeType:
+          type: string
+          enum: [TENANT, ORGANIZATION]
+        permissionCodes:
+          type: array
+          items:
+            type: string
+        hasSensitivePermissions:
+          type: boolean
+    RoleAssignmentOptions:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleAssignmentOption'
+    RoleAssignmentOrganization:
+      type: object
+      additionalProperties: false
+      required: [id, displayName, tenantCode]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Tenant organization relationship ID, never global organization or profile ID.
+        displayName:
+          type: string
+        tenantCode:
+          type: [string, 'null']
+    RoleAssignmentOrganizationPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleAssignmentOrganization'
+        nextCursor:
+          type: [string, 'null']
+    TenantRoleGrant:
+      type: object
+      additionalProperties: false
+      required: [id, roleCode, roleName, isSystemRole, scopeType, organizationRelationshipId, organizationDisplayName, validFrom, validTo, validityEmpty, canRevoke, revocationRefusalCode]
+      properties:
+        id:
+          type: string
+          format: uuid
+        roleCode:
+          type: string
+        roleName:
+          type: string
+        isSystemRole:
+          type: boolean
+        scopeType:
+          type: string
+        organizationRelationshipId:
+          type: [string, 'null']
+          format: uuid
+        organizationDisplayName:
+          type: [string, 'null']
+        validFrom:
+          type: [string, 'null']
+          format: date-time
+        validTo:
+          type: [string, 'null']
+          format: date-time
+        validityEmpty:
+          type: boolean
+        canRevoke:
+          type: boolean
+        revocationRefusalCode:
+          type: [string, 'null']
+    TenantRoleGrantPage:
+      type: object
+      additionalProperties: false
+      required: [membershipId, membershipRowVersion, canAssign, assignmentRefusalCode, items, nextCursor]
+      properties:
+        membershipId:
+          type: string
+          format: uuid
+        membershipRowVersion:
+          type: integer
+          format: int64
+        canAssign:
+          type: boolean
+        assignmentRefusalCode:
+          type: [string, 'null']
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TenantRoleGrant'
+        nextCursor:
+          type: [string, 'null']
+    AssignTenantRoleGrantRequest:
+      type: object
+      additionalProperties: false
+      required: [roleCode, scopeType, reasonCode]
+      properties:
+        roleCode:
+          type: string
+        scopeType:
+          type: string
+          enum: [TENANT, ORGANIZATION]
+        organizationRelationshipId:
+          type: string
+          format: uuid
+        reasonCode:
+          type: string
+          enum: [ONBOARDING, DUTY_ASSIGNMENT]
+    RevokeTenantRoleGrantRequest:
+      type: object
+      additionalProperties: false
+      required: [reasonCode]
+      properties:
+        reasonCode:
+          type: string
+          enum: [ACCESS_REVIEW, DUTY_ENDED, SECURITY_CONCERN]
+    TenantRoleGrantResult:
+      type: object
+      additionalProperties: false
+      required: [membershipId, membershipRowVersion, grant]
+      properties:
+        membershipId:
+          type: string
+          format: uuid
+        membershipRowVersion:
+          type: integer
+          format: int64
+        grant:
+          $ref: '#/components/schemas/TenantRoleGrant'
+    PrivilegedRoleAssignmentOption:
+      type: object
+      additionalProperties: false
+      required: [code, name, description, scopeType, permissionCodes, hasSensitivePermissions, configurationHash, requiresApproval]
+      properties:
+        code: {type: string}
+        name: {type: string}
+        description: {type: string}
+        scopeType: {type: string, enum: [TENANT]}
+        permissionCodes:
+          type: array
+          items: {type: string}
+        hasSensitivePermissions: {type: boolean}
+        configurationHash: {type: string, pattern: '^[0-9a-f]{64}$'}
+        requiresApproval: {type: boolean, enum: [true]}
+    PrivilegedRoleAssignmentOptions:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/PrivilegedRoleAssignmentOption'}
+    RoleChangeEligibility:
+      type: object
+      additionalProperties: false
+      required: [membershipId, membershipRowVersion, canRequestAssignment, assignmentRefusalCode, revokeGrantIds, checkerAvailability]
+      properties:
+        membershipId: {type: string, format: uuid}
+        membershipRowVersion: {type: integer, format: int64}
+        canRequestAssignment: {type: boolean}
+        assignmentRefusalCode: {type: [string, 'null']}
+        revokeGrantIds:
+          type: array
+          maxItems: 1
+          items: {type: string, format: uuid}
+        checkerAvailability: {type: string, enum: [AVAILABLE, NO_ELIGIBLE_CHECKER]}
+    CreateRoleChangeAssignRequest:
+      type: object
+      additionalProperties: false
+      required: [operation, roleCode, configurationHash, reasonCode]
+      properties:
+        operation: {type: string, enum: [ASSIGN]}
+        roleCode: {type: string}
+        configurationHash: {type: string, pattern: '^[0-9a-f]{64}$'}
+        reasonCode: {type: string, enum: [ONBOARDING, DUTY_ASSIGNMENT]}
+    CreateRoleChangeRevokeRequest:
+      type: object
+      additionalProperties: false
+      required: [operation, grantId, configurationHash, reasonCode]
+      properties:
+        operation: {type: string, enum: [REVOKE]}
+        grantId: {type: string, format: uuid}
+        configurationHash: {type: string, pattern: '^[0-9a-f]{64}$'}
+        reasonCode: {type: string, enum: [ACCESS_REVIEW, DUTY_ENDED, SECURITY_CONCERN]}
+    CreateRoleChangeRequest:
+      oneOf:
+        - $ref: '#/components/schemas/CreateRoleChangeAssignRequest'
+        - $ref: '#/components/schemas/CreateRoleChangeRevokeRequest'
+    RoleChangePermission:
+      type: object
+      additionalProperties: false
+      required: [code, sensitivity]
+      properties:
+        code: {type: string}
+        sensitivity: {type: string, enum: [NORMAL, SENSITIVE, PRIVILEGED]}
+    RoleChangeValidity:
+      type: object
+      additionalProperties: false
+      required: [from, fromInclusive, to, toInclusive]
+      properties:
+        from: {type: [string, 'null'], format: date-time}
+        fromInclusive: {type: boolean}
+        to: {type: [string, 'null'], format: date-time}
+        toInclusive: {type: boolean}
+    RoleChangeRequest:
+      type: object
+      additionalProperties: false
+      required: [id, operation, status, targetMembershipId, makerMembershipId, roleCode, scopeType, permissionSnapshot, configurationHash, targetMembershipVersion, revokeGrantId, revokeValidity, reasonCode, createdAt, rowVersion, decidedAt, decidedByMembershipId, decisionReasonCode, appliedGrantId, appliedValidity, appliedMembershipVersion]
+      properties:
+        id: {type: string, format: uuid}
+        operation: {type: string, enum: [ASSIGN, REVOKE]}
+        status: {type: string, enum: [PENDING, APPROVED, REJECTED, CANCELLED]}
+        targetMembershipId: {type: string, format: uuid}
+        makerMembershipId: {type: string, format: uuid}
+        roleCode: {type: string}
+        scopeType: {type: string, enum: [TENANT]}
+        permissionSnapshot:
+          type: array
+          minItems: 1
+          items: {$ref: '#/components/schemas/RoleChangePermission'}
+        configurationHash: {type: string, pattern: '^[0-9a-f]{64}$'}
+        targetMembershipVersion: {type: integer, format: int64}
+        revokeGrantId: {type: [string, 'null'], format: uuid}
+        revokeValidity:
+          oneOf:
+            - $ref: '#/components/schemas/RoleChangeValidity'
+            - type: 'null'
+        reasonCode: {type: string}
+        createdAt: {type: string, format: date-time}
+        rowVersion: {type: integer, format: int64}
+        decidedAt: {type: [string, 'null'], format: date-time}
+        decidedByMembershipId: {type: [string, 'null'], format: uuid}
+        decisionReasonCode: {type: [string, 'null']}
+        appliedGrantId: {type: [string, 'null'], format: uuid}
+        appliedValidity:
+          oneOf:
+            - $ref: '#/components/schemas/RoleChangeValidity'
+            - type: 'null'
+        appliedMembershipVersion: {type: [integer, 'null'], format: int64}
+    RoleChangeAppliedGrant:
+      type: object
+      additionalProperties: false
+      required: [id, roleCode, roleName, isSystemRole, scopeType, validFrom, validTo, validityEmpty]
+      properties:
+        id: {type: string, format: uuid}
+        roleCode: {type: string}
+        roleName: {type: string}
+        isSystemRole: {type: boolean}
+        scopeType: {type: string, enum: [TENANT]}
+        validFrom: {type: [string, 'null'], format: date-time}
+        validTo: {type: [string, 'null'], format: date-time}
+        validityEmpty: {type: boolean}
+    RoleChangeCommandResult:
+      type: object
+      additionalProperties: false
+      required: [request, appliedGrant, membershipRowVersion]
+      properties:
+        request: {$ref: '#/components/schemas/RoleChangeRequest'}
+        appliedGrant:
+          oneOf:
+            - $ref: '#/components/schemas/RoleChangeAppliedGrant'
+            - type: 'null'
+        membershipRowVersion: {type: [integer, 'null'], format: int64}
+    RoleChangeRequestDetail:
+      type: object
+      additionalProperties: false
+      required: [request, canApprove, approvalRefusalCode, canReject, rejectionRefusalCode, canCancel, cancellationRefusalCode, checkerAvailability]
+      properties:
+        request: {$ref: '#/components/schemas/RoleChangeRequest'}
+        canApprove: {type: boolean}
+        approvalRefusalCode: {type: [string, 'null']}
+        canReject: {type: boolean}
+        rejectionRefusalCode: {type: [string, 'null']}
+        canCancel: {type: boolean}
+        cancellationRefusalCode: {type: [string, 'null']}
+        checkerAvailability: {type: string, enum: [AVAILABLE, NO_ELIGIBLE_CHECKER]}
+    RoleChangeRequestSummary:
+      type: object
+      additionalProperties: false
+      required: [id, operation, status, targetMembershipId, makerMembershipId, roleCode, scopeType, reasonCode, createdAt, rowVersion, decidedAt]
+      properties:
+        id: {type: string, format: uuid}
+        operation: {type: string, enum: [ASSIGN, REVOKE]}
+        status: {type: string, enum: [PENDING, APPROVED, REJECTED, CANCELLED]}
+        targetMembershipId: {type: string, format: uuid}
+        makerMembershipId: {type: string, format: uuid}
+        roleCode: {type: string}
+        scopeType: {type: string, enum: [TENANT]}
+        reasonCode: {type: string}
+        createdAt: {type: string, format: date-time}
+        rowVersion: {type: integer, format: int64}
+        decidedAt: {type: [string, 'null'], format: date-time}
+    RoleChangeRequestPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/RoleChangeRequestSummary'}
+        nextCursor: {type: [string, 'null']}
+    ApproveRoleChangeRequest:
+      type: object
+      additionalProperties: false
+      maxProperties: 0
+    RejectRoleChangeRequest:
+      type: object
+      additionalProperties: false
+      required: [reasonCode]
+      properties:
+        reasonCode: {type: string, enum: [NOT_JUSTIFIED, INCORRECT_ACCESS, STALE_REQUEST]}
+    CancelRoleChangeRequest:
+      type: object
+      additionalProperties: false
+      required: [reasonCode]
+      properties:
+        reasonCode: {type: string, enum: [WITHDRAWN]}
+    TenantUserPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TenantUser'
+        nextCursor:
+          type: [string, 'null']
+    TenantAssignedRole:
+      type: object
+      additionalProperties: false
+      required: [code, name, isSystemRole, scopeType, validFrom, validTo, validityEmpty]
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        isSystemRole:
+          type: boolean
+        scopeType:
+          type: string
+          enum: [TENANT, ORGANIZATION, PROGRAM, PROVIDER_LOCATION, WORK_QUEUE, PERSON]
+        validFrom:
+          type: [string, 'null']
+          format: date-time
+        validTo:
+          type: [string, 'null']
+          format: date-time
+        validityEmpty:
+          type: boolean
+          description: True when the stored assignment period contains no instants.
+    TenantUserDetail:
+      type: object
+      additionalProperties: false
+      required: [membership, assignedRoles]
+      properties:
+        membership:
+          $ref: '#/components/schemas/TenantUser'
+        assignedRoles:
+          type: array
+          description: Assignments can be future or expired and are not effective permissions.
+          items:
+            $ref: '#/components/schemas/TenantAssignedRole'
     TenantSummary:
       type: object
       additionalProperties: false
@@ -19523,6 +21263,39 @@ components:
           description: |
             What the provider asked for, as an exact decimal string. A PERCENT_OF_LIST price
             is a percentage of it.
+    PriceProviderOption:
+      type: object
+      additionalProperties: false
+      required: [providerProfileId, organizationName]
+      properties:
+        providerProfileId: {type: string, format: uuid}
+        organizationName: {type: string}
+    PriceProviderOptionPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/PriceProviderOption'}
+        nextCursor: {type: [string, 'null']}
+    PriceServiceOption:
+      type: object
+      additionalProperties: false
+      required: [serviceDefinitionId, code, name]
+      properties:
+        serviceDefinitionId: {type: string, format: uuid}
+        code: {type: string}
+        name: {type: string}
+    PriceServiceOptionPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/PriceServiceOption'}
+        nextCursor: {type: [string, 'null']}
     CreatePriceQuoteRequest:
       type: object
       additionalProperties: false
@@ -21059,6 +22832,14 @@ components:
             Free text kept on the audit row, not on the case. Two hundred characters is the
             audit detail limit: a longer value would be dropped by the sanitiser without
             anybody being told, so it is refused here instead.
+    EndEncounter:
+      type: object
+      additionalProperties: false
+      required: [endedAt]
+      properties:
+        endedAt:
+          type: string
+          format: date-time
     CreateEncounter:
       type: object
       additionalProperties: false
@@ -22217,6 +23998,91 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ClaimException'
+    ClaimCaseSource:
+      type: object
+      additionalProperties: false
+      required: [caseId, openedAt, serviceDate, requestReference, personDisplayName, rowVersion]
+      properties:
+        caseId:
+          type: string
+          format: uuid
+        openedAt:
+          type: string
+          format: date-time
+        serviceDate:
+          type: string
+          format: date
+        requestReference:
+          type: string
+        personDisplayName:
+          type: string
+        rowVersion:
+          type: integer
+          format: int64
+    ClaimCaseSourcePage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClaimCaseSource'
+        nextCursor:
+          type: string
+    ClaimCaseSourceLine:
+      type: object
+      additionalProperties: false
+      required: [serviceDefinitionId, serviceCode, serviceName, unitType, quantity]
+      properties:
+        serviceDefinitionId:
+          type: string
+          format: uuid
+        serviceCode:
+          type: string
+        serviceName:
+          type: string
+        unitType:
+          type: string
+        quantity:
+          type: string
+    ClaimCaseSourceDetail:
+      type: object
+      additionalProperties: false
+      required: [source, lines]
+      properties:
+        source:
+          $ref: '#/components/schemas/ClaimCaseSource'
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClaimCaseSourceLine'
+    CreateClaimFromCase:
+      type: object
+      additionalProperties: false
+      required: [lines]
+      properties:
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/ClaimCaseCharge'
+    ClaimCaseCharge:
+      type: object
+      additionalProperties: false
+      required: [serviceDefinitionId, quantity, lineAmount]
+      properties:
+        serviceDefinitionId:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+          pattern: '^[0-9]{1,14}(\.[0-9]{1,6})?$'
+        lineAmount:
+          type: string
+          pattern: '^[0-9]{1,14}(\.[0-9]{1,6})?$'
+
     NewClaimLine:
       type: object
       additionalProperties: false
@@ -22498,7 +24364,8 @@ components:
       enum: [HEALTH_CASE, BOOKING, REIMBURSEMENT]
       description: |
         What a claim was raised from. It is one vocabulary for every vertical, so a settlement
-        never has to know which module wrote a claim.
+        never has to know which module wrote a claim. Inpatient claims use HEALTH_CASE
+        with the case ID as sourceId; the exact stay and authorization allocation remain internal.
     ClaimAdjustmentType:
       type: string
       enum: [CUT, RECOVERY, CORRECTION, REVERSAL]
@@ -23592,6 +25459,7 @@ components:
           description: |
             Narrows a member with two programs to one of them. It is honoured, never trusted:
             a program the person is not enrolled in on the first night selects nothing.
+            More than one active enrollment in that program still refuses the hold.
         channel:
           $ref: '#/components/schemas/ServiceRequestChannel'
         guests:
@@ -23641,13 +25509,42 @@ components:
         validTo:
           type: string
           format: date-time
+    CancellationEntitlementEffect:
+      type: object
+      description: |
+        Exact service-night and entitlement-unit effects of this cancellation. On a
+        preview these are prospective under the current authorization state; the command
+        recomputes them in its transaction. A cancellation record carries the actual
+        committed effects. Absent means exact evidence is unavailable or was not recorded,
+        not zero. These quantities do not change the frozen policy's monetary charge.
+      additionalProperties: false
+      required:
+        [consumedServiceNights, releasedServiceNights, consumedEntitlementUnits,
+         releasedEntitlementUnits]
+      properties:
+        consumedServiceNights:
+          type: string
+          pattern: '^(0|[1-9][0-9]{0,13})(\.[0-9]{1,6})?$'
+          description: Exact service nights consumed by this cancellation, not policy charge nights.
+        releasedServiceNights:
+          type: string
+          pattern: '^(0|[1-9][0-9]{0,13})(\.[0-9]{1,6})?$'
+          description: Exact unused service nights returned by this cancellation.
+        consumedEntitlementUnits:
+          type: string
+          pattern: '^(0|[1-9][0-9]{0,13})(\.[0-9]{1,6})?$'
+          description: Exact units actually drawn from the original entitlement reservation.
+        releasedEntitlementUnits:
+          type: string
+          pattern: '^(0|[1-9][0-9]{0,13})(\.[0-9]{1,6})?$'
+          description: Exact units actually returned from the original entitlement reservation.
     CancellationQuote:
       type: object
       description: |
         What a cancellation costs and gives back, computed from the booking's own frozen
-        policy and its own night amounts. Every figure is an exact decimal string: these
-        numbers reach a settlement, and a fee two systems disagree about by a kuruş is a fee
-        nobody can invoice.
+        policy and its own night amounts. Monetary amounts are exact decimal strings.
+        Optional entitlementEffect projects the current authorization's exact effects;
+        these prospective quantities are recomputed by the cancellation command.
       additionalProperties: false
       required:
         [free, penaltyNights, releasedNights, feeAmount, payerFee, memberFee, currencyCode]
@@ -23668,10 +25565,12 @@ components:
           type: integer
           minimum: 0
           description: |
-            The nights that go back to the plan: the covered nights of the frozen quote less
-            whatever the penalty spends. The penalty is capped at the covered nights, because
-            a policy charging three nights against a plan that carried two cannot take a
-            third from a balance it never held.
+            When entitlementEffect is present, the whole-number portion of its exact
+            releasedServiceNights. Prefer the exact field when displaying a returned right.
+            Otherwise this retains the legacy frozen-quote calculation and is not newly
+            verified evidence of the current authorization's actual release.
+        entitlementEffect:
+          $ref: '#/components/schemas/CancellationEntitlementEffect'
         feeAmount:
           type: string
           description: Exact decimal as a string; nothing here passes through a float.
@@ -23743,6 +25642,11 @@ components:
         releasedNights:
           type: integer
           minimum: 0
+          description: |
+            Whole-number portion of exact released service nights when entitlementEffect
+            is present. Historical records without that field retain their legacy figure.
+        entitlementEffect:
+          $ref: '#/components/schemas/CancellationEntitlementEffect'
         feeAmount:
           type: string
           description: Exact decimal as a string; nothing here passes through a float.
@@ -23891,8 +25795,10 @@ components:
           format: uuid
           description: |
             The document object the provider is pointing at. It must be linked to this
-            booking and cleared by the scanner. Omitted, any clean document linked to the
-            booking satisfies the gate; a booking with none is refused either way.
+            booking as NO_SHOW_EVIDENCE. Both the linked and canonical objects must be
+            CLEAN, secure, retained and owned by this property's provider or the tenant.
+            Omitted, any linked document meeting those conditions satisfies the gate;
+            a booking with none is refused either way.
         at:
           type: string
           format: date-time
@@ -24046,6 +25952,10 @@ components:
         programId:
           type: string
           format: uuid
+          description: |
+            Narrows the queue entry to one program active on the first night. More than
+            one active enrollment within that program still refuses the entry with
+            ENROLLMENT_MULTIPLE.
     InvoiceStatus:
       type: string
       enum:

@@ -119,6 +119,7 @@ describe('exact reconciliation', () => {
     for (const row of rows.slice(1)) {
       const fields = row.split(',');
       assert.equal(fields.length, 15);
+      assert.equal(fields[9], 'PRINCIPAL');
       const digits = fields[6].split('').map(Number);
       assert.equal(digits.length, 11);
       assert.equal(digits.slice(0, 10).reduce((sum, digit) => sum + digit, 0) % 10, digits[10]);

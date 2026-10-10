@@ -28,6 +28,28 @@ func day(text string) time.Time {
 	return t
 }
 
+func TestMappedNightCoverageUsesExactWholeUnits(t *testing.T) {
+	for _, tc := range []struct {
+		name, balance, factor string
+		stay, want            int
+	}{
+		{"factor one", "2.9", "1", 3, 2},
+		{"less than one night", "1.999999", "2", 2, 0},
+		{"fractional residual", "3", "2", 2, 1},
+		{"fractional factor", "1.5", "0.5", 3, 3},
+		{"six-decimal incomplete", "0.999998", "0.333333", 3, 2},
+		{"six-decimal exact", "0.999999", "0.333333", 3, 3},
+		{"stay cap", "100", "0.000001", 3, 3},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := nightsFromUnits(benefitdomain.MustQuantity(tc.balance), benefitdomain.MustQuantity(tc.factor), tc.stay)
+			if got != tc.want {
+				t.Fatalf("covered nights = %d, want %d", got, tc.want)
+			}
+		})
+	}
+}
+
 // ---------------------------------------------------------------------------
 // Availability
 // ---------------------------------------------------------------------------
@@ -128,6 +150,119 @@ func fixedPrice(definition uuid.UUID, amount, sharePercent, currency string) Pri
 			CurrencyCode: currency, PricingMethod: "FIXED", Amount: amount,
 			MemberShareMethod: "PERCENT", MemberSharePercent: sharePercent,
 		},
+	}
+}
+
+func holdMinutes(value int32) *int32 { return &value }
+
+func TestResolveHoldMinutes(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		tenant   int
+		contract *int32
+		want     int
+		invalid  bool
+	}{
+		{"contract override", 15, holdMinutes(30), 30, false},
+		{"tenant fallback", 20, nil, 20, false},
+		{"lower boundary", 15, holdMinutes(1), 1, false},
+		{"upper boundary", 15, holdMinutes(1440), 1440, false},
+		{"zero is invalid", 15, holdMinutes(0), 0, true},
+		{"negative is invalid", 15, holdMinutes(-1), 0, true},
+		{"above upper boundary is invalid", 15, holdMinutes(1441), 0, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := resolveHoldMinutes(tc.tenant, tc.contract)
+			if (err != nil) != tc.invalid || got != tc.want {
+				t.Fatalf("resolveHoldMinutes(%d, %v) = %d, %v; want %d, invalid=%t",
+					tc.tenant, tc.contract, got, err, tc.want, tc.invalid)
+			}
+		})
+	}
+}
+
+func TestQuoteSelectionKeepsFirstNightWinningContract(t *testing.T) {
+	definition := uuid.New()
+	category, pkg := uuid.New(), uuid.New()
+	categoryPrice := fixedPrice(definition, "800", "20", "TRY")
+	categoryPrice.Candidate.Target = selection.TargetCategory
+	categoryPrice.Candidate.CategoryID = category
+	categoryPrice.Candidate.ItemPriority = 999
+	categoryPrice.HoldMinutes = holdMinutes(90)
+	packagePrice := fixedPrice(definition, "700", "20", "TRY")
+	packagePrice.Candidate.Target = selection.TargetPackage
+	packagePrice.Candidate.PackageID = pkg
+	packagePrice.HoldMinutes = holdMinutes(60)
+	exact := fixedPrice(definition, "500", "20", "TRY")
+	exact.HoldMinutes = holdMinutes(30)
+	f := newQuoteFixture(t, 2, categoryPrice, packagePrice, exact)
+	f.room.ServiceDefinitionID = definition
+	f.world.categoryPath[definition] = []uuid.UUID{category}
+	f.world.packages[definition] = []uuid.UUID{pkg}
+
+	quote, chosen, reason := (&Service{}).quoteRoomTypeWithSelection(f.world, f.property,
+		f.room, verdictFor(definition, true, 2))
+	if quote == nil {
+		t.Fatalf("quote refused: %s", reason)
+	}
+	if quote.TotalAmount != "1000" || chosen.ContractVersionID != exact.Candidate.ContractVersionID ||
+		chosen.HoldMinutes == nil || *chosen.HoldMinutes != 30 {
+		t.Fatalf("quote=%s selection=%+v, want exact service's price and 30 minutes",
+			quote.TotalAmount, chosen)
+	}
+}
+
+func TestQuoteSelectionKeepsCheckInVersionAcrossTransition(t *testing.T) {
+	definition := uuid.New()
+	first := fixedPrice(definition, "500", "20", "TRY")
+	first.VersionValidFrom = day("2026-06-15")
+	first.VersionValidTo = day("2026-06-16")
+	first.HoldMinutes = holdMinutes(30)
+	second := fixedPrice(definition, "700", "20", "TRY")
+	second.VersionValidFrom = day("2026-06-16")
+	second.HoldMinutes = holdMinutes(90)
+	f := newQuoteFixture(t, 2, first, second)
+	f.room.ServiceDefinitionID = definition
+
+	quote, chosen, reason := (&Service{}).quoteRoomTypeWithSelection(f.world, f.property,
+		f.room, verdictFor(definition, true, 2))
+	if quote == nil {
+		t.Fatalf("quote refused: %s", reason)
+	}
+	if quote.TotalAmount != "1200" || chosen.ContractVersionID != first.Candidate.ContractVersionID ||
+		chosen.HoldMinutes == nil || *chosen.HoldMinutes != 30 {
+		t.Fatalf("quote=%s selection=%+v, want first version's 30 minutes", quote.TotalAmount, chosen)
+	}
+}
+
+func TestQuoteSelectionDoesNotBorrowLosingOrUnsupportedHold(t *testing.T) {
+	definition := uuid.New()
+	winner := fixedPrice(definition, "500", "20", "TRY")
+	loser := fixedPrice(definition, "900", "20", "TRY")
+	loser.Candidate.ItemPriority = 1
+	loser.HoldMinutes = holdMinutes(1441) // invalid policy on a losing price must not block a valid winner
+	wrongService := fixedPrice(uuid.New(), "900", "20", "TRY")
+	wrongService.HoldMinutes = holdMinutes(100)
+	wrongLocation := fixedPrice(definition, "900", "20", "TRY")
+	wrongLocation.Candidate.LocationID = uuid.New()
+	wrongLocation.HoldMinutes = holdMinutes(110)
+	expired := fixedPrice(definition, "900", "20", "TRY")
+	expired.VersionValidTo = day("2026-06-15")
+	expired.HoldMinutes = holdMinutes(120)
+	f := newQuoteFixture(t, 1, loser, wrongService, wrongLocation, expired, winner)
+	f.room.ServiceDefinitionID = definition
+	otherProvider := fixedPrice(definition, "900", "20", "TRY")
+	otherProvider.HoldMinutes = holdMinutes(1441)
+	f.world.candidates[uuid.New()] = []PriceCandidate{otherProvider}
+
+	quote, chosen, reason := (&Service{}).quoteRoomTypeWithSelection(f.world, f.property,
+		f.room, verdictFor(definition, true, 1))
+	if quote == nil {
+		t.Fatalf("quote refused: %s", reason)
+	}
+	if quote.TotalAmount != "500" || chosen.ContractVersionID != winner.Candidate.ContractVersionID ||
+		chosen.HoldMinutes != nil {
+		t.Fatalf("quote=%s selection=%+v, want nil override from exact winner", quote.TotalAmount, chosen)
 	}
 }
 

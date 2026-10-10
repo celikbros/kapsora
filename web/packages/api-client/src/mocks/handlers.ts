@@ -6,6 +6,11 @@
 import { HttpResponse, http, type HttpHandler, type PathParams } from 'msw';
 
 import { accommodationHandlers } from './accommodation-handlers';
+import { adminHandlers, hasTenantUserPermission } from './admin-handlers';
+import { roleAssignmentHandlers } from './role-assignment-handlers';
+import { roleChangeHandlers } from './role-change-handlers';
+import { invitationHandlers } from './invitation-handlers';
+import { MockInvitationState } from './invitation-state';
 import { lodgingTermsHandlers } from './lodging-terms-handlers';
 import { batchHandlers } from './batch-handlers';
 import { benefitHandlers } from './benefit-handlers';
@@ -26,6 +31,7 @@ import { providerHandlers } from './provider-handlers';
 import { reimbursementHandlers } from './reimbursement-handlers';
 import { reportHandlers } from './report-handlers';
 import { rulesHandlers } from './rules-handlers';
+import { authorizationHandlers } from './authorization-handlers';
 import { serviceRequestHandlers } from './servicerequest-handlers';
 import { settlementHandlers } from './settlement-handlers';
 import { workflowHandlers } from './workflow-handlers';
@@ -106,7 +112,11 @@ export function grantsFor(
 ): { permissions: string[]; scopes: { type: string; id: string | null }[] } {
   const sets = session.account.memberships.filter(
     (m) =>
-      m.tenantCode === tenantCode && (session.app === null || appOfGrant(m.scopes) === session.app),
+      m.tenantCode === tenantCode &&
+      !m.membershipOnly &&
+      !m.validityEmpty &&
+      withinPeriod(new Date().toISOString(), m.validFrom ?? null, m.validTo ?? null) &&
+      (session.app === null || appOfGrant(m.scopes) === session.app),
   );
   return {
     permissions: [...new Set(sets.flatMap((m) => m.permissions))],
@@ -123,10 +133,58 @@ export interface MockOptions {
   initialUser?: string;
 }
 
+/** One tenant membership, independent of an account's several assigned grants. */
+export interface MockTenantMembership {
+  id: string;
+  status: Schemas['TenantMembershipStatus'];
+  rowVersion: number;
+  validFrom: string | null;
+  validTo: string | null;
+  validityEmpty: boolean;
+}
+
 /** Everything the handlers share; exported so tests can reset or inspect it. */
 export class MockApi {
+  readonly invitations = new MockInvitationState();
   world: MockWorld;
   session: MockSession | null = null;
+  private tenantMemberships = new Map<string, MockTenantMembership>();
+  readonly membershipSuspensionEvents: {
+    tenantId: string;
+    membershipId: string;
+    actorId: string;
+    reasonCode: string;
+  }[] = [];
+  readonly roleGrantEvents: {
+    action: 'assign' | 'revoke';
+    membershipId: string;
+    grantId: string;
+  }[] = [];
+  readonly roleGrantReceipts = new Map<
+    string,
+    { fingerprint: string; result: Schemas['TenantRoleGrantResult']; etag: string }
+  >();
+  readonly roleChangeRequests: Array<{
+    tenantId: string;
+    makerActorId: string;
+    targetActorId: string;
+    request: Schemas['RoleChangeRequest'];
+  }> = [];
+  readonly roleChangeReceipts = new Map<
+    string,
+    {
+      fingerprint: string;
+      result: Schemas['RoleChangeCommandResult'];
+      etag: string;
+      status: number;
+    }
+  >();
+  readonly roleChangeEvents: Array<{
+    action: 'create' | 'approve' | 'reject' | 'cancel';
+    requestId: string;
+  }> = [];
+  readonly rolePermissionOverrides = new Map<string, string[]>();
+  readonly privilegedRoleOverrides = new Set<string>();
   private idempotency = new Map<string, { status: number; body: unknown; etag: string | null }>();
   private traceCounter = 0;
   readonly delayMs: number;
@@ -140,9 +198,19 @@ export class MockApi {
   }
 
   reset(): void {
+    this.invitations.reset();
     this.world = buildWorld(this.options);
     this.session = null;
     this.idempotency.clear();
+    this.tenantMemberships.clear();
+    this.membershipSuspensionEvents.length = 0;
+    this.roleGrantEvents.length = 0;
+    this.roleGrantReceipts.clear();
+    this.roleChangeRequests.length = 0;
+    this.roleChangeReceipts.clear();
+    this.roleChangeEvents.length = 0;
+    this.rolePermissionOverrides.clear();
+    this.privilegedRoleOverrides.clear();
     if (this.options.initialUser) {
       this.signIn(this.options.initialUser);
     }
@@ -158,7 +226,7 @@ export class MockApi {
     if (!account) return null;
     // An account may hold several grant sets in one tenant (one per app); what counts here is
     // how many tenants, as on the server.
-    const codes = [...new Set(account.memberships.map((m) => m.tenantCode))];
+    const codes = this.tenantContexts(account, app).map((context) => context.tenant.code);
     const single = codes.length === 1 ? this.tenantByCode(codes[0]!) : null;
     this.session = {
       account,
@@ -175,14 +243,51 @@ export class MockApi {
     return this.world.tenants.find((t) => t.code === code);
   }
 
+  tenantMembership(account: MockAccount, tenantId: string): MockTenantMembership {
+    const key = `${tenantId}:${account.actorId}`;
+    let membership = this.tenantMemberships.get(key);
+    if (!membership) {
+      membership = {
+        id: `${tenantId.slice(0, 8)}-${account.actorId.slice(9)}`,
+        status: 'ACTIVE',
+        rowVersion: 1,
+        validFrom: '2026-01-01',
+        validTo: null,
+        validityEmpty: false,
+      };
+      this.tenantMemberships.set(key, membership);
+    }
+    return membership;
+  }
+
+  membershipIsActive(account: MockAccount, tenantId: string): boolean {
+    const tenant = this.world.tenants.find((item) => item.id === tenantId);
+    if (!tenant || !account.memberships.some((grant) => grant.tenantCode === tenant.code))
+      return false;
+    const membership = this.tenantMembership(account, tenantId);
+    return (
+      (account.actorStatus ?? 'ACTIVE') === 'ACTIVE' &&
+      membership.status === 'ACTIVE' &&
+      !membership.validityEmpty &&
+      withinPeriod(new Date().toISOString().slice(0, 10), membership.validFrom, membership.validTo)
+    );
+  }
+
   tenantContexts(account: MockAccount, app: MockApp | null = null): Schemas['TenantContext'][] {
     const codes = [...new Set(account.memberships.map((m) => m.tenantCode))];
     const personOf = (scopes: { type: string; id: string | null }[]) =>
       scopes.find((g) => g.type === 'PERSON')?.id ?? null;
     return codes
+      .filter((code) => this.membershipIsActive(account, this.tenantByCode(code)!.id))
       .map((code) => {
         const all = account.memberships.filter((m) => m.tenantCode === code);
-        const lens = all.filter((m) => app === null || appOfGrant(m.scopes) === app);
+        const active = all.filter(
+          (m) =>
+            !m.membershipOnly &&
+            !m.validityEmpty &&
+            withinPeriod(new Date().toISOString(), m.validFrom ?? null, m.validTo ?? null),
+        );
+        const lens = active.filter((m) => app === null || appOfGrant(m.scopes) === app);
         const scopes = lens.flatMap((m) => m.scopes ?? []);
         return {
           tenant: this.tenantByCode(code)!,
@@ -192,12 +297,22 @@ export class MockApi {
           // from the grant again on every call, so nothing trusts it back.
           personId: personOf(scopes),
           // Who the account is, whichever app asks: what marks a reviewer's own file.
-          selfPersonId: personOf(all.flatMap((m) => m.scopes ?? [])),
+          selfPersonId: personOf(active.flatMap((m) => m.scopes ?? [])),
           // The apps the account has work in here, from all of its grant sets.
           apps: MOCK_APPS.filter((a) =>
-            all.some((m) => appOfGrant(m.scopes) === a && m.permissions.length > 0),
+            active.some((m) => appOfGrant(m.scopes) === a && m.permissions.length > 0),
           ),
           permissions: [...new Set(lens.flatMap((m) => m.permissions))],
+          canReadTenantUsers:
+            (app === null || app === 'backoffice') &&
+            hasTenantUserPermission(account, code, 'identity.user.read'),
+          canManageTenantUsers:
+            (app === null || app === 'backoffice') &&
+            hasTenantUserPermission(account, code, 'identity.user.manage'),
+          canManageTenantRoles:
+            (app === null || app === 'backoffice') &&
+            hasTenantUserPermission(account, code, 'identity.user.read') &&
+            hasTenantUserPermission(account, code, 'identity.role.manage'),
           // The access grants that narrow the permissions above. A provider-side role is an
           // ORGANIZATION grant, and it is what every provider boundary in the API is read
           // from — there is no second, client-side rule that could disagree with it.
@@ -333,6 +448,8 @@ export function guardTenant(
     return { error: problem(api, 403, 'TENANT_MISMATCH', 'Tenant başlığı oturumla uyuşmuyor') };
   }
   const tenant = api.world.tenants.find((t) => t.id === header)!;
+  if (!api.membershipIsActive(session.account, header))
+    return { error: problem(api, 403, 'TENANT_ACCESS_DENIED', 'Bu kurumda aktif üyeliğiniz yok') };
   const membership = grantsFor(session, tenant.code);
   if (!membership?.permissions.includes(permission)) {
     return {
@@ -989,13 +1106,26 @@ export function createHandlers(api: MockApi): HttpHandler[] {
       if (!body || typeof body.username !== 'string' || typeof body.password !== 'string') {
         return problem(api, 400, 'INVALID_REQUEST_BODY', 'İstek gövdesi geçersiz');
       }
-      // Any password of 12+ characters signs in a known demo user; unknown users and
-      // short passwords answer like the real API (coarse 401).
+      // Demo accounts accept the shared demo password convention. Invitation-created
+      // accounts require their own keyed, in-memory credential proof.
       if (body.password.length < 12 || body.username === 'locked.user') {
         return body.username === 'locked.user'
           ? problem(api, 403, 'ACCOUNT_LOCKED', 'Hesap geçici olarak kilitlendi')
           : problem(api, 401, 'INVALID_CREDENTIALS', 'Kullanıcı adı veya parola hatalı');
       }
+      const requested = api.world.accounts.find(
+        (account) => account.username === body.username!.trim().toLowerCase(),
+      );
+      if (requested && api.invitations.isNewCredentialLocked(requested.actorId))
+        return problem(api, 403, 'ACCOUNT_LOCKED', 'Hesap geçici olarak kilitlendi');
+      if (
+        requested &&
+        api.invitations.newCredentials.has(requested.actorId) &&
+        !(await api.invitations.verifyNewCredential(requested.actorId, body.password))
+      )
+        return api.invitations.isNewCredentialLocked(requested.actorId)
+          ? problem(api, 403, 'ACCOUNT_LOCKED', 'Hesap geçici olarak kilitlendi')
+          : problem(api, 401, 'INVALID_CREDENTIALS', 'Kullanıcı adı veya parola hatalı');
       const session = api.signIn(body.username.trim().toLowerCase(), appOfRequest(request));
       if (!session)
         return problem(api, 401, 'INVALID_CREDENTIALS', 'Kullanıcı adı veya parola hatalı');
@@ -1604,6 +1734,10 @@ export function createHandlers(api: MockApi): HttpHandler[] {
 
   return [
     ...sessionHandlers,
+    ...adminHandlers(api),
+    ...roleAssignmentHandlers(api),
+    ...roleChangeHandlers(api),
+    ...invitationHandlers(api),
     ...organizationHandlers,
     ...peopleHandlers,
     ...eligibilityHandlers(api),
@@ -1619,6 +1753,7 @@ export function createHandlers(api: MockApi): HttpHandler[] {
     ...pricingHandlers(api),
     // M4: the request lifecycle, the worklist, the document pipeline and notifications.
     ...serviceRequestHandlers(api),
+    ...authorizationHandlers(api),
     ...workflowHandlers(api),
     ...documentHandlers(api),
     ...notificationHandlers(api),

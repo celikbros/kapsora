@@ -51,12 +51,24 @@ func NewImportHandler(svc *memberimport.Service, deny Denier, logger *slog.Logge
 // instead, and apply is idempotent by batch status.
 func (h *ImportHandler) Routes(r chi.Router, create func(http.Handler) http.Handler) {
 	r.Get("/", h.List)
-	r.With(wrap(create)).Post("/", h.Upload)
+	r.With(h.requireUploadStepUp, wrap(create)).Post("/", h.Upload)
 	r.Get("/{importId}", h.Get)
 	r.Get("/{importId}/rows", h.ListRows)
 	r.Post("/{importId}/rows/{rowId}/review", h.Review)
 	r.Post("/{importId}/apply", h.Apply)
 	r.Post("/{importId}/cancel", h.Cancel)
+}
+
+// requireUploadStepUp runs before idempotency so challenges are never cached and
+// replaying a stored response still requires current import permission and step-up.
+func (h *ImportHandler) requireUploadStepUp(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, err := identity.RequireStepUp(r.Context(), PermissionImport); err != nil {
+			h.deny.Deny(w, r, err, PermissionImport)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // Upload implements createMemberImport: multipart file plus the sponsor and source

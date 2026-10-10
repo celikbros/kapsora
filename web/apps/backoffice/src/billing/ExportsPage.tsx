@@ -1,5 +1,5 @@
 import type { Export, ExportKind } from '@kapsora/api-client';
-import { usePermission } from '@kapsora/auth';
+import { usePermission, useSession } from '@kapsora/auth';
 import { formatDate, formatDateTime, useTranslation } from '@kapsora/i18n';
 import {
   Badge,
@@ -22,11 +22,12 @@ import {
   useMinWidth,
   useToast,
 } from '@kapsora/ui';
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 
 import { useProviderOrganizations } from '../lodging/queries';
 import { problemOf } from '../problems';
 import { BillingNav } from './BillingNav';
+import { ExportProviderPicker } from './ExportProviderPicker';
 import { useCreateExport, useDownloadExport, useExports } from './queries';
 import { exportTone } from './reportStatus';
 
@@ -73,10 +74,16 @@ export function ExportsPage() {
   const wide = useMinWidth(768);
   const canExport = usePermission('report.export');
   const canExportSensitive = usePermission('report.export.sensitive');
+  const canReadOrganizations = usePermission('organization.read');
+  const contextKey = useSession(
+    (s) =>
+      `${s.activeTenant?.tenant.id ?? ''}:${s.session?.actorId ?? ''}:${s.activeTenant?.permissions.join('|') ?? ''}`,
+  );
+  const previousContext = useRef(contextKey);
   const [mine, setMine] = useState(true);
   const exports = useExports({ mine });
   const create = useCreateExport();
-  const providers = useProviderOrganizations();
+  const providers = useProviderOrganizations(canReadOrganizations);
   const providerNames = useMemo(
     () => new Map((providers.data?.items ?? []).map((o) => [o.id, o.displayName] as const)),
     [providers.data],
@@ -86,6 +93,13 @@ export function ExportsPage() {
   const [periodFrom, setFrom] = useState(monthStart);
   const [periodTo, setTo] = useState(today);
   const [providerMissing, setProviderMissing] = useState(false);
+  useEffect(() => {
+    if (previousContext.current !== contextKey) {
+      previousContext.current = contextKey;
+      setProviderId('');
+      setProviderMissing(false);
+    }
+  }, [contextKey]);
   const rows = exports.data?.items ?? [];
   const hasPeriod = PERIOD_KINDS.includes(kind);
   // The download dialog lives here, not in a row: below 768 the table becomes a list and the
@@ -162,7 +176,7 @@ export function ExportsPage() {
   function scopeOf(x: Export): string {
     const parts: string[] = [];
     if (x.providerOrganizationId) {
-      parts.push(providerNames.get(x.providerOrganizationId) ?? '…');
+      parts.push(providerNames.get(x.providerOrganizationId) ?? x.providerOrganizationId);
     }
     if (x.periodFrom && x.periodTo) {
       parts.push(`${formatDate(x.periodFrom)} – ${formatDate(x.periodTo)}`);
@@ -206,19 +220,31 @@ export function ExportsPage() {
               requiredLabel={t('common.requiredMark')}
               {...(providerMissing ? { error: t('billing.report.providerRequired') } : {})}
             >
-              <Select
-                name="providerOrganizationId"
-                value={providerId}
-                onChange={(e) => {
-                  setProviderId(e.target.value);
-                  setProviderMissing(false);
-                }}
-                options={(providers.data?.items ?? []).map((o) => ({
-                  value: o.id,
-                  label: o.displayName,
-                }))}
-                placeholder={t('billing.report.allProviders')}
-              />
+              {canReadOrganizations ? (
+                <Select
+                  name="providerOrganizationId"
+                  value={providerId}
+                  onChange={(e) => {
+                    setProviderId(e.target.value);
+                    setProviderMissing(false);
+                  }}
+                  options={(providers.data?.items ?? []).map((o) => ({
+                    value: o.id,
+                    label: o.displayName,
+                  }))}
+                  placeholder={t('billing.report.allProviders')}
+                />
+              ) : (
+                <ExportProviderPicker
+                  value={providerId}
+                  onChange={(id) => {
+                    setProviderId(id);
+                    setProviderMissing(false);
+                  }}
+                  placeholder={t('billing.report.allProviders')}
+                  selectedName={providerNames.get(providerId)}
+                />
+              )}
             </FormField>
             {hasPeriod ? (
               <>

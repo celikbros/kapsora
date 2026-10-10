@@ -496,16 +496,21 @@ func (s *Service) DischargeStay(ctx context.Context, rc identity.RequestContext,
 		if err := domain.ValidateDischarge(dischargeAt, current.AdmissionAt, now); err != nil {
 			return err
 		}
+		// Close undecided requests under the same parent lock. A delayed approval event
+		// then sees CANCELLED and cannot take a new hold after discharge.
+		cancelledExtensions, err := s.stayRepo.CancelExtensions(ctx, tx, rc.TenantID, id,
+			actorPtr(rc.Principal.ActorID))
+		if err != nil {
+			return err
+		}
 		actual := benefitdomain.MustQuantity(
 			fmt.Sprint(domain.ActualDays(current.AdmissionAt, dischargeAt)))
 		authorized := parseDays(current.AuthorizedDays)
 
-		// The stay may stand on more than one hold: an approved extension reserves its added
-		// days on an authorization of its own, and `authorized_days` counts them all. So the
-		// release walks every hold, oldest first, until the unused days are given back —
-		// releasing only from the first would leave the extension's days reserved against a
-		// bed nobody is in, and the account's totals would look right while they did.
-		released, err := s.releaseUnusedDays(ctx, tx, rc, current, authorized.Sub(actual))
+		// An approved extension reserves days on its own authorization. Give unused days
+		// back from the newest extension first, then the original hold, so the days
+		// actually spent remain on the earliest authorization for the later claim.
+		released, err := s.releaseUnusedDays(ctx, tx, rc, current, authorized.Sub(actual), ReleaseReasonDischarge)
 		if err != nil {
 			return err
 		}
@@ -528,6 +533,7 @@ func (s *Service) DischargeStay(ctx context.Context, rc identity.RequestContext,
 		if err := s.recordStay(ctx, tx, rc, "inpatient_stay.discharge", current, map[string]any{
 			"authorized_days": authorized.String(), "actual_days": actual.String(),
 			"released_days": released.String(), "over_authorization": over,
+			"cancelled_extensions": cancelledExtensions,
 		}); err != nil {
 			return err
 		}
@@ -541,33 +547,34 @@ func (s *Service) DischargeStay(ctx context.Context, rc identity.RequestContext,
 }
 
 // releaseUnusedDays gives back the days a stay promised and nobody spent, across every
-// authorization the stay stands on: its own first, then each approved extension's in the
-// order they were granted. It reports what was actually given back, which is what the
-// reconciliation records.
+// authorization the stay stands on: approved extensions newest first, then the original.
+// This leaves the earliest authorized days on the original hold for a later claim to
+// consume. It reports what was actually given back for reconciliation.
 //
 // ReleaseUnused treats its quantity as a ceiling and returns what it could give back, so a
 // hold that has less than is being asked for gives what it has and the rest is asked of the
 // next one. Running a discharge twice releases once: the key is the line and the reason, not
 // the moment.
 func (s *Service) releaseUnusedDays(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
-	current StayRecord, unused benefitdomain.Quantity,
+	current StayRecord, unused benefitdomain.Quantity, reasonCode string,
 ) (benefitdomain.Quantity, error) {
 	released := benefitdomain.ZeroQuantity()
 	if !unused.IsPositive() {
 		return released, nil
 	}
-	holds := make([]uuid.UUID, 0, 2)
-	if current.AuthorizationID != nil {
-		holds = append(holds, *current.AuthorizationID)
-	}
 	extensions, err := s.stayRepo.ListExtensions(ctx, tx, rc.TenantID, current.ID)
 	if err != nil {
 		return released, err
 	}
-	for _, extension := range extensions {
+	holds := make([]uuid.UUID, 0, len(extensions)+1)
+	for i := len(extensions) - 1; i >= 0; i-- {
+		extension := extensions[i]
 		if extension.Status == domain.ExtensionApproved && extension.AuthorizationID != nil {
 			holds = append(holds, *extension.AuthorizationID)
 		}
+	}
+	if current.AuthorizationID != nil {
+		holds = append(holds, *current.AuthorizationID)
 	}
 
 	remaining := unused
@@ -578,7 +585,7 @@ func (s *Service) releaseUnusedDays(ctx context.Context, tx pgx.Tx, rc identity.
 		raw, err := s.authorizations.ReleaseUnused(ctx, tx, StayReleaseInput{
 			TenantID: rc.TenantID, ActorID: rc.Principal.ActorID,
 			AuthorizationID: authorizationID, Days: remaining.String(),
-			ReasonCode: ReleaseReasonDischarge,
+			ReasonCode: reasonCode,
 		})
 		if err != nil {
 			return released, err
@@ -614,20 +621,12 @@ func (s *Service) CancelStay(ctx context.Context, rc identity.RequestContext, id
 		if err != nil {
 			return err
 		}
-		released := benefitdomain.ZeroQuantity()
-		if current.AuthorizationID != nil {
-			authorized := parseDays(current.AuthorizedDays)
-			if authorized.IsPositive() {
-				raw, err := s.authorizations.ReleaseUnused(ctx, tx, StayReleaseInput{
-					TenantID: rc.TenantID, ActorID: rc.Principal.ActorID,
-					AuthorizationID: *current.AuthorizationID, Days: authorized.String(),
-					ReasonCode: ReleaseReasonCancelled,
-				})
-				if err != nil {
-					return err
-				}
-				released = parseDays(raw)
-			}
+		// Approved extensions own separate holds. Release every unused portion; the
+		// authorization service preserves quantities already consumed.
+		released, err := s.releaseUnusedDays(ctx, tx, rc, current,
+			parseDays(current.AuthorizedDays), ReleaseReasonCancelled)
+		if err != nil {
+			return err
 		}
 		if err := s.stayRepo.CancelStay(ctx, tx, rc.TenantID, id, reasonCode,
 			actorPtr(rc.Principal.ActorID), expected); err != nil {

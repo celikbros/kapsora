@@ -215,7 +215,11 @@ func (h *Handler) ReportNoShow(w http.ResponseWriter, r *http.Request) {
 
 // ReviewNoShow serves POST /accommodation/bookings/{bookingId}/no-show/review.
 func (h *Handler) ReviewNoShow(w http.ResponseWriter, r *http.Request) {
-	rc, ok := h.require(w, r, application.PermissionBookingManage)
+	permission := application.PermissionNoShowReview
+	if caller, exists := identity.FromContext(r.Context()); exists && !caller.Has(permission) && caller.Has(application.PermissionBookingManage) {
+		permission = application.PermissionBookingManage
+	}
+	rc, ok := h.require(w, r, permission)
 	if !ok {
 		return
 	}
@@ -371,7 +375,8 @@ func cancellationQuoteView(q application.CancellationQuote) kapsorav1.Cancellati
 	out := kapsorav1.CancellationQuote{
 		Free: q.Free, PenaltyNights: q.PenaltyNights, ReleasedNights: q.ReleasedNights,
 		FeeAmount: q.FeeAmount, PayerFee: q.PayerFee, MemberFee: q.MemberFee,
-		CurrencyCode: q.CurrencyCode,
+		CurrencyCode:      q.CurrencyCode,
+		EntitlementEffect: cancellationEntitlementEffectView(q.EntitlementEffect),
 	}
 	if !q.FreeUntil.IsZero() {
 		until := q.FreeUntil.UTC()
@@ -390,10 +395,23 @@ func cancellationView(c application.CancellationRecord) kapsorav1.Cancellation {
 		CancelledBy: c.CancelledBy, ReasonCode: c.ReasonCode, Free: c.Free,
 		PenaltyNights: c.PenaltyNights, ReleasedNights: c.ReleasedNights,
 		FeeAmount: c.FeeAmount, PayerFee: c.PayerFee, MemberFee: c.MemberFee,
-		CurrencyCode: c.CurrencyCode,
+		CurrencyCode:      c.CurrencyCode,
+		EntitlementEffect: cancellationEntitlementEffectView(c.EntitlementEffect),
 	}
 	out.PolicySnapshot = policySnapshotView(c.PolicySnapshot)
 	return out
+}
+
+func cancellationEntitlementEffectView(effect *application.EntitlementEffect) *kapsorav1.CancellationEntitlementEffect {
+	if effect == nil {
+		return nil
+	}
+	return &kapsorav1.CancellationEntitlementEffect{
+		ConsumedServiceNights:    effect.ConsumedServiceNights,
+		ReleasedServiceNights:    effect.ReleasedServiceNights,
+		ConsumedEntitlementUnits: effect.ConsumedEntitlementUnits,
+		ReleasedEntitlementUnits: effect.ReleasedEntitlementUnits,
+	}
 }
 
 // noShowResultView renders a report with the booking it is about.

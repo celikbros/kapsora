@@ -113,11 +113,13 @@ UPDATE claim.claim
        -- a BOOKING or REIMBURSEMENT source exactly where it was, because a header patch on
        -- a lodging claim has nothing to say about where that claim came from.
        source_type       = CASE
+                               WHEN source_type = 'INPATIENT_STAY' THEN source_type
                                WHEN sqlc.narg('case_id')::uuid IS NOT NULL THEN 'HEALTH_CASE'
                                WHEN source_type = 'HEALTH_CASE' THEN NULL
                                ELSE source_type
                            END,
        source_id         = CASE
+                               WHEN source_type = 'INPATIENT_STAY' THEN source_id
                                WHEN sqlc.narg('case_id')::uuid IS NOT NULL THEN sqlc.narg('case_id')::uuid
                                WHEN source_type = 'HEALTH_CASE' THEN NULL
                                ELSE source_id
@@ -128,6 +130,7 @@ UPDATE claim.claim
  WHERE tenant_id = sqlc.arg('tenant_id')
    AND id = sqlc.arg('id')
    AND status IN ('DRAFT', 'RETURNED')
+   AND (source_type IS DISTINCT FROM 'INPATIENT_STAY' OR case_id = sqlc.narg('case_id')::uuid)
    AND row_version = sqlc.arg('expected_row_version');
 
 -- name: TouchClaim :execrows

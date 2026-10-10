@@ -32,6 +32,11 @@ const (
 	// member number and the same digits recorded as a telephone number are encrypted
 	// under different keys and can never be compared.
 	PurposePersonContact Purpose = "party.person_contact"
+	// Invitations use distinct tenant-bound keys for contact, delivery and command
+	// fingerprints. A contact blind index cannot be compared to a command receipt.
+	PurposeInvitationContact  Purpose = "identity.invitation_contact"
+	PurposeInvitationDelivery Purpose = "identity.invitation_delivery"
+	PurposeInvitationCommand  Purpose = "identity.invitation_command"
 )
 
 // BlindIndexSize is the byte length of every blind index (HMAC-SHA256).

@@ -7,6 +7,15 @@ import {
   type RouterHistory,
 } from '@tanstack/react-router';
 import { AdjustmentQueuePage } from './adjustments/AdjustmentQueuePage';
+import { AdminAccess } from './admin/AdminAccess';
+import { AdminUsersPage } from './admin/AdminUsersPage';
+import { AdminUserDetailPage } from './admin/AdminUserDetailPage';
+import { AdminInvitationsPage } from './admin/AdminInvitationsPage';
+import { AdminInvitationDetailPage } from './admin/AdminInvitationDetailPage';
+import { AdminRoleAccess } from './admin/AdminRoleAccess';
+import { RoleChangeQueuePage } from './admin/RoleChangeQueuePage';
+import { RoleChangeDetailPage } from './admin/RoleChangeDetailPage';
+import { InvitationPage } from './pages/InvitationPage';
 import type { AppServices } from './api';
 import { CategoryTreePage } from './catalog/CategoryTreePage';
 import { CodeSystemDetailPage } from './catalog/CodeSystemDetailPage';
@@ -23,6 +32,7 @@ import { ClaimDetailPage } from './claims/ClaimDetailPage';
 import { ClaimListPage, type ClaimListSearch } from './claims/ClaimListPage';
 import { ReportReviewListPage } from './health/ReportReviewListPage';
 import { ReportReviewPage } from './health/ReportReviewPage';
+import { HealthServicesPage } from './health/HealthServicesPage';
 import { RequestCreatePage } from './requests/RequestCreatePage';
 import { RequestDetailPage } from './requests/RequestDetailPage';
 import { RequestListPage, type RequestListSearch } from './requests/RequestListPage';
@@ -40,6 +50,7 @@ import { PropertiesPage } from './lodging/PropertiesPage';
 import { PropertyDetailPage } from './lodging/PropertyDetailPage';
 import { WaitlistPage } from './lodging/WaitlistPage';
 import { BatchReviewListPage } from './billing/BatchReviewListPage';
+import { BillingAccess } from './billing/BillingAccess';
 import { BatchReviewPage } from './billing/BatchReviewPage';
 import { ReimbursementListPage } from './billing/ReimbursementListPage';
 import { ReimbursementPage } from './billing/ReimbursementPage';
@@ -70,6 +81,9 @@ import { PersonCreatePage } from './people/PersonCreatePage';
 import { PersonDetailPage } from './people/PersonDetailPage';
 import { PersonListPage, type PersonListSearch } from './people/PersonListPage';
 import { HomePage } from './pages/HomePage';
+import { ReportsPage } from './pages/ReportsPage';
+import { SecurityPage } from './pages/SecurityPage';
+import { WalletsPage } from './pages/WalletsPage';
 import { LoginPage } from './pages/LoginPage';
 import { LogoutPage } from './pages/LogoutPage';
 import { AppChooserPage } from './pages/AppChooserPage';
@@ -94,7 +108,13 @@ const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/auth/login',
   validateSearch: returnToSearch,
-  beforeLoad: ({ context }) => redirectIfAuthenticated(context.services.store, '/'),
+  beforeLoad: ({ context, location }) =>
+    redirectIfAuthenticated(
+      context.services.store,
+      new URLSearchParams(location.searchStr).get('returnTo') === '/invitation'
+        ? '/invitation'
+        : '/',
+    ),
   component: LoginPage,
 });
 
@@ -138,6 +158,14 @@ const appChooserRoute = createRoute({
       searchStr: location.searchStr,
     }),
   component: AppChooserPage,
+});
+
+/** Fixed proof page is available before sign-in or tenant selection. */
+const invitationRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/invitation',
+  beforeLoad: ({ context }) => context.services.store.bootstrap().catch(() => undefined),
+  component: InvitationPage,
 });
 
 /** Everything under the shell needs a session and an active tenant. */
@@ -249,34 +277,58 @@ const billingBatchesRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/billing/batches',
   validateSearch: statusSearch,
-  component: BatchReviewListPage,
+  component: () => (
+    <BillingAccess permission="invoice.read">
+      <BatchReviewListPage />
+    </BillingAccess>
+  ),
 });
 const billingBatchRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/billing/batches/$batchId',
-  component: BatchReviewPage,
+  component: () => (
+    <BillingAccess permission="invoice.read">
+      <BatchReviewPage />
+    </BillingAccess>
+  ),
 });
 const billingSettlementsRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/billing/settlements',
   validateSearch: statusSearch,
-  component: SettlementListPage,
+  component: () => (
+    <BillingAccess permission="settlement.read">
+      <SettlementListPage />
+    </BillingAccess>
+  ),
 });
 const billingSettlementRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/billing/settlements/$settlementId',
-  component: SettlementPage,
+  component: () => (
+    <BillingAccess permission="settlement.read">
+      <SettlementPage />
+    </BillingAccess>
+  ),
 });
 const billingReimbursementsRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/billing/reimbursements',
   validateSearch: statusSearch,
-  component: ReimbursementListPage,
+  component: () => (
+    <BillingAccess permission="claim.financial.review">
+      <ReimbursementListPage />
+    </BillingAccess>
+  ),
 });
 const billingReimbursementRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/billing/reimbursements/$reimbursementId',
-  component: ReimbursementPage,
+  component: () => (
+    <BillingAccess permission="claim.financial.review">
+      <ReimbursementPage />
+    </BillingAccess>
+  ),
 });
 const billingReconciliationRoute = createRoute({
   getParentRoute: () => appRoute,
@@ -292,6 +344,16 @@ const billingExportsRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/billing/exports',
   component: ExportsPage,
+});
+const reportsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/reports',
+  component: ReportsPage,
+});
+const securityRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/security',
+  component: SecurityPage,
 });
 const medicalReportsRoute = createRoute({
   getParentRoute: () => appRoute,
@@ -383,8 +445,25 @@ const personCreateRoute = createRoute({
 const personDetailRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/people/$personId',
+  validateSearch: (raw: Record<string, unknown>): { tab?: string } => {
+    const tab = raw['tab'];
+    return typeof tab === 'string' && PERSON_TABS.includes(tab) ? { tab } : {};
+  },
   component: PersonDetailPage,
 });
+
+const PERSON_TABS = [
+  'identity',
+  'family',
+  'memberships',
+  'enrollments',
+  'entitlements',
+  'eligibility',
+  'health',
+  'lodging',
+  'reimbursements',
+  'accessLog',
+];
 
 function programListSearch(raw: Record<string, unknown>): ProgramListSearch {
   const out: ProgramListSearch = {};
@@ -575,6 +654,70 @@ const importDetailRoute = createRoute({
 const soonRoutes = SOON_PATHS.map((path) =>
   createRoute({ getParentRoute: () => appRoute, path, component: SoonPage }),
 );
+const adminUsersRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/admin',
+  component: () => (
+    <AdminAccess>
+      <AdminUsersPage />
+    </AdminAccess>
+  ),
+});
+const adminUserDetailRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/admin/users/$membershipId',
+  component: () => (
+    <AdminAccess>
+      <AdminUserDetailPage />
+    </AdminAccess>
+  ),
+});
+const adminInvitationsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/admin/invitations',
+  component: () => (
+    <AdminAccess>
+      <AdminInvitationsPage />
+    </AdminAccess>
+  ),
+});
+const adminInvitationDetailRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/admin/invitations/$invitationId',
+  component: () => (
+    <AdminAccess>
+      <AdminInvitationDetailPage />
+    </AdminAccess>
+  ),
+});
+const roleChangeQueueRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/admin/role-change-requests',
+  component: () => (
+    <AdminRoleAccess>
+      <RoleChangeQueuePage />
+    </AdminRoleAccess>
+  ),
+});
+const roleChangeDetailRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/admin/role-change-requests/$requestId',
+  component: () => (
+    <AdminRoleAccess>
+      <RoleChangeDetailPage />
+    </AdminRoleAccess>
+  ),
+});
+const healthServicesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/health-services',
+  component: HealthServicesPage,
+});
+const walletsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/wallets',
+  component: WalletsPage,
+});
 
 const routeTree = rootRoute.addChildren([
   loginRoute,
@@ -582,6 +725,7 @@ const routeTree = rootRoute.addChildren([
   tenantRoute,
   passwordRoute,
   appChooserRoute,
+  invitationRoute,
   appRoute.addChildren([
     homeRoute,
     profileRoute,
@@ -623,6 +767,8 @@ const routeTree = rootRoute.addChildren([
     requestDetailRoute,
     claimsRoute,
     claimDetailRoute,
+    healthServicesRoute,
+    walletsRoute,
     lodgingPropertiesRoute,
     lodgingPropertyRoute,
     lodgingBookingsRoute,
@@ -637,6 +783,14 @@ const routeTree = rootRoute.addChildren([
     billingReconciliationRoute,
     billingReconciliationRunRoute,
     billingExportsRoute,
+    reportsRoute,
+    adminUsersRoute,
+    adminUserDetailRoute,
+    adminInvitationsRoute,
+    adminInvitationDetailRoute,
+    roleChangeQueueRoute,
+    roleChangeDetailRoute,
+    securityRoute,
     medicalReportsRoute,
     medicalReportRoute,
     worklistRoute,

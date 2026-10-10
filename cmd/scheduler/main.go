@@ -24,6 +24,7 @@ import (
 	documentpg "github.com/celikbros/kapsora/internal/document/infrastructure/postgres"
 	healthapp "github.com/celikbros/kapsora/internal/health/application"
 	healthpg "github.com/celikbros/kapsora/internal/health/infrastructure/postgres"
+	identitypg "github.com/celikbros/kapsora/internal/identity/infrastructure/postgres"
 	"github.com/celikbros/kapsora/internal/platform/config"
 	"github.com/celikbros/kapsora/internal/platform/db"
 	"github.com/celikbros/kapsora/internal/platform/idempotency"
@@ -167,6 +168,12 @@ func run() error {
 	registry.Register(scheduler.OutboxRecoverStale(outbox.New(pool, outbox.Options{Logger: logger})))
 	registry.Register(scheduler.IdempotencyPurge(pool, idempotency.PurgeExpired))
 	registry.Register(scheduler.RateLimitPurge(ratelimit.NewPostgres(pool)))
+	invitationRepo := identitypg.NewInvitationRepository(pool, nil, nil)
+	registry.Register(scheduler.Job{Code: "identity.invitation_cleanup", Every: time.Hour,
+		Run: func(ctx context.Context) (scheduler.Metrics, error) {
+			n, err := invitationRepo.CleanupInvitations(ctx)
+			return scheduler.Metrics{"cleaned": n}, err
+		}})
 	registry.Register(scheduler.EntitlementReservationExpire(entitlements))
 	registry.Register(scheduler.EntitlementReconcile(entitlements))
 	registry.Register(scheduler.AuthorizationExpire(authorizations))

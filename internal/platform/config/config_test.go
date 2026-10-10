@@ -63,3 +63,35 @@ func TestLoadDefaultsAndValidation(t *testing.T) {
 		t.Fatalf("expected error for out-of-range max conns")
 	}
 }
+
+func TestInvitationDeliveryRequiresExplicitLoopback(t *testing.T) {
+	isolate(t)
+	t.Setenv("KAPSORA_DATABASE_URL", "postgres://u:p@localhost:5432/kapsora")
+	cfg, err := Load("kapsora-worker")
+	if err != nil || cfg.Invitations.DeliveryEnabled {
+		t.Fatal("invitation delivery must default off")
+	}
+	t.Setenv("KAPSORA_INVITATION_DELIVERY_MODE", "local-loopback")
+	cfg, err = Load("kapsora-worker")
+	if err != nil || !cfg.Invitations.DeliveryEnabled {
+		t.Fatal("explicit loopback mode rejected")
+	}
+	t.Setenv("KAPSORA_SMTP_ADDR", "smtp.example.test:25")
+	if _, err = Load("kapsora-worker"); err == nil {
+		t.Fatal("external SMTP accepted in local mode")
+	}
+	t.Setenv("KAPSORA_SMTP_ADDR", "127.0.0.1:1025")
+	t.Setenv("KAPSORA_INVITATION_LINK_BASE", "javascript:alert(1)")
+	if _, err = Load("kapsora-worker"); err == nil {
+		t.Fatal("invalid invitation link base accepted")
+	}
+	t.Setenv("KAPSORA_INVITATION_LINK_BASE", "http://127.0.0.1:5181/")
+	cfg, err = Load("kapsora-worker")
+	if err != nil || cfg.Invitations.LinkBase != "http://127.0.0.1:5181" {
+		t.Fatal("fixed invitation origin not normalized")
+	}
+	t.Setenv("KAPSORA_ENV", "production")
+	if _, err = Load("kapsora-worker"); err == nil {
+		t.Fatal("production loopback invitation mode accepted")
+	}
+}

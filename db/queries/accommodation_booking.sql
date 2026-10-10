@@ -335,9 +335,10 @@ SELECT rt.id AS room_type_id, rt.code AS room_type_code, rt.name AS room_type_na
 
 -- name: GetPersonEnrollmentForStay :one
 -- The enrollment the stay is booked under: the person's own active enrollment covering the
--- first night, narrowed to one program when the caller named one. A person with none has
--- no plan to book against, and the hold refuses rather than guessing.
-SELECT e.id AS enrollment_id, pr.id AS program_id
+-- first night, narrowed to one program when the caller named one. Ordinary commands refuse
+-- multiple matches; a scheduler offer selects its queued enrollment exactly. The count is
+-- over all matching rows before LIMIT, so ambiguity cannot be hidden by ID ordering.
+SELECT e.id AS enrollment_id, pr.id AS program_id, count(*) OVER () AS matching_count
   FROM benefit.enrollment e
   JOIN party.sponsor_membership m ON m.tenant_id = e.tenant_id AND m.id = e.sponsor_membership_id
   JOIN benefit.plan pl ON pl.tenant_id = e.tenant_id AND pl.id = e.plan_id
@@ -348,38 +349,9 @@ SELECT e.id AS enrollment_id, pr.id AS program_id
    AND pr.status = 'ACTIVE'
    AND e.valid_period @> sqlc.arg('service_date')::date
    AND (sqlc.narg('program_id')::uuid IS NULL OR pr.id = sqlc.narg('program_id')::uuid)
+   AND (sqlc.narg('enrollment_id')::uuid IS NULL OR e.id = sqlc.narg('enrollment_id')::uuid)
  ORDER BY e.id
  LIMIT 1;
-
--- name: GetContractVersionForRoomType :one
--- The contract version the room type's price came from on the first night, which is the
--- version whose lodging terms a confirmation freezes. It is read rather than passed in
--- because the terms have to be the ones behind the price the member was quoted, and a
--- caller that could name a version could freeze somebody else's policy onto this stay.
-SELECT cv.id AS contract_version_id
-  FROM contract.contract_version cv
-  JOIN contract.contract c
-    ON c.tenant_id = cv.tenant_id AND c.id = cv.contract_id
- WHERE cv.tenant_id = sqlc.arg('tenant_id')
-   AND c.provider_profile_id = sqlc.arg('provider_profile_id')
-   AND c.status = 'ACTIVE'
-   AND cv.status = 'PUBLISHED'
-   AND cv.valid_from <= sqlc.arg('service_date')::date
-   AND (cv.valid_to IS NULL OR cv.valid_to > sqlc.arg('service_date')::date)
- ORDER BY (c.domain_code = 'ACCOMMODATION') DESC, cv.valid_from DESC, cv.id
- LIMIT 1;
-
--- name: GetProviderProfileForProperty :one
-SELECT pp.id AS provider_profile_id
-  FROM provider.provider_profile pp
-  JOIN accommodation.property p
-    ON p.tenant_id = pp.tenant_id AND p.provider_organization_id = pp.tenant_organization_id
- WHERE pp.tenant_id = sqlc.arg('tenant_id')
-   AND p.id = sqlc.arg('property_id')
-   AND pp.status = 'ACTIVE'
- ORDER BY pp.id
- LIMIT 1;
-
 
 -- name: GetBookingEntitlementCode :one
 -- Which entitlement a room type's service draws on, under the plan version in force for
@@ -409,3 +381,50 @@ SELECT d.code AS entitlement_code
    AND (m.valid_from IS NULL OR m.valid_from <= sqlc.arg('service_date')::date)
    AND (m.valid_to IS NULL OR m.valid_to > sqlc.arg('service_date')::date)
  LIMIT 1;
+
+-- name: GetBookingConversionEvidence :one
+-- Historical confirmation uses the ORIGINAL evaluation's plan version. Current
+-- publication and same-program alternative enrollments must not change its meaning.
+SELECT ee.person_id, ee.enrollment_id, ee.plan_version_id, ee.service_date,
+       m.entitlement_definition_id, m.unit_factor::text AS unit_factor,
+       d.unit_type, r.entitlement_account_id, r.reference_type, r.reference_id,
+       r.quantity::text AS reserved_units, r.consumed_quantity::text AS consumed_units,
+       r.released_quantity::text AS released_units, r.status AS reservation_status,
+       (SELECT coalesce(sum(-l.delta_reserved),0)::text
+          FROM benefit.entitlement_ledger l WHERE l.tenant_id=r.tenant_id
+           AND l.reservation_id=r.id AND l.movement_type='RELEASE'
+           AND l.idempotency_key='booking-unapproved:' || r.reference_id::text
+       ) AS unapproved_released_units,
+       EXISTS (SELECT 1 FROM service.authorization au
+         JOIN accommodation.booking b ON b.tenant_id=au.tenant_id
+          AND b.id=r.reference_id AND b.service_request_id=au.request_id
+          AND b.entitlement_reservation_id=r.id
+         JOIN service.authorization_item ai ON ai.tenant_id=au.tenant_id
+          AND ai.authorization_id=au.id AND ai.entitlement_reservation_id=r.id
+         WHERE au.tenant_id=r.tenant_id
+          AND au.idempotency_key='booking:' || r.reference_id::text
+          AND ai.service_definition_id=sqlc.arg('service_definition_id')
+          AND ai.entitlement_unit_factor=m.unit_factor
+          AND ai.approved_quantity*m.unit_factor=r.quantity-r.released_quantity
+          AND NOT EXISTS (SELECT 1 FROM service.authorization_item other_item
+            WHERE other_item.tenant_id=au.tenant_id
+              AND other_item.authorization_id=au.id AND other_item.id<>ai.id)
+       ) AS prior_authorization
+  FROM benefit.eligibility_evaluation ee
+  JOIN benefit.enrollment e ON e.tenant_id = ee.tenant_id AND e.id = ee.enrollment_id
+  JOIN benefit.plan_version v ON v.tenant_id = ee.tenant_id
+    AND v.id = ee.plan_version_id AND v.plan_id = e.plan_id
+    AND v.status IN ('PUBLISHED','RETIRED') AND v.valid_period @> ee.service_date
+  JOIN benefit.service_entitlement_mapping m ON m.tenant_id = ee.tenant_id
+    AND m.plan_version_id = ee.plan_version_id
+    AND m.service_definition_id = sqlc.arg('service_definition_id')
+    AND (m.valid_from IS NULL OR m.valid_from <= ee.service_date)
+    AND (m.valid_to IS NULL OR m.valid_to > ee.service_date)
+  JOIN benefit.entitlement_definition d ON d.tenant_id = m.tenant_id
+    AND d.id = m.entitlement_definition_id
+  JOIN benefit.entitlement_reservation r ON r.tenant_id = ee.tenant_id
+    AND r.id = sqlc.arg('reservation_id')
+  JOIN benefit.entitlement_account a ON a.tenant_id = r.tenant_id
+    AND a.id = r.entitlement_account_id
+    AND a.entitlement_definition_id = m.entitlement_definition_id
+ WHERE ee.tenant_id = sqlc.arg('tenant_id') AND ee.id = sqlc.arg('evaluation_id');

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -103,15 +104,13 @@ func (r *ProvisioningRepository) GrantRole(ctx context.Context, in application.G
 	created := false
 	err := db.WithTenantTx(ctx, r.pool, db.TenantContext{TenantID: in.TenantID, ActorID: in.GrantedBy.UUID}, func(ctx context.Context, tx pgx.Tx) error {
 		q := sqlcgen.New(tx)
-		role, err := q.GetRoleByCode(ctx, sqlcgen.GetRoleByCodeParams{TenantID: in.TenantID, Code: in.RoleCode})
-		if errors.Is(err, pgx.ErrNoRows) {
-			return fmt.Errorf("identity: role %s does not exist in tenant", in.RoleCode)
-		}
-		if err != nil {
-			return fmt.Errorf("identity: find role: %w", err)
+		if _, err := q.LockTenantForUserManagement(ctx, in.TenantID); err != nil {
+			return fmt.Errorf("identity: lock tenant before offline grant: %w", err)
 		}
 
 		var membershipID uuid.UUID
+		var membershipVersion int64
+		existingMembership := false
 		m, err := q.FindMembershipAnyStatus(ctx, sqlcgen.FindMembershipAnyStatusParams{TenantID: in.TenantID, ActorID: in.ActorID})
 		switch {
 		case errors.Is(err, pgx.ErrNoRows):
@@ -125,6 +124,24 @@ func (r *ProvisioningRepository) GrantRole(ctx context.Context, in application.G
 			return fmt.Errorf("identity: membership is %s; reactivate it before granting roles", m.MembershipStatus)
 		default:
 			membershipID = m.ID
+			locked, lockErr := q.LockTenantUserForSuspension(ctx, sqlcgen.LockTenantUserForSuspensionParams{TenantID: in.TenantID, ID: membershipID})
+			if lockErr != nil {
+				return fmt.Errorf("identity: lock existing offline grant membership: %w", lockErr)
+			}
+			if locked.MembershipStatus != "ACTIVE" {
+				return fmt.Errorf("identity: membership is %s; reactivate it before granting roles", locked.MembershipStatus)
+			}
+			membershipVersion, existingMembership = locked.RowVersion, true
+		}
+		role, err := q.GetRoleByCode(ctx, sqlcgen.GetRoleByCodeParams{TenantID: in.TenantID, Code: in.RoleCode})
+		if errors.Is(err, pgx.ErrNoRows) {
+			return fmt.Errorf("identity: role %s does not exist in tenant", in.RoleCode)
+		}
+		if err != nil {
+			return fmt.Errorf("identity: find role: %w", err)
+		}
+		if _, err := q.LockRoleAssignmentCandidate(ctx, sqlcgen.LockRoleAssignmentCandidateParams{TenantID: in.TenantID, ID: role.ID}); err != nil {
+			return fmt.Errorf("identity: lock role before offline grant: %w", err)
 		}
 
 		_, err = q.FindAccessGrant(ctx, sqlcgen.FindAccessGrantParams{
@@ -147,6 +164,13 @@ func (r *ProvisioningRepository) GrantRole(ctx context.Context, in application.G
 			return fmt.Errorf("identity: create grant: %w", err)
 		}
 		created = true
+		if existingMembership {
+			if _, err := q.TouchRoleAssignmentMembership(ctx, sqlcgen.TouchRoleAssignmentMembershipParams{
+				TenantID: in.TenantID, ID: membershipID, RowVersion: membershipVersion,
+			}); err != nil {
+				return fmt.Errorf("identity: touch offline grant membership: %w", err)
+			}
+		}
 		return nil
 	})
 	return created, err
@@ -217,13 +241,59 @@ func (r *ProvisioningRepository) SyncSystemRoles(ctx context.Context, tenantID u
 	var res application.RoleSyncResult
 	err := db.WithTenantTx(ctx, r.pool, db.TenantContext{TenantID: tenantID}, func(ctx context.Context, tx pgx.Tx) error {
 		q := sqlcgen.New(tx)
+		if _, err := q.LockTenantForUserManagement(ctx, tenantID); err != nil {
+			return fmt.Errorf("identity: lock tenant before role sync: %w", err)
+		}
+		// The tenant lock serializes grant writers. Lock every existing affected role in
+		// UUID order before inspecting or changing child permissions.
+		ids := make([]uuid.UUID, 0, len(roles))
+		roleByCode := make(map[string]uuid.UUID, len(roles))
 		for _, tpl := range roles {
-			_, err := q.GetRoleByCode(ctx, sqlcgen.GetRoleByCodeParams{TenantID: tenantID, Code: tpl.Code})
-			switch {
-			case errors.Is(err, pgx.ErrNoRows):
-				res.RolesCreated = append(res.RolesCreated, tpl.Code)
-			case err != nil:
+			role, err := q.GetRoleByCode(ctx, sqlcgen.GetRoleByCodeParams{TenantID: tenantID, Code: tpl.Code})
+			if errors.Is(err, pgx.ErrNoRows) {
+				continue
+			}
+			if err != nil {
 				return fmt.Errorf("identity: find role %s: %w", tpl.Code, err)
+			}
+			ids = append(ids, role.ID)
+			roleByCode[tpl.Code] = role.ID
+		}
+		sort.Slice(ids, func(i, j int) bool { return ids[i].String() < ids[j].String() })
+		for _, id := range ids {
+			if _, err := q.LockRoleAssignmentCandidate(ctx, sqlcgen.LockRoleAssignmentCandidateParams{TenantID: tenantID, ID: id}); err != nil {
+				return fmt.Errorf("identity: lock role before sync: %w", err)
+			}
+		}
+		for _, tpl := range roles {
+			roleID, exists := roleByCode[tpl.Code]
+			if !exists {
+				res.RolesCreated = append(res.RolesCreated, tpl.Code)
+			} else if _, candidate := application.SupportedRoleScope(tpl.Code); candidate || application.ProtectedPrivilegedRole(tpl.Code) {
+				current, err := q.ListRoleAssignmentPermissions(ctx, sqlcgen.ListRoleAssignmentPermissionsParams{TenantID: tenantID, RoleID: roleID})
+				if err != nil {
+					return fmt.Errorf("identity: read role permissions before sync: %w", err)
+				}
+				present := make(map[string]bool, len(current))
+				for _, p := range current {
+					present[p.PermissionCode] = true
+				}
+				change := false
+				for _, p := range tpl.Permissions {
+					if !present[p] {
+						change = true
+						break
+					}
+				}
+				if change {
+					inUse, err := q.HasCurrentOrFutureGrantForRole(ctx, sqlcgen.HasCurrentOrFutureGrantForRoleParams{TenantID: tenantID, RoleID: roleID})
+					if err != nil {
+						return fmt.Errorf("identity: check role grants before sync: %w", err)
+					}
+					if inUse {
+						return application.ErrRoleConfigurationInUse
+					}
+				}
 			}
 			desc := tpl.Description
 			roleID, err := q.CreateRole(ctx, sqlcgen.CreateRoleParams{TenantID: tenantID, Code: tpl.Code, Name: tpl.Name, Description: &desc, IsSystemRole: true})

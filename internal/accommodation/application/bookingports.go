@@ -22,6 +22,7 @@ import (
 const (
 	PermissionBookingCreate = "accommodation.booking.create"
 	PermissionBookingManage = "accommodation.booking.manage"
+	PermissionNoShowReview  = "accommodation.no_show.review"
 )
 
 // Errors of the booking half, mapped by the transport to problem codes.
@@ -50,6 +51,9 @@ var (
 	// ErrEnrollmentNotFound is a person with no active enrollment covering the first
 	// night. There is no plan to book against and the hold refuses rather than guessing.
 	ErrEnrollmentNotFound = errors.New("accommodation: the person has no active enrollment for these dates")
+	// ErrEnrollmentMultiple refuses an ordinary hold or queue entry when more than one
+	// active enrollment matches the requested program and first night.
+	ErrEnrollmentMultiple = errors.New("accommodation: multiple active enrollments match this stay")
 	// ErrEntitlementAccountNotFound is a room type whose service maps onto no open
 	// entitlement account for this person. The nights cannot be reserved, so the room is
 	// not held: a hold with nothing behind it is a promise the plan cannot keep.
@@ -273,7 +277,28 @@ type ReminderRow struct {
 // the range in stay_date order with FOR UPDATE, and every command that moves a counter
 // calls it first. That single ordering is what turns concurrent holds into a queue rather
 // than a deadlock, and it is stated on the port so no adapter can quietly reorder it.
+type BookingConversionEvidence struct {
+	PersonID                uuid.UUID
+	EnrollmentID            uuid.UUID
+	PlanVersionID           uuid.UUID
+	ServiceDate             time.Time
+	DefinitionID            uuid.UUID
+	UnitFactor              string
+	UnitType                string
+	AccountID               uuid.UUID
+	ReferenceType           string
+	ReferenceID             uuid.UUID
+	ReservedUnits           string
+	ConsumedUnits           string
+	ReleasedUnits           string
+	UnapprovedReleasedUnits string
+	PriorAuthorization      bool
+	ReservationStatus       string
+}
+
 type BookingRepository interface {
+	BookingConversionEvidence(ctx context.Context, tx pgx.Tx, tenantID, evaluationID,
+		reservationID, serviceDefinitionID uuid.UUID) (BookingConversionEvidence, error)
 	// LockInventoryNights takes the nights of [from, to] FOR UPDATE **in stay_date
 	// order**. A night the provider has opened nothing on is simply absent from the
 	// result, which is how the caller tells "no allotment" from "full".
@@ -327,7 +352,7 @@ type BookingRepository interface {
 	RoomTypeBookingContext(ctx context.Context, tx pgx.Tx, tenantID, roomTypeID uuid.UUID,
 		scopeIDs []uuid.UUID) (RoomTypeBookingContext, error)
 	PersonEnrollmentForStay(ctx context.Context, tx pgx.Tx, tenantID, personID uuid.UUID,
-		day time.Time, programID *uuid.UUID) (PersonEnrollment, error)
+		day time.Time, programID, enrollmentID *uuid.UUID) (PersonEnrollment, error)
 	// EntitlementCodeForService is the entitlement a room type's service draws on, under
 	// the plan version in force for this enrollment on the first night. It is WP-I5-05's
 	// mapping rather than the service's own code: which balance a room night spends is the
@@ -335,13 +360,6 @@ type BookingRepository interface {
 	// tenant that did not happen to name the two the same.
 	EntitlementCodeForService(ctx context.Context, tx pgx.Tx, tenantID, enrollmentID,
 		serviceDefinitionID uuid.UUID, day time.Time) (string, error)
-	// ContractVersionForProperty is the published version of the property's own contract
-	// covering the first night. It is read rather than passed in: the terms a booking
-	// freezes have to be the ones behind the price the member was quoted, and a caller
-	// that could name a version could freeze somebody else's policy onto this stay.
-	ContractVersionForProperty(ctx context.Context, tx pgx.Tx, tenantID, propertyID uuid.UUID,
-		day time.Time) (uuid.UUID, error)
-
 	// ListExpiredHolds takes the holds past their deadline FOR UPDATE SKIP LOCKED, so two
 	// schedulers that both believe they lead cannot expire one booking twice.
 	ListExpiredHolds(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, before time.Time,
@@ -395,6 +413,8 @@ type BookingRepository interface {
 	LockWaitlistEntry(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID) (WaitlistRecord, error)
 	ListWaitlistEntries(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 		q WaitlistQuery) ([]WaitlistRecord, error)
+	// WaitlistEnrollmentProgram resolves only the still-active enrollment saved by the entry.
+	WaitlistEnrollmentProgram(ctx context.Context, tx pgx.Tx, tenantID, entryID uuid.UUID) (uuid.UUID, error)
 	// ListWaitlistQueue is the sweep's read: WAITING entries in queue order -- priority
 	// first, then whoever asked first -- taken FOR UPDATE SKIP LOCKED. The ordering is part
 	// of the contract, like LockInventoryNights': a sweep that ignored priority would be a
@@ -421,6 +441,7 @@ type BookingRepository interface {
 // back, and find the account to take it on. This package never writes a balance, and the
 // compiler agrees it cannot post anything else.
 type LedgerPort interface {
+	ReadReservation(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID) (ledger.Reservation, error)
 	Reserve(ctx context.Context, tx pgx.Tx, in ledger.ReserveInput) (ledger.Reservation, error)
 	Release(ctx context.Context, tx pgx.Tx, in ledger.MovementInput) (ledger.Reservation, error)
 	// ResolveAccounts lists the entitlement accounts a person may spend from on a day,
@@ -443,16 +464,17 @@ type BookingRequestInput struct {
 	// night: a reviewer decides "four of the five nights" by reducing a quantity, which is
 	// the decision WP-I4-01 already knows how to record, and five lines would put a
 	// fifteen-line request in front of anybody booking a fortnight.
-	Nights       int
-	UnitType     string
-	Amount       string
-	CurrencyCode string
-	Channel      string
-	// HeldNights is the entitlement this booking has already reserved, as an exact decimal
-	// string. The gate adds it back before it judges the line, so a member whose plan covers
-	// exactly the stay they are holding is not refused for spending what they hold. It is
-	// always the same number as Nights here: both are the covered nights of the frozen quote.
-	HeldNights string
+	Nights          int
+	UnitType        string
+	Amount          string
+	CurrencyCode    string
+	Channel         string
+	BookingID       uuid.UUID
+	ReservationID   uuid.UUID
+	NightConversion *NightConversion
+	// HeldEntitlementUnits is the exact ledger quantity already reserved by this booking.
+	// It can differ from Nights, which remains the requested service quantity.
+	HeldEntitlementUnits string
 }
 
 // BookingRequestRef is the request, as this package needs it.
@@ -487,9 +509,12 @@ type RequestPort interface {
 // BookingAuthorizationInput is the hold this package asks WP-I4-02 for when a reservation
 // request is approved.
 type BookingAuthorizationInput struct {
-	RequestID uuid.UUID
-	ValidFrom time.Time
-	ValidTo   time.Time
+	RequestID           uuid.UUID
+	BookingID           uuid.UUID
+	ServiceDefinitionID uuid.UUID
+	NightConversion     *NightConversion
+	ValidFrom           time.Time
+	ValidTo             time.Time
 	// IdempotencyKey is derived from the booking rather than from a clock, so a
 	// redelivered outbox event finds the authorization the first delivery created.
 	IdempotencyKey string
@@ -547,6 +572,10 @@ type IssuedBookingVoucher struct {
 type AuthorizationPort interface {
 	CreateForRequest(ctx context.Context, rc identity.RequestContext,
 		in BookingAuthorizationInput) (BookingAuthorizationRef, error)
+	// RetireBookingOrphan retires the exact unused authorization which adopted a
+	// terminal booking's released reservation, inside the booking transaction.
+	RetireBookingOrphan(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
+		in BookingOrphanInput) error
 	IssueVoucher(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
 		in BookingVoucherInput) (IssuedBookingVoucher, error)
 
@@ -576,7 +605,25 @@ type AuthorizationPort interface {
 	// or release computes its arithmetic on numbers nobody else can move before it commits.
 	Lines(ctx context.Context, tx pgx.Tx, tenantID, authorizationID uuid.UUID) (
 		[]BookingAuthorizationLine, error)
+	// CancellationEvidence locks the original authorization, single item and booking
+	// reservation in that order. Nil means exact reporting is unprovable.
+	CancellationEvidence(ctx context.Context, tx pgx.Tx, tenantID, authorizationID,
+		requestID, personID, bookingID, reservationID, serviceDefinitionID uuid.UUID) (
+		*BookingCancellationEvidence, error)
 }
+
+// BookingOrphanInput carries frozen booking provenance across the module boundary.
+// ExpectedAuthorizationID is optional for redelivery after an interrupted worker.
+type BookingOrphanInput struct {
+	BookingID, RequestID, PersonID, ReservationID uuid.UUID
+	ServiceDefinitionID, AccountID                uuid.UUID
+	ExpectedAuthorizationID                       uuid.UUID
+	UnitFactor, ReservedUnits, IdempotencyKey     string
+}
+
+// ErrBookingOrphanProvenance marks a persisted authorization whose identity or use
+// history does not match the terminal booking. Redelivering cannot make it safe.
+var ErrBookingOrphanProvenance = errors.New("accommodation: booking orphan provenance mismatch")
 
 // LodgingPolicyPort is WP-I6-04's SnapshotLodgingPolicy, seen from here: the terms of the
 // contract version behind this stay, stamped with the moment and the property's zone, as
@@ -618,6 +665,12 @@ func (NoAuthorizations) CreateForRequest(context.Context, identity.RequestContex
 	BookingAuthorizationInput,
 ) (BookingAuthorizationRef, error) {
 	return BookingAuthorizationRef{}, errors.New("accommodation: this process cannot create an authorization")
+}
+
+func (NoAuthorizations) RetireBookingOrphan(context.Context, pgx.Tx, identity.RequestContext,
+	BookingOrphanInput,
+) error {
+	return errors.New("accommodation: this process cannot retire an authorization")
 }
 
 // IssueVoucher implements AuthorizationPort.
@@ -663,6 +716,12 @@ func (NoAuthorizations) Lines(context.Context, pgx.Tx, uuid.UUID, uuid.UUID) (
 	[]BookingAuthorizationLine, error,
 ) {
 	return nil, errors.New("accommodation: this process cannot read an authorization")
+}
+
+func (NoAuthorizations) CancellationEvidence(context.Context, pgx.Tx,
+	uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUID,
+) (*BookingCancellationEvidence, error) {
+	return nil, errors.New("accommodation: this process cannot read cancellation evidence")
 }
 
 // NoPolicies is the refusing LodgingPolicyPort.

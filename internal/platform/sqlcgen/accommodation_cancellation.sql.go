@@ -234,12 +234,21 @@ const countCleanBookingDocuments = `-- name: CountCleanBookingDocuments :one
 SELECT count(*)
   FROM document.link l
   JOIN document.object o ON o.tenant_id = l.tenant_id AND o.id = l.object_id
+  JOIN document.object stored ON stored.tenant_id = o.tenant_id
+       AND stored.id = COALESCE(o.duplicate_of_object_id, o.id)
+  JOIN accommodation.booking b ON b.tenant_id = l.tenant_id AND b.id = l.aggregate_id
+  JOIN accommodation.property p ON p.tenant_id = b.tenant_id AND p.id = b.property_id
  WHERE l.tenant_id = $1
    AND l.aggregate_type = 'BOOKING'
    AND l.aggregate_id = $2
+   AND l.document_type_code = 'NO_SHOW_EVIDENCE'
    AND ($3::uuid IS NULL OR o.id = $3::uuid)
-   AND o.scan_status = 'CLEAN'
-   AND o.purged_at IS NULL
+   AND o.scan_status = 'CLEAN' AND o.bucket = 'secure' AND o.purged_at IS NULL
+   AND stored.scan_status = 'CLEAN' AND stored.bucket = 'secure' AND stored.purged_at IS NULL
+   AND (o.owner_tenant_organization_id IS NULL
+        OR o.owner_tenant_organization_id = p.provider_organization_id)
+   AND (stored.owner_tenant_organization_id IS NULL
+        OR stored.owner_tenant_organization_id = p.provider_organization_id)
 `
 
 type CountCleanBookingDocumentsParams struct {
@@ -251,10 +260,8 @@ type CountCleanBookingDocumentsParams struct {
 // ---------------------------------------------------------------------------
 // accommodation.no_show
 // ---------------------------------------------------------------------------
-// The evidence half of the no-show gate: is a document actually linked to this booking, and
-// did the scanner clear it. A link to an object still in quarantine is not evidence a
-// reviewer can open, and a no-show reported without one is a reviewer asked to decide on
-// nothing. `aggregate_type = 'BOOKING'` is the link WP-I4-04 writes for a stay.
+// A no-show fee review needs its own evidence type, within the property's provider
+// boundary. Both the linked row and the canonical bytes must still be clean and retained.
 func (q *Queries) CountCleanBookingDocuments(ctx context.Context, arg CountCleanBookingDocumentsParams) (int64, error) {
 	row := q.db.QueryRow(ctx, countCleanBookingDocuments, arg.TenantID, arg.BookingID, arg.ObjectID)
 	var count int64
@@ -266,50 +273,66 @@ const createCancellation = `-- name: CreateCancellation :one
 
 INSERT INTO accommodation.cancellation (
     tenant_id, booking_id, cancelled_at, cancelled_by, reason_code, policy_snapshot, free,
-    penalty_nights, released_nights, fee_amount, payer_fee, member_fee, currency_code)
+    penalty_nights, released_nights, fee_amount, payer_fee, member_fee, currency_code,
+    consumed_service_nights, released_service_nights,
+    consumed_entitlement_units, released_entitlement_units)
 VALUES ($1, $2, $3,
         $4, $5, $6,
         $7::boolean, $8::int,
         $9::int, $10::text::numeric,
         $11::text::numeric, $12::text::numeric,
-        $13)
+        $13,
+        $14::text::numeric,
+        $15::text::numeric,
+        $16::text::numeric,
+        $17::text::numeric)
 RETURNING id, booking_id, cancelled_at, cancelled_by, reason_code, policy_snapshot, free,
           penalty_nights, released_nights, fee_amount::text AS fee_amount,
           payer_fee::text AS payer_fee, member_fee::text AS member_fee, currency_code,
+          consumed_service_nights, released_service_nights,
+          consumed_entitlement_units, released_entitlement_units,
           created_at
 `
 
 type CreateCancellationParams struct {
-	TenantID       uuid.UUID
-	BookingID      uuid.UUID
-	CancelledAt    time.Time
-	CancelledBy    uuid.NullUUID
-	ReasonCode     string
-	PolicySnapshot []byte
-	Free           bool
-	PenaltyNights  int32
-	ReleasedNights int32
-	FeeAmount      string
-	PayerFee       string
-	MemberFee      string
-	CurrencyCode   string
+	TenantID                 uuid.UUID
+	BookingID                uuid.UUID
+	CancelledAt              time.Time
+	CancelledBy              uuid.NullUUID
+	ReasonCode               string
+	PolicySnapshot           []byte
+	Free                     bool
+	PenaltyNights            int32
+	ReleasedNights           int32
+	FeeAmount                string
+	PayerFee                 string
+	MemberFee                string
+	CurrencyCode             string
+	ConsumedServiceNights    *string
+	ReleasedServiceNights    *string
+	ConsumedEntitlementUnits *string
+	ReleasedEntitlementUnits *string
 }
 
 type CreateCancellationRow struct {
-	ID             uuid.UUID
-	BookingID      uuid.UUID
-	CancelledAt    time.Time
-	CancelledBy    uuid.NullUUID
-	ReasonCode     string
-	PolicySnapshot []byte
-	Free           bool
-	PenaltyNights  int32
-	ReleasedNights int32
-	FeeAmount      string
-	PayerFee       string
-	MemberFee      string
-	CurrencyCode   string
-	CreatedAt      time.Time
+	ID                       uuid.UUID
+	BookingID                uuid.UUID
+	CancelledAt              time.Time
+	CancelledBy              uuid.NullUUID
+	ReasonCode               string
+	PolicySnapshot           []byte
+	Free                     bool
+	PenaltyNights            int32
+	ReleasedNights           int32
+	FeeAmount                string
+	PayerFee                 string
+	MemberFee                string
+	CurrencyCode             string
+	ConsumedServiceNights    pgtype.Numeric
+	ReleasedServiceNights    pgtype.Numeric
+	ConsumedEntitlementUnits pgtype.Numeric
+	ReleasedEntitlementUnits pgtype.Numeric
+	CreatedAt                time.Time
 }
 
 // ---------------------------------------------------------------------------
@@ -333,6 +356,10 @@ func (q *Queries) CreateCancellation(ctx context.Context, arg CreateCancellation
 		arg.PayerFee,
 		arg.MemberFee,
 		arg.CurrencyCode,
+		arg.ConsumedServiceNights,
+		arg.ReleasedServiceNights,
+		arg.ConsumedEntitlementUnits,
+		arg.ReleasedEntitlementUnits,
 	)
 	var i CreateCancellationRow
 	err := row.Scan(
@@ -349,6 +376,10 @@ func (q *Queries) CreateCancellation(ctx context.Context, arg CreateCancellation
 		&i.PayerFee,
 		&i.MemberFee,
 		&i.CurrencyCode,
+		&i.ConsumedServiceNights,
+		&i.ReleasedServiceNights,
+		&i.ConsumedEntitlementUnits,
+		&i.ReleasedEntitlementUnits,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -536,6 +567,8 @@ const getCancellation = `-- name: GetCancellation :one
 SELECT id, booking_id, cancelled_at, cancelled_by, reason_code, policy_snapshot, free,
        penalty_nights, released_nights, fee_amount::text AS fee_amount,
        payer_fee::text AS payer_fee, member_fee::text AS member_fee, currency_code,
+       consumed_service_nights, released_service_nights,
+       consumed_entitlement_units, released_entitlement_units,
        created_at
   FROM accommodation.cancellation
  WHERE tenant_id = $1
@@ -548,20 +581,24 @@ type GetCancellationParams struct {
 }
 
 type GetCancellationRow struct {
-	ID             uuid.UUID
-	BookingID      uuid.UUID
-	CancelledAt    time.Time
-	CancelledBy    uuid.NullUUID
-	ReasonCode     string
-	PolicySnapshot []byte
-	Free           bool
-	PenaltyNights  int32
-	ReleasedNights int32
-	FeeAmount      string
-	PayerFee       string
-	MemberFee      string
-	CurrencyCode   string
-	CreatedAt      time.Time
+	ID                       uuid.UUID
+	BookingID                uuid.UUID
+	CancelledAt              time.Time
+	CancelledBy              uuid.NullUUID
+	ReasonCode               string
+	PolicySnapshot           []byte
+	Free                     bool
+	PenaltyNights            int32
+	ReleasedNights           int32
+	FeeAmount                string
+	PayerFee                 string
+	MemberFee                string
+	CurrencyCode             string
+	ConsumedServiceNights    pgtype.Numeric
+	ReleasedServiceNights    pgtype.Numeric
+	ConsumedEntitlementUnits pgtype.Numeric
+	ReleasedEntitlementUnits pgtype.Numeric
+	CreatedAt                time.Time
 }
 
 func (q *Queries) GetCancellation(ctx context.Context, arg GetCancellationParams) (GetCancellationRow, error) {
@@ -581,6 +618,10 @@ func (q *Queries) GetCancellation(ctx context.Context, arg GetCancellationParams
 		&i.PayerFee,
 		&i.MemberFee,
 		&i.CurrencyCode,
+		&i.ConsumedServiceNights,
+		&i.ReleasedServiceNights,
+		&i.ConsumedEntitlementUnits,
+		&i.ReleasedEntitlementUnits,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -644,6 +685,32 @@ func (q *Queries) GetNoShow(ctx context.Context, arg GetNoShowParams) (GetNoShow
 		&i.RowVersion,
 	)
 	return i, err
+}
+
+const getWaitlistEnrollmentProgram = `-- name: GetWaitlistEnrollmentProgram :one
+SELECT pl.program_id
+  FROM accommodation.waitlist_entry w
+  JOIN benefit.enrollment e ON e.tenant_id = w.tenant_id AND e.id = w.enrollment_id
+  JOIN party.sponsor_membership m ON m.tenant_id = e.tenant_id AND m.id = e.sponsor_membership_id
+  JOIN benefit.plan pl ON pl.tenant_id = e.tenant_id AND pl.id = e.plan_id
+  JOIN benefit.program pr ON pr.tenant_id = pl.tenant_id AND pr.id = pl.program_id
+ WHERE w.tenant_id = $1 AND w.id = $2
+   AND w.status = 'WAITING' AND m.person_id = w.person_id
+   AND e.status = 'ACTIVE' AND pr.status = 'ACTIVE'
+   AND e.valid_period @> w.check_in
+`
+
+type GetWaitlistEnrollmentProgramParams struct {
+	TenantID uuid.UUID
+	EntryID  uuid.UUID
+}
+
+// An offer must use the enrollment selected when joining, never another active program.
+func (q *Queries) GetWaitlistEnrollmentProgram(ctx context.Context, arg GetWaitlistEnrollmentProgramParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, getWaitlistEnrollmentProgram, arg.TenantID, arg.EntryID)
+	var program_id uuid.UUID
+	err := row.Scan(&program_id)
+	return program_id, err
 }
 
 const getWaitlistEntry = `-- name: GetWaitlistEntry :one

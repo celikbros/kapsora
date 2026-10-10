@@ -74,21 +74,25 @@ type AccommodationBookingNight struct {
 }
 
 type AccommodationCancellation struct {
-	ID             uuid.UUID
-	TenantID       uuid.UUID
-	BookingID      uuid.UUID
-	CancelledAt    time.Time
-	CancelledBy    uuid.NullUUID
-	ReasonCode     string
-	PolicySnapshot []byte
-	Free           bool
-	PenaltyNights  int32
-	ReleasedNights int32
-	FeeAmount      pgtype.Numeric
-	PayerFee       pgtype.Numeric
-	MemberFee      pgtype.Numeric
-	CurrencyCode   string
-	CreatedAt      time.Time
+	ID                       uuid.UUID
+	TenantID                 uuid.UUID
+	BookingID                uuid.UUID
+	CancelledAt              time.Time
+	CancelledBy              uuid.NullUUID
+	ReasonCode               string
+	PolicySnapshot           []byte
+	Free                     bool
+	PenaltyNights            int32
+	ReleasedNights           int32
+	FeeAmount                pgtype.Numeric
+	PayerFee                 pgtype.Numeric
+	MemberFee                pgtype.Numeric
+	CurrencyCode             string
+	CreatedAt                time.Time
+	ConsumedServiceNights    pgtype.Numeric
+	ReleasedServiceNights    pgtype.Numeric
+	ConsumedEntitlementUnits pgtype.Numeric
+	ReleasedEntitlementUnits pgtype.Numeric
 }
 
 type AccommodationInventoryDay struct {
@@ -848,6 +852,19 @@ type ClaimClaimLine struct {
 	RowVersion          int64
 }
 
+type ClaimClaimLineAuthorizationAllocation struct {
+	ID              uuid.UUID
+	TenantID        uuid.UUID
+	VersionID       uuid.UUID
+	LineID          uuid.UUID
+	AuthorizationID uuid.UUID
+	AllocationOrder int32
+	PlannedQuantity pgtype.Numeric
+	AppliedQuantity pgtype.Numeric
+	IdempotencyKey  string
+	CreatedAt       time.Time
+}
+
 type ClaimClaimVersion struct {
 	ID               uuid.UUID
 	TenantID         uuid.UUID
@@ -1430,6 +1447,50 @@ type IamRole struct {
 	CreatedAt    time.Time
 }
 
+type IamRoleChangeCommandReceipt struct {
+	ID             uuid.UUID
+	TenantID       uuid.UUID
+	ActorID        uuid.UUID
+	CommandCode    string
+	KeyHash        []byte
+	RequestHash    []byte
+	RequestID      uuid.UUID
+	ResponseStatus int32
+	ResponseEtag   string
+	ResponseBody   []byte
+	CreatedAt      time.Time
+}
+
+type IamRoleChangeRequest struct {
+	ID                       uuid.UUID
+	TenantID                 uuid.UUID
+	Operation                string
+	TargetMembershipID       uuid.UUID
+	TargetActorID            uuid.UUID
+	MakerMembershipID        uuid.UUID
+	MakerActorID             uuid.UUID
+	RoleID                   uuid.UUID
+	RoleCode                 string
+	ScopeType                string
+	PermissionSnapshot       []byte
+	ConfigurationHash        []byte
+	TargetMembershipVersion  int64
+	RevokeGrantID            uuid.NullUUID
+	RevokeValidPeriod        pgtype.Range[pgtype.Timestamptz]
+	ReasonCode               string
+	Status                   string
+	DecidedByMembershipID    uuid.NullUUID
+	DecidedByActorID         uuid.NullUUID
+	DecidedAt                *time.Time
+	DecisionReasonCode       *string
+	AppliedGrantID           uuid.NullUUID
+	AppliedMembershipVersion *int64
+	AppliedValidPeriod       pgtype.Range[pgtype.Timestamptz]
+	CreatedAt                time.Time
+	UpdatedAt                time.Time
+	RowVersion               int64
+}
+
 type IamRolePermission struct {
 	TenantID       uuid.UUID
 	RoleID         uuid.UUID
@@ -1448,6 +1509,39 @@ type IamSession struct {
 	ExpiresAt      time.Time
 	StepUpUntil    *time.Time
 	RevokedAt      *time.Time
+}
+
+type IamTenantInvitation struct {
+	ID                   uuid.UUID
+	TenantID             uuid.UUID
+	ContactCipher        []byte
+	ContactHash          []byte
+	MaskedRecipient      *string
+	ProofDigest          []byte
+	DeliveryCipher       []byte
+	DeliveryGeneration   int32
+	DeliveryStatus       string
+	Status               string
+	AcceptedActorID      uuid.NullUUID
+	AcceptedMembershipID uuid.NullUUID
+	AcceptKey            *string
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
+	ExpiresAt            time.Time
+	TerminalAt           *time.Time
+	RowVersion           int64
+	AcceptedMode         *string
+	AcceptNewFingerprint []byte
+}
+
+type IamTenantInvitationCreateReceipt struct {
+	TenantID       uuid.UUID
+	ActorID        uuid.UUID
+	IdempotencyKey string
+	Fingerprint    []byte
+	InvitationID   uuid.UUID
+	ResponseJson   []byte
+	CreatedAt      time.Time
 }
 
 type IamTenantMembership struct {
@@ -2010,6 +2104,7 @@ type ServiceAuthorizationItem struct {
 	CreatedAt                time.Time
 	UpdatedAt                time.Time
 	RowVersion               int64
+	EntitlementUnitFactor    pgtype.Numeric
 }
 
 type ServiceCancellation struct {

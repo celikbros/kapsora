@@ -36,10 +36,11 @@ import {
 } from './queries';
 import { qty, reportTone, today } from './words';
 
-function HeaderForm({ report, onSaved }: { report: MedicalReport; onSaved: () => void }) {
+type ReportCommands = ReturnType<typeof useReportCommands>;
+
+function HeaderForm({ report, commands }: { report: MedicalReport; commands: ReportCommands }) {
   const { t } = useTranslation();
   const toast = useToast();
-  const commands = useReportCommands(report.id);
   const [type, setType] = useState(report.reportType ?? '');
   const [subtype, setSubtype] = useState(report.reportSubtype ?? '');
   const [issuedAt, setIssuedAt] = useState(report.issuedAt.slice(0, 10));
@@ -69,7 +70,6 @@ function HeaderForm({ report, onSaved }: { report: MedicalReport; onSaved: () =>
         },
       });
       toast.notify({ tone: 'success', title: t('health.reports.header.saved') });
-      onSaved();
     } catch {
       // Rendered below.
     }
@@ -175,10 +175,9 @@ interface DraftService {
   notes: string;
 }
 
-function ServicesEditor({ report }: { report: MedicalReport }) {
+function ServicesEditor({ report, commands }: { report: MedicalReport; commands: ReportCommands }) {
   const { t } = useTranslation();
   const toast = useToast();
-  const commands = useReportCommands(report.id);
   const options = useServiceDefinitions();
   const [rows, setRows] = useState<DraftService[]>(
     report.services.map((s) => ({
@@ -213,7 +212,7 @@ function ServicesEditor({ report }: { report: MedicalReport }) {
       {rows.length === 0 ? (
         <p className="text-fg-muted text-sm">{t('health.reports.services.empty')}</p>
       ) : (
-        <Table data-testid="report-services-editor">
+        <Table data-testid="report-services-editor" className="min-w-[48rem]">
           <THead>
             <TR>
               <TH>{t('health.reports.services.service')}</TH>
@@ -325,6 +324,9 @@ export function ReportPage() {
   const canManage = usePermission('health.medical_report.manage');
   const commands = useReportCommands(reportId);
   const createReport = useCreateReport();
+  // Keep every editor locked until the mutation's awaited refetch has settled.
+  const busy =
+    Object.values(commands).some((command) => command.isPending) || createReport.isPending;
   const personName = usePersonName(query.data?.data.personId);
   const chain = useReportChain(query.data?.data.rootReportId);
 
@@ -427,6 +429,7 @@ export function ReportPage() {
               <Button
                 size="sm"
                 loading={commands.submit.isPending}
+                disabled={busy}
                 onClick={() => void run('submit')}
               >
                 {t('health.reports.commands.submit')}
@@ -437,6 +440,7 @@ export function ReportPage() {
                 size="sm"
                 variant="secondary"
                 loading={commands.cancel.isPending}
+                disabled={busy}
                 onClick={() => void run('cancel')}
               >
                 {t('health.reports.commands.cancel')}
@@ -447,6 +451,7 @@ export function ReportPage() {
                 size="sm"
                 variant="secondary"
                 loading={createReport.isPending}
+                disabled={busy}
                 onClick={() => void correct()}
               >
                 {t('health.reports.commands.correct')}
@@ -493,9 +498,9 @@ export function ReportPage() {
         <Card>
           <h2 className="text-base font-semibold">{t('health.reports.header.title')}</h2>
           {draft && canManage && clinical ? (
-            <div className="mt-3">
-              <HeaderForm report={report} onSaved={() => undefined} />
-            </div>
+            <fieldset disabled={busy} aria-busy={busy} className="mt-3 min-w-0">
+              <HeaderForm report={report} commands={commands} />
+            </fieldset>
           ) : (
             <dl className="mt-3 grid gap-x-6 gap-y-1 text-sm md:grid-cols-[minmax(0,12rem)_minmax(0,1fr)]">
               {clinical ? (
@@ -532,7 +537,9 @@ export function ReportPage() {
           <h2 className="text-base font-semibold">{t('health.reports.services.title')}</h2>
           <p className="text-fg-muted mb-3 mt-1 text-sm">{t('health.reports.services.intro')}</p>
           {draft && canManage && clinical ? (
-            <ServicesEditor key={report.rowVersion} report={report} />
+            <fieldset disabled={busy} aria-busy={busy} className="min-w-0">
+              <ServicesEditor key={report.rowVersion} report={report} commands={commands} />
+            </fieldset>
           ) : report.services.length === 0 ? (
             <p className="text-fg-muted text-sm">{t('health.reports.services.empty')}</p>
           ) : (

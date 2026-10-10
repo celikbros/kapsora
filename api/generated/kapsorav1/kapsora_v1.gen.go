@@ -19,6 +19,102 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for AcceptExistingInvitationRequestConfirmed.
+const (
+	AcceptExistingInvitationRequestConfirmedTrue AcceptExistingInvitationRequestConfirmed = true
+)
+
+// Valid indicates whether the value is a known member of the AcceptExistingInvitationRequestConfirmed enum.
+func (e AcceptExistingInvitationRequestConfirmed) Valid() bool {
+	switch e {
+	case AcceptExistingInvitationRequestConfirmedTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AcceptExistingInvitationResponseMembershipStatus.
+const (
+	AcceptExistingInvitationResponseMembershipStatusACTIVE AcceptExistingInvitationResponseMembershipStatus = "ACTIVE"
+)
+
+// Valid indicates whether the value is a known member of the AcceptExistingInvitationResponseMembershipStatus enum.
+func (e AcceptExistingInvitationResponseMembershipStatus) Valid() bool {
+	switch e {
+	case AcceptExistingInvitationResponseMembershipStatusACTIVE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AcceptNewInvitationRequestConfirmed.
+const (
+	AcceptNewInvitationRequestConfirmedTrue AcceptNewInvitationRequestConfirmed = true
+)
+
+// Valid indicates whether the value is a known member of the AcceptNewInvitationRequestConfirmed enum.
+func (e AcceptNewInvitationRequestConfirmed) Valid() bool {
+	switch e {
+	case AcceptNewInvitationRequestConfirmedTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AcceptNewInvitationResponseMembershipStatus.
+const (
+	AcceptNewInvitationResponseMembershipStatusACTIVE AcceptNewInvitationResponseMembershipStatus = "ACTIVE"
+)
+
+// Valid indicates whether the value is a known member of the AcceptNewInvitationResponseMembershipStatus enum.
+func (e AcceptNewInvitationResponseMembershipStatus) Valid() bool {
+	switch e {
+	case AcceptNewInvitationResponseMembershipStatusACTIVE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AssignTenantRoleGrantRequestReasonCode.
+const (
+	AssignTenantRoleGrantRequestReasonCodeDUTYASSIGNMENT AssignTenantRoleGrantRequestReasonCode = "DUTY_ASSIGNMENT"
+	AssignTenantRoleGrantRequestReasonCodeONBOARDING     AssignTenantRoleGrantRequestReasonCode = "ONBOARDING"
+)
+
+// Valid indicates whether the value is a known member of the AssignTenantRoleGrantRequestReasonCode enum.
+func (e AssignTenantRoleGrantRequestReasonCode) Valid() bool {
+	switch e {
+	case AssignTenantRoleGrantRequestReasonCodeDUTYASSIGNMENT:
+		return true
+	case AssignTenantRoleGrantRequestReasonCodeONBOARDING:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AssignTenantRoleGrantRequestScopeType.
+const (
+	AssignTenantRoleGrantRequestScopeTypeORGANIZATION AssignTenantRoleGrantRequestScopeType = "ORGANIZATION"
+	AssignTenantRoleGrantRequestScopeTypeTENANT       AssignTenantRoleGrantRequestScopeType = "TENANT"
+)
+
+// Valid indicates whether the value is a known member of the AssignTenantRoleGrantRequestScopeType enum.
+func (e AssignTenantRoleGrantRequestScopeType) Valid() bool {
+	switch e {
+	case AssignTenantRoleGrantRequestScopeTypeORGANIZATION:
+		return true
+	case AssignTenantRoleGrantRequestScopeTypeTENANT:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AssignmentPolicy.
 const (
 	AssignmentPolicyLEASTLOADED AssignmentPolicy = "LEAST_LOADED"
@@ -175,6 +271,21 @@ func (e BookingStatus) Valid() bool {
 	case BookingStatusNOSHOW:
 		return true
 	case BookingStatusPENDINGAPPROVAL:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CancelRoleChangeRequestReasonCode.
+const (
+	WITHDRAWN CancelRoleChangeRequestReasonCode = "WITHDRAWN"
+)
+
+// Valid indicates whether the value is a known member of the CancelRoleChangeRequestReasonCode enum.
+func (e CancelRoleChangeRequestReasonCode) Valid() bool {
+	switch e {
+	case WITHDRAWN:
 		return true
 	default:
 		return false
@@ -649,6 +760,75 @@ func (e CreatePersonRequestSexAtBirth) Valid() bool {
 	case CreatePersonRequestSexAtBirthMALE:
 		return true
 	case CreatePersonRequestSexAtBirthUNKNOWN:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateRoleChangeAssignRequestOperation.
+const (
+	CreateRoleChangeAssignRequestOperationASSIGN CreateRoleChangeAssignRequestOperation = "ASSIGN"
+)
+
+// Valid indicates whether the value is a known member of the CreateRoleChangeAssignRequestOperation enum.
+func (e CreateRoleChangeAssignRequestOperation) Valid() bool {
+	switch e {
+	case CreateRoleChangeAssignRequestOperationASSIGN:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateRoleChangeAssignRequestReasonCode.
+const (
+	CreateRoleChangeAssignRequestReasonCodeDUTYASSIGNMENT CreateRoleChangeAssignRequestReasonCode = "DUTY_ASSIGNMENT"
+	CreateRoleChangeAssignRequestReasonCodeONBOARDING     CreateRoleChangeAssignRequestReasonCode = "ONBOARDING"
+)
+
+// Valid indicates whether the value is a known member of the CreateRoleChangeAssignRequestReasonCode enum.
+func (e CreateRoleChangeAssignRequestReasonCode) Valid() bool {
+	switch e {
+	case CreateRoleChangeAssignRequestReasonCodeDUTYASSIGNMENT:
+		return true
+	case CreateRoleChangeAssignRequestReasonCodeONBOARDING:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateRoleChangeRevokeRequestOperation.
+const (
+	CreateRoleChangeRevokeRequestOperationREVOKE CreateRoleChangeRevokeRequestOperation = "REVOKE"
+)
+
+// Valid indicates whether the value is a known member of the CreateRoleChangeRevokeRequestOperation enum.
+func (e CreateRoleChangeRevokeRequestOperation) Valid() bool {
+	switch e {
+	case CreateRoleChangeRevokeRequestOperationREVOKE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateRoleChangeRevokeRequestReasonCode.
+const (
+	CreateRoleChangeRevokeRequestReasonCodeACCESSREVIEW    CreateRoleChangeRevokeRequestReasonCode = "ACCESS_REVIEW"
+	CreateRoleChangeRevokeRequestReasonCodeDUTYENDED       CreateRoleChangeRevokeRequestReasonCode = "DUTY_ENDED"
+	CreateRoleChangeRevokeRequestReasonCodeSECURITYCONCERN CreateRoleChangeRevokeRequestReasonCode = "SECURITY_CONCERN"
+)
+
+// Valid indicates whether the value is a known member of the CreateRoleChangeRevokeRequestReasonCode enum.
+func (e CreateRoleChangeRevokeRequestReasonCode) Valid() bool {
+	switch e {
+	case CreateRoleChangeRevokeRequestReasonCodeACCESSREVIEW:
+		return true
+	case CreateRoleChangeRevokeRequestReasonCodeDUTYENDED:
+		return true
+	case CreateRoleChangeRevokeRequestReasonCodeSECURITYCONCERN:
 		return true
 	default:
 		return false
@@ -1536,16 +1716,16 @@ func (e HealthAccessEventOutcome) Valid() bool {
 
 // Defines values for HealthCaseSensitivity.
 const (
-	SENSITIVE HealthCaseSensitivity = "SENSITIVE"
-	STANDARD  HealthCaseSensitivity = "STANDARD"
+	HealthCaseSensitivitySENSITIVE HealthCaseSensitivity = "SENSITIVE"
+	HealthCaseSensitivitySTANDARD  HealthCaseSensitivity = "STANDARD"
 )
 
 // Valid indicates whether the value is a known member of the HealthCaseSensitivity enum.
 func (e HealthCaseSensitivity) Valid() bool {
 	switch e {
-	case SENSITIVE:
+	case HealthCaseSensitivitySENSITIVE:
 		return true
-	case STANDARD:
+	case HealthCaseSensitivitySTANDARD:
 		return true
 	default:
 		return false
@@ -2112,19 +2292,19 @@ func (e NotificationMessageStatus) Valid() bool {
 
 // Defines values for NotificationRecipientType.
 const (
-	ACTOR        NotificationRecipientType = "ACTOR"
-	ORGANIZATION NotificationRecipientType = "ORGANIZATION"
-	PERSON       NotificationRecipientType = "PERSON"
+	NotificationRecipientTypeACTOR        NotificationRecipientType = "ACTOR"
+	NotificationRecipientTypeORGANIZATION NotificationRecipientType = "ORGANIZATION"
+	NotificationRecipientTypePERSON       NotificationRecipientType = "PERSON"
 )
 
 // Valid indicates whether the value is a known member of the NotificationRecipientType enum.
 func (e NotificationRecipientType) Valid() bool {
 	switch e {
-	case ACTOR:
+	case NotificationRecipientTypeACTOR:
 		return true
-	case ORGANIZATION:
+	case NotificationRecipientTypeORGANIZATION:
 		return true
-	case PERSON:
+	case NotificationRecipientTypePERSON:
 		return true
 	default:
 		return false
@@ -2908,6 +3088,36 @@ func (e PricingMethod) Valid() bool {
 	}
 }
 
+// Defines values for PrivilegedRoleAssignmentOptionRequiresApproval.
+const (
+	PrivilegedRoleAssignmentOptionRequiresApprovalTrue PrivilegedRoleAssignmentOptionRequiresApproval = true
+)
+
+// Valid indicates whether the value is a known member of the PrivilegedRoleAssignmentOptionRequiresApproval enum.
+func (e PrivilegedRoleAssignmentOptionRequiresApproval) Valid() bool {
+	switch e {
+	case PrivilegedRoleAssignmentOptionRequiresApprovalTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PrivilegedRoleAssignmentOptionScopeType.
+const (
+	PrivilegedRoleAssignmentOptionScopeTypeTENANT PrivilegedRoleAssignmentOptionScopeType = "TENANT"
+)
+
+// Valid indicates whether the value is a known member of the PrivilegedRoleAssignmentOptionScopeType enum.
+func (e PrivilegedRoleAssignmentOptionScopeType) Valid() bool {
+	switch e {
+	case PrivilegedRoleAssignmentOptionScopeTypeTENANT:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ProgramStatus.
 const (
 	ProgramStatusACTIVE    ProgramStatus = "ACTIVE"
@@ -3352,6 +3562,27 @@ func (e ReimbursementStatus) Valid() bool {
 	}
 }
 
+// Defines values for RejectRoleChangeRequestReasonCode.
+const (
+	INCORRECTACCESS RejectRoleChangeRequestReasonCode = "INCORRECT_ACCESS"
+	NOTJUSTIFIED    RejectRoleChangeRequestReasonCode = "NOT_JUSTIFIED"
+	STALEREQUEST    RejectRoleChangeRequestReasonCode = "STALE_REQUEST"
+)
+
+// Valid indicates whether the value is a known member of the RejectRoleChangeRequestReasonCode enum.
+func (e RejectRoleChangeRequestReasonCode) Valid() bool {
+	switch e {
+	case INCORRECTACCESS:
+		return true
+	case NOTJUSTIFIED:
+		return true
+	case STALEREQUEST:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ResolvePriceResultOutcome.
 const (
 	ResolvePriceResultOutcomeMATCHED        ResolvePriceResultOutcome = "MATCHED"
@@ -3388,6 +3619,231 @@ func (e ReviewNoShowRequestStatus) Valid() bool {
 	case ReviewNoShowRequestStatusDISPUTED:
 		return true
 	case ReviewNoShowRequestStatusREJECTED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RevokeTenantRoleGrantRequestReasonCode.
+const (
+	RevokeTenantRoleGrantRequestReasonCodeACCESSREVIEW    RevokeTenantRoleGrantRequestReasonCode = "ACCESS_REVIEW"
+	RevokeTenantRoleGrantRequestReasonCodeDUTYENDED       RevokeTenantRoleGrantRequestReasonCode = "DUTY_ENDED"
+	RevokeTenantRoleGrantRequestReasonCodeSECURITYCONCERN RevokeTenantRoleGrantRequestReasonCode = "SECURITY_CONCERN"
+)
+
+// Valid indicates whether the value is a known member of the RevokeTenantRoleGrantRequestReasonCode enum.
+func (e RevokeTenantRoleGrantRequestReasonCode) Valid() bool {
+	switch e {
+	case RevokeTenantRoleGrantRequestReasonCodeACCESSREVIEW:
+		return true
+	case RevokeTenantRoleGrantRequestReasonCodeDUTYENDED:
+		return true
+	case RevokeTenantRoleGrantRequestReasonCodeSECURITYCONCERN:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RoleAssignmentOptionScopeType.
+const (
+	RoleAssignmentOptionScopeTypeORGANIZATION RoleAssignmentOptionScopeType = "ORGANIZATION"
+	RoleAssignmentOptionScopeTypeTENANT       RoleAssignmentOptionScopeType = "TENANT"
+)
+
+// Valid indicates whether the value is a known member of the RoleAssignmentOptionScopeType enum.
+func (e RoleAssignmentOptionScopeType) Valid() bool {
+	switch e {
+	case RoleAssignmentOptionScopeTypeORGANIZATION:
+		return true
+	case RoleAssignmentOptionScopeTypeTENANT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RoleChangeAppliedGrantScopeType.
+const (
+	RoleChangeAppliedGrantScopeTypeTENANT RoleChangeAppliedGrantScopeType = "TENANT"
+)
+
+// Valid indicates whether the value is a known member of the RoleChangeAppliedGrantScopeType enum.
+func (e RoleChangeAppliedGrantScopeType) Valid() bool {
+	switch e {
+	case RoleChangeAppliedGrantScopeTypeTENANT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RoleChangeEligibilityCheckerAvailability.
+const (
+	RoleChangeEligibilityCheckerAvailabilityAVAILABLE         RoleChangeEligibilityCheckerAvailability = "AVAILABLE"
+	RoleChangeEligibilityCheckerAvailabilityNOELIGIBLECHECKER RoleChangeEligibilityCheckerAvailability = "NO_ELIGIBLE_CHECKER"
+)
+
+// Valid indicates whether the value is a known member of the RoleChangeEligibilityCheckerAvailability enum.
+func (e RoleChangeEligibilityCheckerAvailability) Valid() bool {
+	switch e {
+	case RoleChangeEligibilityCheckerAvailabilityAVAILABLE:
+		return true
+	case RoleChangeEligibilityCheckerAvailabilityNOELIGIBLECHECKER:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RoleChangePermissionSensitivity.
+const (
+	RoleChangePermissionSensitivityNORMAL     RoleChangePermissionSensitivity = "NORMAL"
+	RoleChangePermissionSensitivityPRIVILEGED RoleChangePermissionSensitivity = "PRIVILEGED"
+	RoleChangePermissionSensitivitySENSITIVE  RoleChangePermissionSensitivity = "SENSITIVE"
+)
+
+// Valid indicates whether the value is a known member of the RoleChangePermissionSensitivity enum.
+func (e RoleChangePermissionSensitivity) Valid() bool {
+	switch e {
+	case RoleChangePermissionSensitivityNORMAL:
+		return true
+	case RoleChangePermissionSensitivityPRIVILEGED:
+		return true
+	case RoleChangePermissionSensitivitySENSITIVE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RoleChangeRequestOperation.
+const (
+	RoleChangeRequestOperationASSIGN RoleChangeRequestOperation = "ASSIGN"
+	RoleChangeRequestOperationREVOKE RoleChangeRequestOperation = "REVOKE"
+)
+
+// Valid indicates whether the value is a known member of the RoleChangeRequestOperation enum.
+func (e RoleChangeRequestOperation) Valid() bool {
+	switch e {
+	case RoleChangeRequestOperationASSIGN:
+		return true
+	case RoleChangeRequestOperationREVOKE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RoleChangeRequestScopeType.
+const (
+	RoleChangeRequestScopeTypeTENANT RoleChangeRequestScopeType = "TENANT"
+)
+
+// Valid indicates whether the value is a known member of the RoleChangeRequestScopeType enum.
+func (e RoleChangeRequestScopeType) Valid() bool {
+	switch e {
+	case RoleChangeRequestScopeTypeTENANT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RoleChangeRequestStatus.
+const (
+	RoleChangeRequestStatusAPPROVED  RoleChangeRequestStatus = "APPROVED"
+	RoleChangeRequestStatusCANCELLED RoleChangeRequestStatus = "CANCELLED"
+	RoleChangeRequestStatusPENDING   RoleChangeRequestStatus = "PENDING"
+	RoleChangeRequestStatusREJECTED  RoleChangeRequestStatus = "REJECTED"
+)
+
+// Valid indicates whether the value is a known member of the RoleChangeRequestStatus enum.
+func (e RoleChangeRequestStatus) Valid() bool {
+	switch e {
+	case RoleChangeRequestStatusAPPROVED:
+		return true
+	case RoleChangeRequestStatusCANCELLED:
+		return true
+	case RoleChangeRequestStatusPENDING:
+		return true
+	case RoleChangeRequestStatusREJECTED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RoleChangeRequestDetailCheckerAvailability.
+const (
+	RoleChangeRequestDetailCheckerAvailabilityAVAILABLE         RoleChangeRequestDetailCheckerAvailability = "AVAILABLE"
+	RoleChangeRequestDetailCheckerAvailabilityNOELIGIBLECHECKER RoleChangeRequestDetailCheckerAvailability = "NO_ELIGIBLE_CHECKER"
+)
+
+// Valid indicates whether the value is a known member of the RoleChangeRequestDetailCheckerAvailability enum.
+func (e RoleChangeRequestDetailCheckerAvailability) Valid() bool {
+	switch e {
+	case RoleChangeRequestDetailCheckerAvailabilityAVAILABLE:
+		return true
+	case RoleChangeRequestDetailCheckerAvailabilityNOELIGIBLECHECKER:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RoleChangeRequestSummaryOperation.
+const (
+	RoleChangeRequestSummaryOperationASSIGN RoleChangeRequestSummaryOperation = "ASSIGN"
+	RoleChangeRequestSummaryOperationREVOKE RoleChangeRequestSummaryOperation = "REVOKE"
+)
+
+// Valid indicates whether the value is a known member of the RoleChangeRequestSummaryOperation enum.
+func (e RoleChangeRequestSummaryOperation) Valid() bool {
+	switch e {
+	case RoleChangeRequestSummaryOperationASSIGN:
+		return true
+	case RoleChangeRequestSummaryOperationREVOKE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RoleChangeRequestSummaryScopeType.
+const (
+	RoleChangeRequestSummaryScopeTypeTENANT RoleChangeRequestSummaryScopeType = "TENANT"
+)
+
+// Valid indicates whether the value is a known member of the RoleChangeRequestSummaryScopeType enum.
+func (e RoleChangeRequestSummaryScopeType) Valid() bool {
+	switch e {
+	case RoleChangeRequestSummaryScopeTypeTENANT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RoleChangeRequestSummaryStatus.
+const (
+	RoleChangeRequestSummaryStatusAPPROVED  RoleChangeRequestSummaryStatus = "APPROVED"
+	RoleChangeRequestSummaryStatusCANCELLED RoleChangeRequestSummaryStatus = "CANCELLED"
+	RoleChangeRequestSummaryStatusPENDING   RoleChangeRequestSummaryStatus = "PENDING"
+	RoleChangeRequestSummaryStatusREJECTED  RoleChangeRequestSummaryStatus = "REJECTED"
+)
+
+// Valid indicates whether the value is a known member of the RoleChangeRequestSummaryStatus enum.
+func (e RoleChangeRequestSummaryStatus) Valid() bool {
+	switch e {
+	case RoleChangeRequestSummaryStatusAPPROVED:
+		return true
+	case RoleChangeRequestSummaryStatusCANCELLED:
+		return true
+	case RoleChangeRequestSummaryStatusPENDING:
+		return true
+	case RoleChangeRequestSummaryStatusREJECTED:
 		return true
 	default:
 		return false
@@ -4012,6 +4468,27 @@ func (e StaySegmentType) Valid() bool {
 	}
 }
 
+// Defines values for SuspendTenantUserRequestReasonCode.
+const (
+	SuspendTenantUserRequestReasonCodeACCESSREVIEW    SuspendTenantUserRequestReasonCode = "ACCESS_REVIEW"
+	SuspendTenantUserRequestReasonCodeSECURITYCONCERN SuspendTenantUserRequestReasonCode = "SECURITY_CONCERN"
+	SuspendTenantUserRequestReasonCodeSTAFFDEPARTURE  SuspendTenantUserRequestReasonCode = "STAFF_DEPARTURE"
+)
+
+// Valid indicates whether the value is a known member of the SuspendTenantUserRequestReasonCode enum.
+func (e SuspendTenantUserRequestReasonCode) Valid() bool {
+	switch e {
+	case SuspendTenantUserRequestReasonCodeACCESSREVIEW:
+		return true
+	case SuspendTenantUserRequestReasonCodeSECURITYCONCERN:
+		return true
+	case SuspendTenantUserRequestReasonCodeSTAFFDEPARTURE:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TaxBehaviour.
 const (
 	EXCLUSIVE TaxBehaviour = "EXCLUSIVE"
@@ -4027,6 +4504,36 @@ func (e TaxBehaviour) Valid() bool {
 	case EXEMPT:
 		return true
 	case INCLUSIVE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TenantAssignedRoleScopeType.
+const (
+	TenantAssignedRoleScopeTypeORGANIZATION     TenantAssignedRoleScopeType = "ORGANIZATION"
+	TenantAssignedRoleScopeTypePERSON           TenantAssignedRoleScopeType = "PERSON"
+	TenantAssignedRoleScopeTypePROGRAM          TenantAssignedRoleScopeType = "PROGRAM"
+	TenantAssignedRoleScopeTypePROVIDERLOCATION TenantAssignedRoleScopeType = "PROVIDER_LOCATION"
+	TenantAssignedRoleScopeTypeTENANT           TenantAssignedRoleScopeType = "TENANT"
+	TenantAssignedRoleScopeTypeWORKQUEUE        TenantAssignedRoleScopeType = "WORK_QUEUE"
+)
+
+// Valid indicates whether the value is a known member of the TenantAssignedRoleScopeType enum.
+func (e TenantAssignedRoleScopeType) Valid() bool {
+	switch e {
+	case TenantAssignedRoleScopeTypeORGANIZATION:
+		return true
+	case TenantAssignedRoleScopeTypePERSON:
+		return true
+	case TenantAssignedRoleScopeTypePROGRAM:
+		return true
+	case TenantAssignedRoleScopeTypePROVIDERLOCATION:
+		return true
+	case TenantAssignedRoleScopeTypeTENANT:
+		return true
+	case TenantAssignedRoleScopeTypeWORKQUEUE:
 		return true
 	default:
 		return false
@@ -4054,6 +4561,78 @@ func (e TenantContextApps) Valid() bool {
 	}
 }
 
+// Defines values for TenantInvitationDeliveryStatus.
+const (
+	TenantInvitationDeliveryStatusCANCELLED TenantInvitationDeliveryStatus = "CANCELLED"
+	TenantInvitationDeliveryStatusFAILED    TenantInvitationDeliveryStatus = "FAILED"
+	TenantInvitationDeliveryStatusQUEUED    TenantInvitationDeliveryStatus = "QUEUED"
+	TenantInvitationDeliveryStatusSENT      TenantInvitationDeliveryStatus = "SENT"
+)
+
+// Valid indicates whether the value is a known member of the TenantInvitationDeliveryStatus enum.
+func (e TenantInvitationDeliveryStatus) Valid() bool {
+	switch e {
+	case TenantInvitationDeliveryStatusCANCELLED:
+		return true
+	case TenantInvitationDeliveryStatusFAILED:
+		return true
+	case TenantInvitationDeliveryStatusQUEUED:
+		return true
+	case TenantInvitationDeliveryStatusSENT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TenantInvitationStatus.
+const (
+	TenantInvitationStatusACCEPTED  TenantInvitationStatus = "ACCEPTED"
+	TenantInvitationStatusCANCELLED TenantInvitationStatus = "CANCELLED"
+	TenantInvitationStatusEXPIRED   TenantInvitationStatus = "EXPIRED"
+	TenantInvitationStatusPENDING   TenantInvitationStatus = "PENDING"
+)
+
+// Valid indicates whether the value is a known member of the TenantInvitationStatus enum.
+func (e TenantInvitationStatus) Valid() bool {
+	switch e {
+	case TenantInvitationStatusACCEPTED:
+		return true
+	case TenantInvitationStatusCANCELLED:
+		return true
+	case TenantInvitationStatusEXPIRED:
+		return true
+	case TenantInvitationStatusPENDING:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TenantMembershipStatus.
+const (
+	TenantMembershipStatusACTIVE    TenantMembershipStatus = "ACTIVE"
+	TenantMembershipStatusPENDING   TenantMembershipStatus = "PENDING"
+	TenantMembershipStatusREVOKED   TenantMembershipStatus = "REVOKED"
+	TenantMembershipStatusSUSPENDED TenantMembershipStatus = "SUSPENDED"
+)
+
+// Valid indicates whether the value is a known member of the TenantMembershipStatus enum.
+func (e TenantMembershipStatus) Valid() bool {
+	switch e {
+	case TenantMembershipStatusACTIVE:
+		return true
+	case TenantMembershipStatusPENDING:
+		return true
+	case TenantMembershipStatusREVOKED:
+		return true
+	case TenantMembershipStatusSUSPENDED:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TenantSummaryStatus.
 const (
 	TenantSummaryStatusACTIVE       TenantSummaryStatus = "ACTIVE"
@@ -4072,6 +4651,51 @@ func (e TenantSummaryStatus) Valid() bool {
 	case TenantSummaryStatusPROVISIONING:
 		return true
 	case TenantSummaryStatusSUSPENDED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TenantUserActorStatus.
+const (
+	TenantUserActorStatusACTIVE    TenantUserActorStatus = "ACTIVE"
+	TenantUserActorStatusCLOSED    TenantUserActorStatus = "CLOSED"
+	TenantUserActorStatusINVITED   TenantUserActorStatus = "INVITED"
+	TenantUserActorStatusSUSPENDED TenantUserActorStatus = "SUSPENDED"
+)
+
+// Valid indicates whether the value is a known member of the TenantUserActorStatus enum.
+func (e TenantUserActorStatus) Valid() bool {
+	switch e {
+	case TenantUserActorStatusACTIVE:
+		return true
+	case TenantUserActorStatusCLOSED:
+		return true
+	case TenantUserActorStatusINVITED:
+		return true
+	case TenantUserActorStatusSUSPENDED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TenantUserActorType.
+const (
+	HUMAN          TenantUserActorType = "HUMAN"
+	SERVICEACCOUNT TenantUserActorType = "SERVICE_ACCOUNT"
+	SYSTEM         TenantUserActorType = "SYSTEM"
+)
+
+// Valid indicates whether the value is a known member of the TenantUserActorType enum.
+func (e TenantUserActorType) Valid() bool {
+	switch e {
+	case HUMAN:
+		return true
+	case SERVICEACCOUNT:
+		return true
+	case SYSTEM:
 		return true
 	default:
 		return false
@@ -4423,6 +5047,45 @@ func (e AppHeader) Valid() bool {
 	case AppHeaderMember:
 		return true
 	case AppHeaderProvider:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InvitationRequestMarker.
+const (
+	InvitationRequestMarkerN1 InvitationRequestMarker = "1"
+)
+
+// Valid indicates whether the value is a known member of the InvitationRequestMarker enum.
+func (e InvitationRequestMarker) Valid() bool {
+	switch e {
+	case InvitationRequestMarkerN1:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListRoleChangeRequestsParamsStatus.
+const (
+	ListRoleChangeRequestsParamsStatusAPPROVED  ListRoleChangeRequestsParamsStatus = "APPROVED"
+	ListRoleChangeRequestsParamsStatusCANCELLED ListRoleChangeRequestsParamsStatus = "CANCELLED"
+	ListRoleChangeRequestsParamsStatusPENDING   ListRoleChangeRequestsParamsStatus = "PENDING"
+	ListRoleChangeRequestsParamsStatusREJECTED  ListRoleChangeRequestsParamsStatus = "REJECTED"
+)
+
+// Valid indicates whether the value is a known member of the ListRoleChangeRequestsParamsStatus enum.
+func (e ListRoleChangeRequestsParamsStatus) Valid() bool {
+	switch e {
+	case ListRoleChangeRequestsParamsStatusAPPROVED:
+		return true
+	case ListRoleChangeRequestsParamsStatusCANCELLED:
+		return true
+	case ListRoleChangeRequestsParamsStatusPENDING:
+		return true
+	case ListRoleChangeRequestsParamsStatusREJECTED:
 		return true
 	default:
 		return false
@@ -5392,6 +6055,51 @@ func (e PutStaySegmentsParamsXAccessProjection) Valid() bool {
 	}
 }
 
+// Defines values for AcceptNewInvitationParamsXInvitationRequest.
+const (
+	AcceptNewInvitationParamsXInvitationRequestN1 AcceptNewInvitationParamsXInvitationRequest = "1"
+)
+
+// Valid indicates whether the value is a known member of the AcceptNewInvitationParamsXInvitationRequest enum.
+func (e AcceptNewInvitationParamsXInvitationRequest) Valid() bool {
+	switch e {
+	case AcceptNewInvitationParamsXInvitationRequestN1:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RecoverNewInvitationAcceptanceParamsXInvitationRequest.
+const (
+	RecoverNewInvitationAcceptanceParamsXInvitationRequestN1 RecoverNewInvitationAcceptanceParamsXInvitationRequest = "1"
+)
+
+// Valid indicates whether the value is a known member of the RecoverNewInvitationAcceptanceParamsXInvitationRequest enum.
+func (e RecoverNewInvitationAcceptanceParamsXInvitationRequest) Valid() bool {
+	switch e {
+	case RecoverNewInvitationAcceptanceParamsXInvitationRequestN1:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InspectNewInvitationParamsXInvitationRequest.
+const (
+	InspectNewInvitationParamsXInvitationRequestN1 InspectNewInvitationParamsXInvitationRequest = "1"
+)
+
+// Valid indicates whether the value is a known member of the InspectNewInvitationParamsXInvitationRequest enum.
+func (e InspectNewInvitationParamsXInvitationRequest) Valid() bool {
+	switch e {
+	case InspectNewInvitationParamsXInvitationRequestN1:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for GetCurrentUserContextParamsXKapsoraApp.
 const (
 	GetCurrentUserContextParamsXKapsoraAppBackoffice GetCurrentUserContextParamsXKapsoraApp = "backoffice"
@@ -5599,6 +6307,53 @@ func (e SwitchTenantParamsXKapsoraApp) Valid() bool {
 	}
 }
 
+// AcceptExistingInvitationRequest defines model for AcceptExistingInvitationRequest.
+type AcceptExistingInvitationRequest struct {
+	Code      string                                   `json:"code"`
+	Confirmed AcceptExistingInvitationRequestConfirmed `json:"confirmed"`
+}
+
+// AcceptExistingInvitationRequestConfirmed defines model for AcceptExistingInvitationRequest.Confirmed.
+type AcceptExistingInvitationRequestConfirmed bool
+
+// AcceptExistingInvitationResponse defines model for AcceptExistingInvitationResponse.
+type AcceptExistingInvitationResponse struct {
+	// AccessPending True when the accepted membership currently has no effective role permissions.
+	AccessPending     bool                                             `json:"accessPending"`
+	MembershipId      openapi_types.UUID                               `json:"membershipId"`
+	MembershipStatus  AcceptExistingInvitationResponseMembershipStatus `json:"membershipStatus"`
+	TenantDisplayName string                                           `json:"tenantDisplayName"`
+	TenantId          openapi_types.UUID                               `json:"tenantId"`
+}
+
+// AcceptExistingInvitationResponseMembershipStatus defines model for AcceptExistingInvitationResponse.MembershipStatus.
+type AcceptExistingInvitationResponseMembershipStatus string
+
+// AcceptNewInvitationRequest defines model for AcceptNewInvitationRequest.
+type AcceptNewInvitationRequest struct {
+	Code        string                              `json:"code"`
+	Confirmed   AcceptNewInvitationRequestConfirmed `json:"confirmed"`
+	DisplayName string                              `json:"displayName"`
+	Password    *string                             `json:"password,omitempty"`
+}
+
+// AcceptNewInvitationRequestConfirmed defines model for AcceptNewInvitationRequest.Confirmed.
+type AcceptNewInvitationRequestConfirmed bool
+
+// AcceptNewInvitationResponse defines model for AcceptNewInvitationResponse.
+type AcceptNewInvitationResponse struct {
+	AccessPending     bool                                        `json:"accessPending"`
+	LoginHandle       string                                      `json:"loginHandle"`
+	MembershipId      openapi_types.UUID                          `json:"membershipId"`
+	MembershipStatus  AcceptNewInvitationResponseMembershipStatus `json:"membershipStatus"`
+	RecoveryExpiresAt time.Time                                   `json:"recoveryExpiresAt"`
+	TenantDisplayName string                                      `json:"tenantDisplayName"`
+	TenantId          openapi_types.UUID                          `json:"tenantId"`
+}
+
+// AcceptNewInvitationResponseMembershipStatus defines model for AcceptNewInvitationResponse.MembershipStatus.
+type AcceptNewInvitationResponseMembershipStatus string
+
 // AddWorkItemComment defines model for AddWorkItemComment.
 type AddWorkItemComment struct {
 	Body string `json:"body"`
@@ -5659,6 +6414,23 @@ type ApprovalPolicyInput struct {
 type ApprovalPolicyList struct {
 	Items []ApprovalPolicy `json:"items"`
 }
+
+// ApproveRoleChangeRequest defines model for ApproveRoleChangeRequest.
+type ApproveRoleChangeRequest = map[string]interface{}
+
+// AssignTenantRoleGrantRequest defines model for AssignTenantRoleGrantRequest.
+type AssignTenantRoleGrantRequest struct {
+	OrganizationRelationshipId *openapi_types.UUID                    `json:"organizationRelationshipId,omitempty"`
+	ReasonCode                 AssignTenantRoleGrantRequestReasonCode `json:"reasonCode"`
+	RoleCode                   string                                 `json:"roleCode"`
+	ScopeType                  AssignTenantRoleGrantRequestScopeType  `json:"scopeType"`
+}
+
+// AssignTenantRoleGrantRequestReasonCode defines model for AssignTenantRoleGrantRequest.ReasonCode.
+type AssignTenantRoleGrantRequestReasonCode string
+
+// AssignTenantRoleGrantRequestScopeType defines model for AssignTenantRoleGrantRequest.ScopeType.
+type AssignTenantRoleGrantRequestScopeType string
 
 // AssignmentPolicy How work is meant to reach a person in this queue. MANUAL is the only one the
 // commands implement today: ROUND_ROBIN and LEAST_LOADED are recorded so a queue can
@@ -6188,6 +6960,14 @@ type CancelInpatientStay struct {
 	ReasonText *string `json:"reasonText,omitempty"`
 }
 
+// CancelRoleChangeRequest defines model for CancelRoleChangeRequest.
+type CancelRoleChangeRequest struct {
+	ReasonCode CancelRoleChangeRequestReasonCode `json:"reasonCode"`
+}
+
+// CancelRoleChangeRequestReasonCode defines model for CancelRoleChangeRequest.ReasonCode.
+type CancelRoleChangeRequestReasonCode string
+
 // CancelSettlement Why this settlement is being withdrawn. The code is what a report counts; the text is
 // free prose for the person who reads the row afterwards.
 type CancelSettlement struct {
@@ -6204,6 +6984,13 @@ type Cancellation struct {
 	CancelledAt  time.Time           `json:"cancelledAt"`
 	CancelledBy  *openapi_types.UUID `json:"cancelledBy,omitempty"`
 	CurrencyCode string              `json:"currencyCode"`
+
+	// EntitlementEffect Exact service-night and entitlement-unit effects of this cancellation. On a
+	// preview these are prospective under the current authorization state; the command
+	// recomputes them in its transaction. A cancellation record carries the actual
+	// committed effects. Absent means exact evidence is unavailable or was not recorded,
+	// not zero. These quantities do not change the frozen policy's monetary charge.
+	EntitlementEffect *CancellationEntitlementEffect `json:"entitlementEffect,omitempty"`
 
 	// FeeAmount Exact decimal as a string; nothing here passes through a float.
 	FeeAmount string             `json:"feeAmount"`
@@ -6222,7 +7009,29 @@ type Cancellation struct {
 	// owed nothing.
 	PolicySnapshot *LodgingPolicySnapshot `json:"policySnapshot,omitempty"`
 	ReasonCode     string                 `json:"reasonCode"`
-	ReleasedNights int                    `json:"releasedNights"`
+
+	// ReleasedNights Whole-number portion of exact released service nights when entitlementEffect
+	// is present. Historical records without that field retain their legacy figure.
+	ReleasedNights int `json:"releasedNights"`
+}
+
+// CancellationEntitlementEffect Exact service-night and entitlement-unit effects of this cancellation. On a
+// preview these are prospective under the current authorization state; the command
+// recomputes them in its transaction. A cancellation record carries the actual
+// committed effects. Absent means exact evidence is unavailable or was not recorded,
+// not zero. These quantities do not change the frozen policy's monetary charge.
+type CancellationEntitlementEffect struct {
+	// ConsumedEntitlementUnits Exact units actually drawn from the original entitlement reservation.
+	ConsumedEntitlementUnits string `json:"consumedEntitlementUnits"`
+
+	// ConsumedServiceNights Exact service nights consumed by this cancellation, not policy charge nights.
+	ConsumedServiceNights string `json:"consumedServiceNights"`
+
+	// ReleasedEntitlementUnits Exact units actually returned from the original entitlement reservation.
+	ReleasedEntitlementUnits string `json:"releasedEntitlementUnits"`
+
+	// ReleasedServiceNights Exact unused service nights returned by this cancellation.
+	ReleasedServiceNights string `json:"releasedServiceNights"`
 }
 
 // CancellationPreview The booking, and what cancelling it now would cost.
@@ -6239,18 +7048,25 @@ type CancellationPreview struct {
 	Booking Booking `json:"booking"`
 
 	// Quote What a cancellation costs and gives back, computed from the booking's own frozen
-	// policy and its own night amounts. Every figure is an exact decimal string: these
-	// numbers reach a settlement, and a fee two systems disagree about by a kuruş is a fee
-	// nobody can invoice.
+	// policy and its own night amounts. Monetary amounts are exact decimal strings.
+	// Optional entitlementEffect projects the current authorization's exact effects;
+	// these prospective quantities are recomputed by the cancellation command.
 	Quote CancellationQuote `json:"quote"`
 }
 
 // CancellationQuote What a cancellation costs and gives back, computed from the booking's own frozen
-// policy and its own night amounts. Every figure is an exact decimal string: these
-// numbers reach a settlement, and a fee two systems disagree about by a kuruş is a fee
-// nobody can invoice.
+// policy and its own night amounts. Monetary amounts are exact decimal strings.
+// Optional entitlementEffect projects the current authorization's exact effects;
+// these prospective quantities are recomputed by the cancellation command.
 type CancellationQuote struct {
 	CurrencyCode string `json:"currencyCode"`
+
+	// EntitlementEffect Exact service-night and entitlement-unit effects of this cancellation. On a
+	// preview these are prospective under the current authorization state; the command
+	// recomputes them in its transaction. A cancellation record carries the actual
+	// committed effects. Absent means exact evidence is unavailable or was not recorded,
+	// not zero. These quantities do not change the frozen policy's monetary charge.
+	EntitlementEffect *CancellationEntitlementEffect `json:"entitlementEffect,omitempty"`
 
 	// FeeAmount Exact decimal as a string; nothing here passes through a float.
 	FeeAmount string `json:"feeAmount"`
@@ -6275,10 +7091,10 @@ type CancellationQuote struct {
 	// PERCENT policy, which charges a share of the member's own amount instead.
 	PenaltyNights int `json:"penaltyNights"`
 
-	// ReleasedNights The nights that go back to the plan: the covered nights of the frozen quote less
-	// whatever the penalty spends. The penalty is capped at the covered nights, because
-	// a policy charging three nights against a plan that carried two cannot take a
-	// third from a balance it never held.
+	// ReleasedNights When entitlementEffect is present, the whole-number portion of its exact
+	// releasedServiceNights. Prefer the exact field when displaying a returned right.
+	// Otherwise this retains the legacy frozen-quote calculation and is not newly
+	// verified evidence of the current authorization's actual release.
 	ReleasedNights int `json:"releasedNights"`
 }
 
@@ -6302,9 +7118,9 @@ type CancellationResult struct {
 	Cancellation Cancellation `json:"cancellation"`
 
 	// Quote What a cancellation costs and gives back, computed from the booking's own frozen
-	// policy and its own night amounts. Every figure is an exact decimal string: these
-	// numbers reach a settlement, and a fee two systems disagree about by a kuruş is a fee
-	// nobody can invoice.
+	// policy and its own night amounts. Monetary amounts are exact decimal strings.
+	// Optional entitlementEffect projects the current authorization's exact effects;
+	// these prospective quantities are recomputed by the cancellation command.
 	Quote CancellationQuote `json:"quote"`
 }
 
@@ -6459,6 +7275,44 @@ type ClaimAdjustmentSource string
 // `REVERSAL` is not a fourth kind of money — it is the negative of one of the three, and
 // it is the only way an adjustment is ever undone.
 type ClaimAdjustmentType string
+
+// ClaimCaseCharge defines model for ClaimCaseCharge.
+type ClaimCaseCharge struct {
+	LineAmount          string             `json:"lineAmount"`
+	Quantity            string             `json:"quantity"`
+	ServiceDefinitionId openapi_types.UUID `json:"serviceDefinitionId"`
+}
+
+// ClaimCaseSource defines model for ClaimCaseSource.
+type ClaimCaseSource struct {
+	CaseId            openapi_types.UUID `json:"caseId"`
+	OpenedAt          time.Time          `json:"openedAt"`
+	PersonDisplayName string             `json:"personDisplayName"`
+	RequestReference  string             `json:"requestReference"`
+	RowVersion        int64              `json:"rowVersion"`
+	ServiceDate       openapi_types.Date `json:"serviceDate"`
+}
+
+// ClaimCaseSourceDetail defines model for ClaimCaseSourceDetail.
+type ClaimCaseSourceDetail struct {
+	Lines  []ClaimCaseSourceLine `json:"lines"`
+	Source ClaimCaseSource       `json:"source"`
+}
+
+// ClaimCaseSourceLine defines model for ClaimCaseSourceLine.
+type ClaimCaseSourceLine struct {
+	Quantity            string             `json:"quantity"`
+	ServiceCode         string             `json:"serviceCode"`
+	ServiceDefinitionId openapi_types.UUID `json:"serviceDefinitionId"`
+	ServiceName         string             `json:"serviceName"`
+	UnitType            string             `json:"unitType"`
+}
+
+// ClaimCaseSourcePage defines model for ClaimCaseSourcePage.
+type ClaimCaseSourcePage struct {
+	Items      []ClaimCaseSource `json:"items"`
+	NextCursor *string           `json:"nextCursor,omitempty"`
+}
 
 // ClaimDecisionKind What was decided about one line. CUT is a reduction the payer applied to an otherwise
 // valid line; PARTIALLY_APPROVED is a smaller quantity than was claimed. They are two
@@ -6657,7 +7511,8 @@ type ClaimReturnReason struct {
 }
 
 // ClaimSourceType What a claim was raised from. It is one vocabulary for every vertical, so a settlement
-// never has to know which module wrote a claim.
+// never has to know which module wrote a claim. Inpatient claims use HEALTH_CASE
+// with the case ID as sourceId; the exact stay and authorization allocation remain internal.
 type ClaimSourceType string
 
 // ClaimStatus The claim lifecycle of v1.2 12.5. INVOICED, BATCHED and SETTLED are declared because
@@ -7012,6 +7867,11 @@ type CreateClaimAdjustment struct {
 	ReversesAdjustmentId *openapi_types.UUID `json:"reversesAdjustmentId,omitempty"`
 }
 
+// CreateClaimFromCase defines model for CreateClaimFromCase.
+type CreateClaimFromCase struct {
+	Lines []ClaimCaseCharge `json:"lines"`
+}
+
 // CreateCodeSystemRequest defines model for CreateCodeSystemRequest.
 type CreateCodeSystemRequest struct {
 	// Authority Publisher of a code system; TENANT marks a sponsor-internal system.
@@ -7157,6 +8017,7 @@ type CreateHoldRequest struct {
 
 	// ProgramId Narrows a member with two programs to one of them. It is honoured, never trusted:
 	// a program the person is not enrolled in on the first night selects nothing.
+	// More than one active enrollment in that program still refuses the hold.
 	ProgramId  *openapi_types.UUID `json:"programId,omitempty"`
 	RoomTypeId openapi_types.UUID  `json:"roomTypeId"`
 }
@@ -7506,6 +8367,39 @@ type CreateRelationshipRequest struct {
 	ValidTo          *openapi_types.Date `json:"validTo,omitempty"`
 }
 
+// CreateRoleChangeAssignRequest defines model for CreateRoleChangeAssignRequest.
+type CreateRoleChangeAssignRequest struct {
+	ConfigurationHash string                                  `json:"configurationHash"`
+	Operation         CreateRoleChangeAssignRequestOperation  `json:"operation"`
+	ReasonCode        CreateRoleChangeAssignRequestReasonCode `json:"reasonCode"`
+	RoleCode          string                                  `json:"roleCode"`
+}
+
+// CreateRoleChangeAssignRequestOperation defines model for CreateRoleChangeAssignRequest.Operation.
+type CreateRoleChangeAssignRequestOperation string
+
+// CreateRoleChangeAssignRequestReasonCode defines model for CreateRoleChangeAssignRequest.ReasonCode.
+type CreateRoleChangeAssignRequestReasonCode string
+
+// CreateRoleChangeRequest defines model for CreateRoleChangeRequest.
+type CreateRoleChangeRequest struct {
+	union json.RawMessage
+}
+
+// CreateRoleChangeRevokeRequest defines model for CreateRoleChangeRevokeRequest.
+type CreateRoleChangeRevokeRequest struct {
+	ConfigurationHash string                                  `json:"configurationHash"`
+	GrantId           openapi_types.UUID                      `json:"grantId"`
+	Operation         CreateRoleChangeRevokeRequestOperation  `json:"operation"`
+	ReasonCode        CreateRoleChangeRevokeRequestReasonCode `json:"reasonCode"`
+}
+
+// CreateRoleChangeRevokeRequestOperation defines model for CreateRoleChangeRevokeRequest.Operation.
+type CreateRoleChangeRevokeRequestOperation string
+
+// CreateRoleChangeRevokeRequestReasonCode defines model for CreateRoleChangeRevokeRequest.ReasonCode.
+type CreateRoleChangeRevokeRequestReasonCode string
+
 // CreateRoomType defines model for CreateRoomType.
 type CreateRoomType struct {
 	Attributes          *map[string]interface{} `json:"attributes,omitempty"`
@@ -7599,6 +8493,11 @@ type CreateServiceRequest struct {
 
 	// SupersedesRequestId The rejected request this one replaces; a rejection is never reopened.
 	SupersedesRequestId *openapi_types.UUID `json:"supersedesRequestId,omitempty"`
+}
+
+// CreateTenantInvitationRequest defines model for CreateTenantInvitationRequest.
+type CreateTenantInvitationRequest struct {
+	Email openapi_types.Email `json:"email"`
 }
 
 // CreateUpload defines model for CreateUpload.
@@ -8096,6 +8995,11 @@ type Encounter struct {
 
 // EncounterType defines model for EncounterType.
 type EncounterType string
+
+// EndEncounter defines model for EndEncounter.
+type EndEncounter struct {
+	EndedAt time.Time `json:"endedAt"`
+}
 
 // EndPeriodCommand defines model for EndPeriodCommand.
 type EndPeriodCommand struct {
@@ -8655,6 +9559,18 @@ type InpatientStayPage struct {
 // when the reviewer decides its preauthorization request.
 type InpatientStayStatus string
 
+// InspectInvitationRequest defines model for InspectInvitationRequest.
+type InspectInvitationRequest struct {
+	Code string `json:"code"`
+}
+
+// InspectInvitationResponse defines model for InspectInvitationResponse.
+type InspectInvitationResponse struct {
+	ExpiresAt         time.Time              `json:"expiresAt"`
+	InvitationStatus  TenantInvitationStatus `json:"invitationStatus"`
+	TenantDisplayName string                 `json:"tenantDisplayName"`
+}
+
 // InventoryDay defines model for InventoryDay.
 type InventoryDay struct {
 	// Allotted False for a night this provider has opened nothing on. It is not the same
@@ -8671,6 +9587,12 @@ type InventoryDay struct {
 	RowVersion *int64             `json:"rowVersion,omitempty"`
 	StayDate   openapi_types.Date `json:"stayDate"`
 	UpdatedAt  *time.Time         `json:"updatedAt,omitempty"`
+}
+
+// InvitationAcceptanceReceiptRequest defines model for InvitationAcceptanceReceiptRequest.
+type InvitationAcceptanceReceiptRequest struct {
+	Code     string  `json:"code"`
+	Password *string `json:"password,omitempty"`
 }
 
 // Invoice An invoice the provider raised elsewhere, as KAPSORA records it, with the claims it
@@ -8898,7 +9820,11 @@ type JoinWaitlistRequest struct {
 	// Priority The desk's own ordering. A member joining for themselves is placed at zero
 	// whatever they send, because a queue a member can push themselves up is not a
 	// queue.
-	Priority   *int                `json:"priority,omitempty"`
+	Priority *int `json:"priority,omitempty"`
+
+	// ProgramId Narrows the queue entry to one program active on the first night. More than
+	// one active enrollment within that program still refuses the entry with
+	// ENROLLMENT_MULTIPLE.
 	ProgramId  *openapi_types.UUID `json:"programId,omitempty"`
 	PropertyId openapi_types.UUID  `json:"propertyId"`
 
@@ -10311,6 +11237,18 @@ type PriceListList struct {
 // or a category above it in the catalog tree.
 type PriceMatchTarget string
 
+// PriceProviderOption defines model for PriceProviderOption.
+type PriceProviderOption struct {
+	OrganizationName  string             `json:"organizationName"`
+	ProviderProfileId openapi_types.UUID `json:"providerProfileId"`
+}
+
+// PriceProviderOptionPage defines model for PriceProviderOptionPage.
+type PriceProviderOptionPage struct {
+	Items      []PriceProviderOption `json:"items"`
+	NextCursor *string               `json:"nextCursor"`
+}
+
 // PriceQuote defines model for PriceQuote.
 type PriceQuote struct {
 	ContractAmount string `json:"contractAmount"`
@@ -10437,9 +11375,45 @@ type PriceQuoteRequestItem struct {
 	ServiceDefinitionId *openapi_types.UUID `json:"serviceDefinitionId,omitempty"`
 }
 
+// PriceServiceOption defines model for PriceServiceOption.
+type PriceServiceOption struct {
+	Code                string             `json:"code"`
+	Name                string             `json:"name"`
+	ServiceDefinitionId openapi_types.UUID `json:"serviceDefinitionId"`
+}
+
+// PriceServiceOptionPage defines model for PriceServiceOptionPage.
+type PriceServiceOptionPage struct {
+	Items      []PriceServiceOption `json:"items"`
+	NextCursor *string              `json:"nextCursor"`
+}
+
 // PricingMethod How the amount of a price item is arrived at. FIXED and UNIT carry an amount,
 // PERCENT_OF_LIST a percent, FORMULA the key of a calculation rule.
 type PricingMethod string
+
+// PrivilegedRoleAssignmentOption defines model for PrivilegedRoleAssignmentOption.
+type PrivilegedRoleAssignmentOption struct {
+	Code                    string                                         `json:"code"`
+	ConfigurationHash       string                                         `json:"configurationHash"`
+	Description             string                                         `json:"description"`
+	HasSensitivePermissions bool                                           `json:"hasSensitivePermissions"`
+	Name                    string                                         `json:"name"`
+	PermissionCodes         []string                                       `json:"permissionCodes"`
+	RequiresApproval        PrivilegedRoleAssignmentOptionRequiresApproval `json:"requiresApproval"`
+	ScopeType               PrivilegedRoleAssignmentOptionScopeType        `json:"scopeType"`
+}
+
+// PrivilegedRoleAssignmentOptionRequiresApproval defines model for PrivilegedRoleAssignmentOption.RequiresApproval.
+type PrivilegedRoleAssignmentOptionRequiresApproval bool
+
+// PrivilegedRoleAssignmentOptionScopeType defines model for PrivilegedRoleAssignmentOption.ScopeType.
+type PrivilegedRoleAssignmentOptionScopeType string
+
+// PrivilegedRoleAssignmentOptions defines model for PrivilegedRoleAssignmentOptions.
+type PrivilegedRoleAssignmentOptions struct {
+	Items []PrivilegedRoleAssignmentOption `json:"items"`
+}
 
 // Problem RFC 9457 problem detail. Extension members are permitted and are serialised flat
 // beside the standard members: a problem type may carry the one fact that makes it
@@ -11049,6 +12023,14 @@ type RejectMedicalReport struct {
 	ReviewComment    *string `json:"reviewComment,omitempty"`
 }
 
+// RejectRoleChangeRequest defines model for RejectRoleChangeRequest.
+type RejectRoleChangeRequest struct {
+	ReasonCode RejectRoleChangeRequestReasonCode `json:"reasonCode"`
+}
+
+// RejectRoleChangeRequestReasonCode defines model for RejectRoleChangeRequest.ReasonCode.
+type RejectRoleChangeRequestReasonCode string
+
 // ReleaseWorkItem A reason is optional here: putting work down may be nothing more than the end of a
 // shift. A code that is given has to be one a report can group by.
 type ReleaseWorkItem struct {
@@ -11108,8 +12090,10 @@ type ReportNoShowRequest struct {
 	At *time.Time `json:"at,omitempty"`
 
 	// EvidenceDocumentId The document object the provider is pointing at. It must be linked to this
-	// booking and cleared by the scanner. Omitted, any clean document linked to the
-	// booking satisfies the gate; a booking with none is refused either way.
+	// booking as NO_SHOW_EVIDENCE. Both the linked and canonical objects must be
+	// CLEAN, secure, retained and owned by this property's provider or the tenant.
+	// Omitted, any linked document meeting those conditions satisfies the gate;
+	// a booking with none is refused either way.
 	EvidenceDocumentId *openapi_types.UUID `json:"evidenceDocumentId,omitempty"`
 }
 
@@ -11218,6 +12202,178 @@ type ReviewNoShowRequest struct {
 // ReviewNoShowRequestStatus The decision. CONFIRMED closes the booking and moves the plan; REJECTED leaves
 // the stay bookable; DISPUTED raises a work item and changes nothing.
 type ReviewNoShowRequestStatus string
+
+// RevokeTenantRoleGrantRequest defines model for RevokeTenantRoleGrantRequest.
+type RevokeTenantRoleGrantRequest struct {
+	ReasonCode RevokeTenantRoleGrantRequestReasonCode `json:"reasonCode"`
+}
+
+// RevokeTenantRoleGrantRequestReasonCode defines model for RevokeTenantRoleGrantRequest.ReasonCode.
+type RevokeTenantRoleGrantRequestReasonCode string
+
+// RoleAssignmentOption defines model for RoleAssignmentOption.
+type RoleAssignmentOption struct {
+	Code                    string                        `json:"code"`
+	Description             string                        `json:"description"`
+	HasSensitivePermissions bool                          `json:"hasSensitivePermissions"`
+	Name                    string                        `json:"name"`
+	PermissionCodes         []string                      `json:"permissionCodes"`
+	ScopeType               RoleAssignmentOptionScopeType `json:"scopeType"`
+}
+
+// RoleAssignmentOptionScopeType defines model for RoleAssignmentOption.ScopeType.
+type RoleAssignmentOptionScopeType string
+
+// RoleAssignmentOptions defines model for RoleAssignmentOptions.
+type RoleAssignmentOptions struct {
+	Items []RoleAssignmentOption `json:"items"`
+}
+
+// RoleAssignmentOrganization defines model for RoleAssignmentOrganization.
+type RoleAssignmentOrganization struct {
+	DisplayName string `json:"displayName"`
+
+	// Id Tenant organization relationship ID, never global organization or profile ID.
+	Id         openapi_types.UUID `json:"id"`
+	TenantCode *string            `json:"tenantCode"`
+}
+
+// RoleAssignmentOrganizationPage defines model for RoleAssignmentOrganizationPage.
+type RoleAssignmentOrganizationPage struct {
+	Items      []RoleAssignmentOrganization `json:"items"`
+	NextCursor *string                      `json:"nextCursor"`
+}
+
+// RoleChangeAppliedGrant defines model for RoleChangeAppliedGrant.
+type RoleChangeAppliedGrant struct {
+	Id            openapi_types.UUID              `json:"id"`
+	IsSystemRole  bool                            `json:"isSystemRole"`
+	RoleCode      string                          `json:"roleCode"`
+	RoleName      string                          `json:"roleName"`
+	ScopeType     RoleChangeAppliedGrantScopeType `json:"scopeType"`
+	ValidFrom     *time.Time                      `json:"validFrom"`
+	ValidTo       *time.Time                      `json:"validTo"`
+	ValidityEmpty bool                            `json:"validityEmpty"`
+}
+
+// RoleChangeAppliedGrantScopeType defines model for RoleChangeAppliedGrant.ScopeType.
+type RoleChangeAppliedGrantScopeType string
+
+// RoleChangeCommandResult defines model for RoleChangeCommandResult.
+type RoleChangeCommandResult struct {
+	AppliedGrant         *RoleChangeAppliedGrant `json:"appliedGrant"`
+	MembershipRowVersion *int64                  `json:"membershipRowVersion"`
+	Request              RoleChangeRequest       `json:"request"`
+}
+
+// RoleChangeEligibility defines model for RoleChangeEligibility.
+type RoleChangeEligibility struct {
+	AssignmentRefusalCode *string                                  `json:"assignmentRefusalCode"`
+	CanRequestAssignment  bool                                     `json:"canRequestAssignment"`
+	CheckerAvailability   RoleChangeEligibilityCheckerAvailability `json:"checkerAvailability"`
+	MembershipId          openapi_types.UUID                       `json:"membershipId"`
+	MembershipRowVersion  int64                                    `json:"membershipRowVersion"`
+	RevokeGrantIds        []openapi_types.UUID                     `json:"revokeGrantIds"`
+}
+
+// RoleChangeEligibilityCheckerAvailability defines model for RoleChangeEligibility.CheckerAvailability.
+type RoleChangeEligibilityCheckerAvailability string
+
+// RoleChangePermission defines model for RoleChangePermission.
+type RoleChangePermission struct {
+	Code        string                          `json:"code"`
+	Sensitivity RoleChangePermissionSensitivity `json:"sensitivity"`
+}
+
+// RoleChangePermissionSensitivity defines model for RoleChangePermission.Sensitivity.
+type RoleChangePermissionSensitivity string
+
+// RoleChangeRequest defines model for RoleChangeRequest.
+type RoleChangeRequest struct {
+	AppliedGrantId           *openapi_types.UUID        `json:"appliedGrantId"`
+	AppliedMembershipVersion *int64                     `json:"appliedMembershipVersion"`
+	AppliedValidity          *RoleChangeValidity        `json:"appliedValidity"`
+	ConfigurationHash        string                     `json:"configurationHash"`
+	CreatedAt                time.Time                  `json:"createdAt"`
+	DecidedAt                *time.Time                 `json:"decidedAt"`
+	DecidedByMembershipId    *openapi_types.UUID        `json:"decidedByMembershipId"`
+	DecisionReasonCode       *string                    `json:"decisionReasonCode"`
+	Id                       openapi_types.UUID         `json:"id"`
+	MakerMembershipId        openapi_types.UUID         `json:"makerMembershipId"`
+	Operation                RoleChangeRequestOperation `json:"operation"`
+	PermissionSnapshot       []RoleChangePermission     `json:"permissionSnapshot"`
+	ReasonCode               string                     `json:"reasonCode"`
+	RevokeGrantId            *openapi_types.UUID        `json:"revokeGrantId"`
+	RevokeValidity           *RoleChangeValidity        `json:"revokeValidity"`
+	RoleCode                 string                     `json:"roleCode"`
+	RowVersion               int64                      `json:"rowVersion"`
+	ScopeType                RoleChangeRequestScopeType `json:"scopeType"`
+	Status                   RoleChangeRequestStatus    `json:"status"`
+	TargetMembershipId       openapi_types.UUID         `json:"targetMembershipId"`
+	TargetMembershipVersion  int64                      `json:"targetMembershipVersion"`
+}
+
+// RoleChangeRequestOperation defines model for RoleChangeRequest.Operation.
+type RoleChangeRequestOperation string
+
+// RoleChangeRequestScopeType defines model for RoleChangeRequest.ScopeType.
+type RoleChangeRequestScopeType string
+
+// RoleChangeRequestStatus defines model for RoleChangeRequest.Status.
+type RoleChangeRequestStatus string
+
+// RoleChangeRequestDetail defines model for RoleChangeRequestDetail.
+type RoleChangeRequestDetail struct {
+	ApprovalRefusalCode     *string                                    `json:"approvalRefusalCode"`
+	CanApprove              bool                                       `json:"canApprove"`
+	CanCancel               bool                                       `json:"canCancel"`
+	CanReject               bool                                       `json:"canReject"`
+	CancellationRefusalCode *string                                    `json:"cancellationRefusalCode"`
+	CheckerAvailability     RoleChangeRequestDetailCheckerAvailability `json:"checkerAvailability"`
+	RejectionRefusalCode    *string                                    `json:"rejectionRefusalCode"`
+	Request                 RoleChangeRequest                          `json:"request"`
+}
+
+// RoleChangeRequestDetailCheckerAvailability defines model for RoleChangeRequestDetail.CheckerAvailability.
+type RoleChangeRequestDetailCheckerAvailability string
+
+// RoleChangeRequestPage defines model for RoleChangeRequestPage.
+type RoleChangeRequestPage struct {
+	Items      []RoleChangeRequestSummary `json:"items"`
+	NextCursor *string                    `json:"nextCursor"`
+}
+
+// RoleChangeRequestSummary defines model for RoleChangeRequestSummary.
+type RoleChangeRequestSummary struct {
+	CreatedAt          time.Time                         `json:"createdAt"`
+	DecidedAt          *time.Time                        `json:"decidedAt"`
+	Id                 openapi_types.UUID                `json:"id"`
+	MakerMembershipId  openapi_types.UUID                `json:"makerMembershipId"`
+	Operation          RoleChangeRequestSummaryOperation `json:"operation"`
+	ReasonCode         string                            `json:"reasonCode"`
+	RoleCode           string                            `json:"roleCode"`
+	RowVersion         int64                             `json:"rowVersion"`
+	ScopeType          RoleChangeRequestSummaryScopeType `json:"scopeType"`
+	Status             RoleChangeRequestSummaryStatus    `json:"status"`
+	TargetMembershipId openapi_types.UUID                `json:"targetMembershipId"`
+}
+
+// RoleChangeRequestSummaryOperation defines model for RoleChangeRequestSummary.Operation.
+type RoleChangeRequestSummaryOperation string
+
+// RoleChangeRequestSummaryScopeType defines model for RoleChangeRequestSummary.ScopeType.
+type RoleChangeRequestSummaryScopeType string
+
+// RoleChangeRequestSummaryStatus defines model for RoleChangeRequestSummary.Status.
+type RoleChangeRequestSummaryStatus string
+
+// RoleChangeValidity defines model for RoleChangeValidity.
+type RoleChangeValidity struct {
+	From          *time.Time `json:"from"`
+	FromInclusive bool       `json:"fromInclusive"`
+	To            *time.Time `json:"to"`
+	ToInclusive   bool       `json:"toInclusive"`
+}
 
 // RoomType defines model for RoomType.
 type RoomType struct {
@@ -12184,15 +13340,52 @@ type StaySegmentInput struct {
 // constraint, because a companion is in the room while the patient is.
 type StaySegmentType string
 
+// SuspendTenantUserRequest defines model for SuspendTenantUserRequest.
+type SuspendTenantUserRequest struct {
+	ReasonCode SuspendTenantUserRequestReasonCode `json:"reasonCode"`
+}
+
+// SuspendTenantUserRequestReasonCode defines model for SuspendTenantUserRequest.ReasonCode.
+type SuspendTenantUserRequestReasonCode string
+
 // TaxBehaviour Whether the agreed amounts already include VAT, exclude it, or are exempt.
 type TaxBehaviour string
+
+// TenantAssignedRole defines model for TenantAssignedRole.
+type TenantAssignedRole struct {
+	Code         string                      `json:"code"`
+	IsSystemRole bool                        `json:"isSystemRole"`
+	Name         string                      `json:"name"`
+	ScopeType    TenantAssignedRoleScopeType `json:"scopeType"`
+	ValidFrom    *time.Time                  `json:"validFrom"`
+	ValidTo      *time.Time                  `json:"validTo"`
+
+	// ValidityEmpty True when the stored assignment period contains no instants.
+	ValidityEmpty bool `json:"validityEmpty"`
+}
+
+// TenantAssignedRoleScopeType defines model for TenantAssignedRole.ScopeType.
+type TenantAssignedRoleScopeType string
 
 // TenantContext defines model for TenantContext.
 type TenantContext struct {
 	// Apps The apps the account has work in here, from all of its grants. The single
 	// sign-in sends a person straight to the one app, or offers the choice.
-	Apps        []TenantContextApps `json:"apps"`
-	Permissions []string            `json:"permissions"`
+	Apps []TenantContextApps `json:"apps"`
+
+	// CanManageTenantRoles True only when current TENANT grants correlate identity.user.read and identity.role.manage on this active membership in backoffice or unrestricted app context.
+	CanManageTenantRoles *bool `json:"canManageTenantRoles,omitempty"`
+
+	// CanManageTenantUsers True only when identity.user.manage belongs to an active TENANT-scoped grant
+	// in this tenant and the request uses backoffice or unrestricted app context.
+	CanManageTenantUsers *bool `json:"canManageTenantUsers,omitempty"`
+
+	// CanReadTenantUsers Server-computed Management Users capability. True only when identity.user.read
+	// belongs to an active TENANT-scoped grant in this tenant and the request uses
+	// the backoffice or unrestricted app context; flattened permissions and scopes
+	// cannot establish that correlation.
+	CanReadTenantUsers *bool    `json:"canReadTenantUsers,omitempty"`
+	Permissions        []string `json:"permissions"`
 
 	// PersonId The person this account acts for in this tenant, from its PERSON-scoped access
 	// grant (migration 000039). It is null for every actor that is not a member: a
@@ -12216,6 +13409,65 @@ type TenantContext struct {
 // TenantContextApps defines model for TenantContext.Apps.
 type TenantContextApps string
 
+// TenantInvitation defines model for TenantInvitation.
+type TenantInvitation struct {
+	CreatedAt       time.Time                      `json:"createdAt"`
+	DeliveryStatus  TenantInvitationDeliveryStatus `json:"deliveryStatus"`
+	ExpiresAt       time.Time                      `json:"expiresAt"`
+	InvitationId    openapi_types.UUID             `json:"invitationId"`
+	MaskedRecipient string                         `json:"maskedRecipient"`
+	RowVersion      int64                          `json:"rowVersion"`
+	Status          TenantInvitationStatus         `json:"status"`
+}
+
+// TenantInvitationDeliveryStatus defines model for TenantInvitationDeliveryStatus.
+type TenantInvitationDeliveryStatus string
+
+// TenantInvitationPage defines model for TenantInvitationPage.
+type TenantInvitationPage struct {
+	Items      []TenantInvitation `json:"items"`
+	NextCursor *string            `json:"nextCursor"`
+}
+
+// TenantInvitationStatus defines model for TenantInvitationStatus.
+type TenantInvitationStatus string
+
+// TenantMembershipStatus defines model for TenantMembershipStatus.
+type TenantMembershipStatus string
+
+// TenantRoleGrant defines model for TenantRoleGrant.
+type TenantRoleGrant struct {
+	CanRevoke                  bool                `json:"canRevoke"`
+	Id                         openapi_types.UUID  `json:"id"`
+	IsSystemRole               bool                `json:"isSystemRole"`
+	OrganizationDisplayName    *string             `json:"organizationDisplayName"`
+	OrganizationRelationshipId *openapi_types.UUID `json:"organizationRelationshipId"`
+	RevocationRefusalCode      *string             `json:"revocationRefusalCode"`
+	RoleCode                   string              `json:"roleCode"`
+	RoleName                   string              `json:"roleName"`
+	ScopeType                  string              `json:"scopeType"`
+	ValidFrom                  *time.Time          `json:"validFrom"`
+	ValidTo                    *time.Time          `json:"validTo"`
+	ValidityEmpty              bool                `json:"validityEmpty"`
+}
+
+// TenantRoleGrantPage defines model for TenantRoleGrantPage.
+type TenantRoleGrantPage struct {
+	AssignmentRefusalCode *string            `json:"assignmentRefusalCode"`
+	CanAssign             bool               `json:"canAssign"`
+	Items                 []TenantRoleGrant  `json:"items"`
+	MembershipId          openapi_types.UUID `json:"membershipId"`
+	MembershipRowVersion  int64              `json:"membershipRowVersion"`
+	NextCursor            *string            `json:"nextCursor"`
+}
+
+// TenantRoleGrantResult defines model for TenantRoleGrantResult.
+type TenantRoleGrantResult struct {
+	Grant                TenantRoleGrant    `json:"grant"`
+	MembershipId         openapi_types.UUID `json:"membershipId"`
+	MembershipRowVersion int64              `json:"membershipRowVersion"`
+}
+
 // TenantSummary defines model for TenantSummary.
 type TenantSummary struct {
 	Code            string              `json:"code"`
@@ -12228,6 +13480,44 @@ type TenantSummary struct {
 
 // TenantSummaryStatus defines model for TenantSummary.Status.
 type TenantSummaryStatus string
+
+// TenantUser defines model for TenantUser.
+type TenantUser struct {
+	ActorStatus TenantUserActorStatus `json:"actorStatus"`
+	ActorType   TenantUserActorType   `json:"actorType"`
+	DisplayName string                `json:"displayName"`
+
+	// Id Tenant membership ID; never a global actor ID.
+	Id               openapi_types.UUID     `json:"id"`
+	MembershipStatus TenantMembershipStatus `json:"membershipStatus"`
+
+	// RowVersion Concurrency version; use the detail ETag for suspension's If-Match.
+	RowVersion int64               `json:"rowVersion"`
+	ValidFrom  *openapi_types.Date `json:"validFrom"`
+	ValidTo    *openapi_types.Date `json:"validTo"`
+
+	// ValidityEmpty True when the stored membership period contains no dates.
+	ValidityEmpty bool `json:"validityEmpty"`
+}
+
+// TenantUserActorStatus defines model for TenantUser.ActorStatus.
+type TenantUserActorStatus string
+
+// TenantUserActorType defines model for TenantUser.ActorType.
+type TenantUserActorType string
+
+// TenantUserDetail defines model for TenantUserDetail.
+type TenantUserDetail struct {
+	// AssignedRoles Assignments can be future or expired and are not effective permissions.
+	AssignedRoles []TenantAssignedRole `json:"assignedRoles"`
+	Membership    TenantUser           `json:"membership"`
+}
+
+// TenantUserPage defines model for TenantUserPage.
+type TenantUserPage struct {
+	Items      []TenantUser `json:"items"`
+	NextCursor *string      `json:"nextCursor"`
+}
 
 // UpdateCodeSystemRequest Merge-patch body; code and version are absent because they are immutable.
 type UpdateCodeSystemRequest struct {
@@ -12720,6 +14010,12 @@ type ImportId = openapi_types.UUID
 // ImportRowId defines model for ImportRowId.
 type ImportRowId = openapi_types.UUID
 
+// InvitationOrigin defines model for InvitationOrigin.
+type InvitationOrigin = string
+
+// InvitationRequestMarker defines model for InvitationRequestMarker.
+type InvitationRequestMarker string
+
 // InvoiceId defines model for InvoiceId.
 type InvoiceId = openapi_types.UUID
 
@@ -12782,6 +14078,12 @@ type ReportId = openapi_types.UUID
 
 // RequestId defines model for RequestId.
 type RequestId = openapi_types.UUID
+
+// RoleAssignmentMembershipId defines model for RoleAssignmentMembershipId.
+type RoleAssignmentMembershipId = openapi_types.UUID
+
+// RoleChangeRequestId defines model for RoleChangeRequestId.
+type RoleChangeRequestId = openapi_types.UUID
 
 // RoomTypeId defines model for RoomTypeId.
 type RoomTypeId = openapi_types.UUID
@@ -13138,6 +14440,204 @@ type CancelWaitlistEntryParams struct {
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
+// ListTenantInvitationsParams defines parameters for ListTenantInvitations.
+type ListTenantInvitationsParams struct {
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor                 `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit                  `form:"limit,omitempty" json:"limit,omitempty"`
+	Status *TenantInvitationStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// CreateTenantInvitationParams defines parameters for CreateTenantInvitation.
+type CreateTenantInvitationParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// GetTenantInvitationParams defines parameters for GetTenantInvitation.
+type GetTenantInvitationParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// CancelTenantInvitationParams defines parameters for CancelTenantInvitation.
+type CancelTenantInvitationParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ListPrivilegedRoleAssignmentOptionsParams defines parameters for ListPrivilegedRoleAssignmentOptions.
+type ListPrivilegedRoleAssignmentOptionsParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// ListRoleAssignmentOptionsParams defines parameters for ListRoleAssignmentOptions.
+type ListRoleAssignmentOptionsParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// ListRoleAssignmentOrganizationsParams defines parameters for ListRoleAssignmentOrganizations.
+type ListRoleAssignmentOrganizationsParams struct {
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// ListRoleChangeRequestsParams defines parameters for ListRoleChangeRequests.
+type ListRoleChangeRequestsParams struct {
+	// Cursor Opaque cursor from the previous response.
+	Cursor       *Cursor                             `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit        *Limit                              `form:"limit,omitempty" json:"limit,omitempty"`
+	Status       *ListRoleChangeRequestsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+	MembershipId *openapi_types.UUID                 `form:"membershipId,omitempty" json:"membershipId,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// ListRoleChangeRequestsParamsStatus defines parameters for ListRoleChangeRequests.
+type ListRoleChangeRequestsParamsStatus string
+
+// GetRoleChangeRequestParams defines parameters for GetRoleChangeRequest.
+type GetRoleChangeRequestParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// ApproveRoleChangeRequestParams defines parameters for ApproveRoleChangeRequest.
+type ApproveRoleChangeRequestParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// CancelRoleChangeRequestParams defines parameters for CancelRoleChangeRequest.
+type CancelRoleChangeRequestParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// RejectRoleChangeRequestParams defines parameters for RejectRoleChangeRequest.
+type RejectRoleChangeRequestParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ListTenantUsersParams defines parameters for ListTenantUsers.
+type ListTenantUsersParams struct {
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor                 `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit                  `form:"limit,omitempty" json:"limit,omitempty"`
+	Status *TenantMembershipStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// GetTenantUserParams defines parameters for GetTenantUser.
+type GetTenantUserParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// GetTenantUserRoleChangeEligibilityParams defines parameters for GetTenantUserRoleChangeEligibility.
+type GetTenantUserRoleChangeEligibilityParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// CreateTenantUserRoleChangeRequestParams defines parameters for CreateTenantUserRoleChangeRequest.
+type CreateTenantUserRoleChangeRequestParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ListTenantUserRoleGrantsParams defines parameters for ListTenantUserRoleGrants.
+type ListTenantUserRoleGrantsParams struct {
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// AssignTenantUserRoleGrantParams defines parameters for AssignTenantUserRoleGrant.
+type AssignTenantUserRoleGrantParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// RevokeTenantUserRoleGrantParams defines parameters for RevokeTenantUserRoleGrant.
+type RevokeTenantUserRoleGrantParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// SuspendTenantUserParams defines parameters for SuspendTenantUser.
+type SuspendTenantUserParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
 // ListApprovalPoliciesParams defines parameters for ListApprovalPolicies.
 type ListApprovalPoliciesParams struct {
 	// ActionCode Keep only the policies of one action.
@@ -13405,6 +14905,34 @@ type CreateClaimParamsXAccessPurpose string
 
 // CreateClaimParamsXAccessProjection defines parameters for CreateClaim.
 type CreateClaimParamsXAccessProjection string
+
+// ListClaimCaseSourcesParams defines parameters for ListClaimCaseSources.
+type ListClaimCaseSourcesParams struct {
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// GetClaimCaseSourceParams defines parameters for GetClaimCaseSource.
+type GetClaimCaseSourceParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// CreateClaimFromCaseParams defines parameters for CreateClaimFromCase.
+type CreateClaimFromCaseParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
 
 // GetClaimParams defines parameters for GetClaim.
 type GetClaimParams struct {
@@ -14107,6 +15635,18 @@ type PutEncounterDiagnosesParams struct {
 
 	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// EndEncounterParams defines parameters for EndEncounter.
+type EndEncounterParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
 }
 
 // ListEnrollmentsParams defines parameters for ListEnrollments.
@@ -14851,6 +16391,51 @@ type PutStaySegmentsParamsXAccessPurpose string
 
 // PutStaySegmentsParamsXAccessProjection defines parameters for PutStaySegments.
 type PutStaySegmentsParamsXAccessProjection string
+
+// AcceptExistingInvitationParams defines parameters for AcceptExistingInvitation.
+type AcceptExistingInvitationParams struct {
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// AcceptNewInvitationParams defines parameters for AcceptNewInvitation.
+type AcceptNewInvitationParams struct {
+	// XInvitationRequest Must be exactly 1 on anonymous invitation requests.
+	XInvitationRequest AcceptNewInvitationParamsXInvitationRequest `json:"X-Invitation-Request"`
+
+	// Origin Must exactly match the origin of the configured invitation link base.
+	Origin InvitationOrigin `json:"Origin"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// AcceptNewInvitationParamsXInvitationRequest defines parameters for AcceptNewInvitation.
+type AcceptNewInvitationParamsXInvitationRequest string
+
+// RecoverNewInvitationAcceptanceParams defines parameters for RecoverNewInvitationAcceptance.
+type RecoverNewInvitationAcceptanceParams struct {
+	// XInvitationRequest Must be exactly 1 on anonymous invitation requests.
+	XInvitationRequest RecoverNewInvitationAcceptanceParamsXInvitationRequest `json:"X-Invitation-Request"`
+
+	// Origin Must exactly match the origin of the configured invitation link base.
+	Origin InvitationOrigin `json:"Origin"`
+}
+
+// RecoverNewInvitationAcceptanceParamsXInvitationRequest defines parameters for RecoverNewInvitationAcceptance.
+type RecoverNewInvitationAcceptanceParamsXInvitationRequest string
+
+// InspectNewInvitationParams defines parameters for InspectNewInvitation.
+type InspectNewInvitationParams struct {
+	// XInvitationRequest Must be exactly 1 on anonymous invitation requests.
+	XInvitationRequest InspectNewInvitationParamsXInvitationRequest `json:"X-Invitation-Request"`
+
+	// Origin Must exactly match the origin of the configured invitation link base.
+	Origin InvitationOrigin `json:"Origin"`
+}
+
+// InspectNewInvitationParamsXInvitationRequest defines parameters for InspectNewInvitation.
+type InspectNewInvitationParamsXInvitationRequest string
 
 // ListInvoicesParams defines parameters for ListInvoices.
 type ListInvoicesParams struct {
@@ -15676,6 +17261,26 @@ type ResolvePriceParams struct {
 
 	// XCSRFToken Required when the request is authenticated with the BFF session cookie.
 	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
+}
+
+// ListPriceProviderOptionsParams defines parameters for ListPriceProviderOptions.
+type ListPriceProviderOptionsParams struct {
+	Q      *string `form:"q,omitempty" json:"q,omitempty"`
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// ListPriceServiceOptionsParams defines parameters for ListPriceServiceOptions.
+type ListPriceServiceOptionsParams struct {
+	Q      *string `form:"q,omitempty" json:"q,omitempty"`
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
 }
 
 // CreatePriceQuoteParams defines parameters for CreatePriceQuote.
@@ -16821,6 +18426,30 @@ type PutRoomTypeInventoryJSONRequestBody = PutRoomTypeInventory
 // JoinWaitlistJSONRequestBody defines body for JoinWaitlist for application/json ContentType.
 type JoinWaitlistJSONRequestBody = JoinWaitlistRequest
 
+// CreateTenantInvitationJSONRequestBody defines body for CreateTenantInvitation for application/json ContentType.
+type CreateTenantInvitationJSONRequestBody = CreateTenantInvitationRequest
+
+// ApproveRoleChangeRequestJSONRequestBody defines body for ApproveRoleChangeRequest for application/json ContentType.
+type ApproveRoleChangeRequestJSONRequestBody = ApproveRoleChangeRequest
+
+// CancelRoleChangeRequestJSONRequestBody defines body for CancelRoleChangeRequest for application/json ContentType.
+type CancelRoleChangeRequestJSONRequestBody = CancelRoleChangeRequest
+
+// RejectRoleChangeRequestJSONRequestBody defines body for RejectRoleChangeRequest for application/json ContentType.
+type RejectRoleChangeRequestJSONRequestBody = RejectRoleChangeRequest
+
+// CreateTenantUserRoleChangeRequestJSONRequestBody defines body for CreateTenantUserRoleChangeRequest for application/json ContentType.
+type CreateTenantUserRoleChangeRequestJSONRequestBody = CreateRoleChangeRequest
+
+// AssignTenantUserRoleGrantJSONRequestBody defines body for AssignTenantUserRoleGrant for application/json ContentType.
+type AssignTenantUserRoleGrantJSONRequestBody = AssignTenantRoleGrantRequest
+
+// RevokeTenantUserRoleGrantJSONRequestBody defines body for RevokeTenantUserRoleGrant for application/json ContentType.
+type RevokeTenantUserRoleGrantJSONRequestBody = RevokeTenantRoleGrantRequest
+
+// SuspendTenantUserJSONRequestBody defines body for SuspendTenantUser for application/json ContentType.
+type SuspendTenantUserJSONRequestBody = SuspendTenantUserRequest
+
 // PutApprovalPoliciesJSONRequestBody defines body for PutApprovalPolicies for application/json ContentType.
 type PutApprovalPoliciesJSONRequestBody = PutApprovalPolicies
 
@@ -16847,6 +18476,9 @@ type ReviewBatchInvoiceJSONRequestBody = ReviewBatchInvoice
 
 // CreateClaimJSONRequestBody defines body for CreateClaim for application/json ContentType.
 type CreateClaimJSONRequestBody = CreateClaim
+
+// CreateClaimFromCaseJSONRequestBody defines body for CreateClaimFromCase for application/json ContentType.
+type CreateClaimFromCaseJSONRequestBody = CreateClaimFromCase
 
 // PatchClaimDraftJSONRequestBody defines body for PatchClaimDraft for application/json ContentType.
 type PatchClaimDraftJSONRequestBody = PatchClaimDraft
@@ -16935,6 +18567,9 @@ type CheckEligibilityJSONRequestBody = EligibilityCheckRequest
 // PutEncounterDiagnosesJSONRequestBody defines body for PutEncounterDiagnoses for application/json ContentType.
 type PutEncounterDiagnosesJSONRequestBody = PutEncounterDiagnoses
 
+// EndEncounterJSONRequestBody defines body for EndEncounter for application/json ContentType.
+type EndEncounterJSONRequestBody = EndEncounter
+
 // UpdateEnrollmentApplicationMergePatchPlusJSONRequestBody defines body for UpdateEnrollment for application/merge-patch+json ContentType.
 type UpdateEnrollmentApplicationMergePatchPlusJSONRequestBody = UpdateEnrollmentRequest
 
@@ -16991,6 +18626,21 @@ type ExtendInpatientStayJSONRequestBody = ExtendInpatientStay
 
 // PutStaySegmentsJSONRequestBody defines body for PutStaySegments for application/json ContentType.
 type PutStaySegmentsJSONRequestBody = PutStaySegments
+
+// AcceptExistingInvitationJSONRequestBody defines body for AcceptExistingInvitation for application/json ContentType.
+type AcceptExistingInvitationJSONRequestBody = AcceptExistingInvitationRequest
+
+// AcceptNewInvitationJSONRequestBody defines body for AcceptNewInvitation for application/json ContentType.
+type AcceptNewInvitationJSONRequestBody = AcceptNewInvitationRequest
+
+// RecoverNewInvitationAcceptanceJSONRequestBody defines body for RecoverNewInvitationAcceptance for application/json ContentType.
+type RecoverNewInvitationAcceptanceJSONRequestBody = InvitationAcceptanceReceiptRequest
+
+// InspectInvitationJSONRequestBody defines body for InspectInvitation for application/json ContentType.
+type InspectInvitationJSONRequestBody = InspectInvitationRequest
+
+// InspectNewInvitationJSONRequestBody defines body for InspectNewInvitation for application/json ContentType.
+type InspectNewInvitationJSONRequestBody = InspectInvitationRequest
 
 // CreateInvoiceJSONRequestBody defines body for CreateInvoice for application/json ContentType.
 type CreateInvoiceJSONRequestBody = CreateInvoice
@@ -17416,6 +19066,68 @@ func (a Problem) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// AsCreateRoleChangeAssignRequest returns the union data inside the CreateRoleChangeRequest as a CreateRoleChangeAssignRequest
+func (t CreateRoleChangeRequest) AsCreateRoleChangeAssignRequest() (CreateRoleChangeAssignRequest, error) {
+	var body CreateRoleChangeAssignRequest
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateRoleChangeAssignRequest overwrites any union data inside the CreateRoleChangeRequest as the provided CreateRoleChangeAssignRequest
+func (t *CreateRoleChangeRequest) FromCreateRoleChangeAssignRequest(v CreateRoleChangeAssignRequest) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateRoleChangeAssignRequest performs a merge with any union data inside the CreateRoleChangeRequest, using the provided CreateRoleChangeAssignRequest
+func (t *CreateRoleChangeRequest) MergeCreateRoleChangeAssignRequest(v CreateRoleChangeAssignRequest) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCreateRoleChangeRevokeRequest returns the union data inside the CreateRoleChangeRequest as a CreateRoleChangeRevokeRequest
+func (t CreateRoleChangeRequest) AsCreateRoleChangeRevokeRequest() (CreateRoleChangeRevokeRequest, error) {
+	var body CreateRoleChangeRevokeRequest
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateRoleChangeRevokeRequest overwrites any union data inside the CreateRoleChangeRequest as the provided CreateRoleChangeRevokeRequest
+func (t *CreateRoleChangeRequest) FromCreateRoleChangeRevokeRequest(v CreateRoleChangeRevokeRequest) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateRoleChangeRevokeRequest performs a merge with any union data inside the CreateRoleChangeRequest, using the provided CreateRoleChangeRevokeRequest
+func (t *CreateRoleChangeRequest) MergeCreateRoleChangeRevokeRequest(v CreateRoleChangeRevokeRequest) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t CreateRoleChangeRequest) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *CreateRoleChangeRequest) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
@@ -17500,6 +19212,66 @@ type ServerInterface interface {
 	// (POST /api/v1/accommodation/waitlist/{waitlistEntryId}/cancel)
 	CancelWaitlistEntry(w http.ResponseWriter, r *http.Request, waitlistEntryId WaitlistEntryId, params CancelWaitlistEntryParams)
 
+	// (GET /api/v1/admin/invitations)
+	ListTenantInvitations(w http.ResponseWriter, r *http.Request, params ListTenantInvitationsParams)
+
+	// (POST /api/v1/admin/invitations)
+	CreateTenantInvitation(w http.ResponseWriter, r *http.Request, params CreateTenantInvitationParams)
+
+	// (GET /api/v1/admin/invitations/{invitationId})
+	GetTenantInvitation(w http.ResponseWriter, r *http.Request, invitationId openapi_types.UUID, params GetTenantInvitationParams)
+
+	// (POST /api/v1/admin/invitations/{invitationId}/cancel)
+	CancelTenantInvitation(w http.ResponseWriter, r *http.Request, invitationId openapi_types.UUID, params CancelTenantInvitationParams)
+
+	// (GET /api/v1/admin/privileged-role-assignment-options)
+	ListPrivilegedRoleAssignmentOptions(w http.ResponseWriter, r *http.Request, params ListPrivilegedRoleAssignmentOptionsParams)
+
+	// (GET /api/v1/admin/role-assignment-options)
+	ListRoleAssignmentOptions(w http.ResponseWriter, r *http.Request, params ListRoleAssignmentOptionsParams)
+
+	// (GET /api/v1/admin/role-assignment-organizations)
+	ListRoleAssignmentOrganizations(w http.ResponseWriter, r *http.Request, params ListRoleAssignmentOrganizationsParams)
+
+	// (GET /api/v1/admin/role-change-requests)
+	ListRoleChangeRequests(w http.ResponseWriter, r *http.Request, params ListRoleChangeRequestsParams)
+
+	// (GET /api/v1/admin/role-change-requests/{requestId})
+	GetRoleChangeRequest(w http.ResponseWriter, r *http.Request, requestId RoleChangeRequestId, params GetRoleChangeRequestParams)
+
+	// (POST /api/v1/admin/role-change-requests/{requestId}/approve)
+	ApproveRoleChangeRequest(w http.ResponseWriter, r *http.Request, requestId RoleChangeRequestId, params ApproveRoleChangeRequestParams)
+
+	// (POST /api/v1/admin/role-change-requests/{requestId}/cancel)
+	CancelRoleChangeRequest(w http.ResponseWriter, r *http.Request, requestId RoleChangeRequestId, params CancelRoleChangeRequestParams)
+
+	// (POST /api/v1/admin/role-change-requests/{requestId}/reject)
+	RejectRoleChangeRequest(w http.ResponseWriter, r *http.Request, requestId RoleChangeRequestId, params RejectRoleChangeRequestParams)
+
+	// (GET /api/v1/admin/users)
+	ListTenantUsers(w http.ResponseWriter, r *http.Request, params ListTenantUsersParams)
+
+	// (GET /api/v1/admin/users/{membershipId})
+	GetTenantUser(w http.ResponseWriter, r *http.Request, membershipId openapi_types.UUID, params GetTenantUserParams)
+
+	// (GET /api/v1/admin/users/{membershipId}/role-change-eligibility)
+	GetTenantUserRoleChangeEligibility(w http.ResponseWriter, r *http.Request, membershipId RoleAssignmentMembershipId, params GetTenantUserRoleChangeEligibilityParams)
+
+	// (POST /api/v1/admin/users/{membershipId}/role-change-requests)
+	CreateTenantUserRoleChangeRequest(w http.ResponseWriter, r *http.Request, membershipId RoleAssignmentMembershipId, params CreateTenantUserRoleChangeRequestParams)
+
+	// (GET /api/v1/admin/users/{membershipId}/role-grants)
+	ListTenantUserRoleGrants(w http.ResponseWriter, r *http.Request, membershipId RoleAssignmentMembershipId, params ListTenantUserRoleGrantsParams)
+
+	// (POST /api/v1/admin/users/{membershipId}/role-grants)
+	AssignTenantUserRoleGrant(w http.ResponseWriter, r *http.Request, membershipId RoleAssignmentMembershipId, params AssignTenantUserRoleGrantParams)
+
+	// (POST /api/v1/admin/users/{membershipId}/role-grants/{grantId}/revoke)
+	RevokeTenantUserRoleGrant(w http.ResponseWriter, r *http.Request, membershipId RoleAssignmentMembershipId, grantId openapi_types.UUID, params RevokeTenantUserRoleGrantParams)
+
+	// (POST /api/v1/admin/users/{membershipId}/suspend)
+	SuspendTenantUser(w http.ResponseWriter, r *http.Request, membershipId openapi_types.UUID, params SuspendTenantUserParams)
+
 	// (GET /api/v1/approval-policies)
 	ListApprovalPolicies(w http.ResponseWriter, r *http.Request, params ListApprovalPoliciesParams)
 
@@ -17553,6 +19325,15 @@ type ServerInterface interface {
 
 	// (POST /api/v1/claims)
 	CreateClaim(w http.ResponseWriter, r *http.Request, params CreateClaimParams)
+
+	// (GET /api/v1/claims/case-sources)
+	ListClaimCaseSources(w http.ResponseWriter, r *http.Request, params ListClaimCaseSourcesParams)
+
+	// (GET /api/v1/claims/case-sources/{caseId})
+	GetClaimCaseSource(w http.ResponseWriter, r *http.Request, caseId CaseId, params GetClaimCaseSourceParams)
+
+	// (POST /api/v1/claims/case-sources/{caseId})
+	CreateClaimFromCase(w http.ResponseWriter, r *http.Request, caseId CaseId, params CreateClaimFromCaseParams)
 
 	// (GET /api/v1/claims/{claimId})
 	GetClaim(w http.ResponseWriter, r *http.Request, claimId ClaimId, params GetClaimParams)
@@ -17713,6 +19494,9 @@ type ServerInterface interface {
 	// (PUT /api/v1/encounters/{encounterId}/diagnoses)
 	PutEncounterDiagnoses(w http.ResponseWriter, r *http.Request, encounterId EncounterId, params PutEncounterDiagnosesParams)
 
+	// (POST /api/v1/encounters/{encounterId}/end)
+	EndEncounter(w http.ResponseWriter, r *http.Request, encounterId EncounterId, params EndEncounterParams)
+
 	// (GET /api/v1/enrollments)
 	ListEnrollments(w http.ResponseWriter, r *http.Request, params ListEnrollmentsParams)
 
@@ -17829,6 +19613,21 @@ type ServerInterface interface {
 
 	// (PUT /api/v1/inpatient-stays/{stayId}/segments)
 	PutStaySegments(w http.ResponseWriter, r *http.Request, stayId StayId, params PutStaySegmentsParams)
+
+	// (POST /api/v1/invitations/accept-existing)
+	AcceptExistingInvitation(w http.ResponseWriter, r *http.Request, params AcceptExistingInvitationParams)
+
+	// (POST /api/v1/invitations/accept-new)
+	AcceptNewInvitation(w http.ResponseWriter, r *http.Request, params AcceptNewInvitationParams)
+
+	// (POST /api/v1/invitations/acceptance-receipt)
+	RecoverNewInvitationAcceptance(w http.ResponseWriter, r *http.Request, params RecoverNewInvitationAcceptanceParams)
+
+	// (POST /api/v1/invitations/inspect)
+	InspectInvitation(w http.ResponseWriter, r *http.Request)
+
+	// (POST /api/v1/invitations/inspect-new)
+	InspectNewInvitation(w http.ResponseWriter, r *http.Request, params InspectNewInvitationParams)
 
 	// (GET /api/v1/invoices)
 	ListInvoices(w http.ResponseWriter, r *http.Request, params ListInvoicesParams)
@@ -18051,6 +19850,12 @@ type ServerInterface interface {
 
 	// (POST /api/v1/prices:resolve)
 	ResolvePrice(w http.ResponseWriter, r *http.Request, params ResolvePriceParams)
+
+	// (GET /api/v1/pricing/options/providers)
+	ListPriceProviderOptions(w http.ResponseWriter, r *http.Request, params ListPriceProviderOptionsParams)
+
+	// (GET /api/v1/pricing/options/services)
+	ListPriceServiceOptions(w http.ResponseWriter, r *http.Request, params ListPriceServiceOptionsParams)
 
 	// (POST /api/v1/pricing/quotes)
 	CreatePriceQuote(w http.ResponseWriter, r *http.Request, params CreatePriceQuoteParams)
@@ -18492,6 +20297,106 @@ func (_ Unimplemented) CancelWaitlistEntry(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// (GET /api/v1/admin/invitations)
+func (_ Unimplemented) ListTenantInvitations(w http.ResponseWriter, r *http.Request, params ListTenantInvitationsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/admin/invitations)
+func (_ Unimplemented) CreateTenantInvitation(w http.ResponseWriter, r *http.Request, params CreateTenantInvitationParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/admin/invitations/{invitationId})
+func (_ Unimplemented) GetTenantInvitation(w http.ResponseWriter, r *http.Request, invitationId openapi_types.UUID, params GetTenantInvitationParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/admin/invitations/{invitationId}/cancel)
+func (_ Unimplemented) CancelTenantInvitation(w http.ResponseWriter, r *http.Request, invitationId openapi_types.UUID, params CancelTenantInvitationParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/admin/privileged-role-assignment-options)
+func (_ Unimplemented) ListPrivilegedRoleAssignmentOptions(w http.ResponseWriter, r *http.Request, params ListPrivilegedRoleAssignmentOptionsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/admin/role-assignment-options)
+func (_ Unimplemented) ListRoleAssignmentOptions(w http.ResponseWriter, r *http.Request, params ListRoleAssignmentOptionsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/admin/role-assignment-organizations)
+func (_ Unimplemented) ListRoleAssignmentOrganizations(w http.ResponseWriter, r *http.Request, params ListRoleAssignmentOrganizationsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/admin/role-change-requests)
+func (_ Unimplemented) ListRoleChangeRequests(w http.ResponseWriter, r *http.Request, params ListRoleChangeRequestsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/admin/role-change-requests/{requestId})
+func (_ Unimplemented) GetRoleChangeRequest(w http.ResponseWriter, r *http.Request, requestId RoleChangeRequestId, params GetRoleChangeRequestParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/admin/role-change-requests/{requestId}/approve)
+func (_ Unimplemented) ApproveRoleChangeRequest(w http.ResponseWriter, r *http.Request, requestId RoleChangeRequestId, params ApproveRoleChangeRequestParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/admin/role-change-requests/{requestId}/cancel)
+func (_ Unimplemented) CancelRoleChangeRequest(w http.ResponseWriter, r *http.Request, requestId RoleChangeRequestId, params CancelRoleChangeRequestParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/admin/role-change-requests/{requestId}/reject)
+func (_ Unimplemented) RejectRoleChangeRequest(w http.ResponseWriter, r *http.Request, requestId RoleChangeRequestId, params RejectRoleChangeRequestParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/admin/users)
+func (_ Unimplemented) ListTenantUsers(w http.ResponseWriter, r *http.Request, params ListTenantUsersParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/admin/users/{membershipId})
+func (_ Unimplemented) GetTenantUser(w http.ResponseWriter, r *http.Request, membershipId openapi_types.UUID, params GetTenantUserParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/admin/users/{membershipId}/role-change-eligibility)
+func (_ Unimplemented) GetTenantUserRoleChangeEligibility(w http.ResponseWriter, r *http.Request, membershipId RoleAssignmentMembershipId, params GetTenantUserRoleChangeEligibilityParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/admin/users/{membershipId}/role-change-requests)
+func (_ Unimplemented) CreateTenantUserRoleChangeRequest(w http.ResponseWriter, r *http.Request, membershipId RoleAssignmentMembershipId, params CreateTenantUserRoleChangeRequestParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/admin/users/{membershipId}/role-grants)
+func (_ Unimplemented) ListTenantUserRoleGrants(w http.ResponseWriter, r *http.Request, membershipId RoleAssignmentMembershipId, params ListTenantUserRoleGrantsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/admin/users/{membershipId}/role-grants)
+func (_ Unimplemented) AssignTenantUserRoleGrant(w http.ResponseWriter, r *http.Request, membershipId RoleAssignmentMembershipId, params AssignTenantUserRoleGrantParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/admin/users/{membershipId}/role-grants/{grantId}/revoke)
+func (_ Unimplemented) RevokeTenantUserRoleGrant(w http.ResponseWriter, r *http.Request, membershipId RoleAssignmentMembershipId, grantId openapi_types.UUID, params RevokeTenantUserRoleGrantParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/admin/users/{membershipId}/suspend)
+func (_ Unimplemented) SuspendTenantUser(w http.ResponseWriter, r *http.Request, membershipId openapi_types.UUID, params SuspendTenantUserParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // (GET /api/v1/approval-policies)
 func (_ Unimplemented) ListApprovalPolicies(w http.ResponseWriter, r *http.Request, params ListApprovalPoliciesParams) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -18579,6 +20484,21 @@ func (_ Unimplemented) ListClaims(w http.ResponseWriter, r *http.Request, params
 
 // (POST /api/v1/claims)
 func (_ Unimplemented) CreateClaim(w http.ResponseWriter, r *http.Request, params CreateClaimParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/claims/case-sources)
+func (_ Unimplemented) ListClaimCaseSources(w http.ResponseWriter, r *http.Request, params ListClaimCaseSourcesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/claims/case-sources/{caseId})
+func (_ Unimplemented) GetClaimCaseSource(w http.ResponseWriter, r *http.Request, caseId CaseId, params GetClaimCaseSourceParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/claims/case-sources/{caseId})
+func (_ Unimplemented) CreateClaimFromCase(w http.ResponseWriter, r *http.Request, caseId CaseId, params CreateClaimFromCaseParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -18847,6 +20767,11 @@ func (_ Unimplemented) PutEncounterDiagnoses(w http.ResponseWriter, r *http.Requ
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// (POST /api/v1/encounters/{encounterId}/end)
+func (_ Unimplemented) EndEncounter(w http.ResponseWriter, r *http.Request, encounterId EncounterId, params EndEncounterParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // (GET /api/v1/enrollments)
 func (_ Unimplemented) ListEnrollments(w http.ResponseWriter, r *http.Request, params ListEnrollmentsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -19039,6 +20964,31 @@ func (_ Unimplemented) GetInpatientStayReconciliation(w http.ResponseWriter, r *
 
 // (PUT /api/v1/inpatient-stays/{stayId}/segments)
 func (_ Unimplemented) PutStaySegments(w http.ResponseWriter, r *http.Request, stayId StayId, params PutStaySegmentsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/invitations/accept-existing)
+func (_ Unimplemented) AcceptExistingInvitation(w http.ResponseWriter, r *http.Request, params AcceptExistingInvitationParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/invitations/accept-new)
+func (_ Unimplemented) AcceptNewInvitation(w http.ResponseWriter, r *http.Request, params AcceptNewInvitationParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/invitations/acceptance-receipt)
+func (_ Unimplemented) RecoverNewInvitationAcceptance(w http.ResponseWriter, r *http.Request, params RecoverNewInvitationAcceptanceParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/invitations/inspect)
+func (_ Unimplemented) InspectInvitation(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/invitations/inspect-new)
+func (_ Unimplemented) InspectNewInvitation(w http.ResponseWriter, r *http.Request, params InspectNewInvitationParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -19409,6 +21359,16 @@ func (_ Unimplemented) PutPriceItems(w http.ResponseWriter, r *http.Request, pri
 
 // (POST /api/v1/prices:resolve)
 func (_ Unimplemented) ResolvePrice(w http.ResponseWriter, r *http.Request, params ResolvePriceParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/pricing/options/providers)
+func (_ Unimplemented) ListPriceProviderOptions(w http.ResponseWriter, r *http.Request, params ListPriceProviderOptionsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/pricing/options/services)
+func (_ Unimplemented) ListPriceServiceOptions(w http.ResponseWriter, r *http.Request, params ListPriceServiceOptionsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -21995,6 +23955,1605 @@ func (siw *ServerInterfaceWrapper) CancelWaitlistEntry(w http.ResponseWriter, r 
 	handler.ServeHTTP(w, r)
 }
 
+// ListTenantInvitations operation middleware
+func (siw *ServerInterfaceWrapper) ListTenantInvitations(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListTenantInvitationsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListTenantInvitations(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateTenantInvitation operation middleware
+func (siw *ServerInterfaceWrapper) CreateTenantInvitation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateTenantInvitationParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateTenantInvitation(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetTenantInvitation operation middleware
+func (siw *ServerInterfaceWrapper) GetTenantInvitation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "invitationId" -------------
+	var invitationId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "invitationId", chi.URLParam(r, "invitationId"), &invitationId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "invitationId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetTenantInvitationParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetTenantInvitation(w, r, invitationId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CancelTenantInvitation operation middleware
+func (siw *ServerInterfaceWrapper) CancelTenantInvitation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "invitationId" -------------
+	var invitationId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "invitationId", chi.URLParam(r, "invitationId"), &invitationId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "invitationId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CancelTenantInvitationParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CancelTenantInvitation(w, r, invitationId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListPrivilegedRoleAssignmentOptions operation middleware
+func (siw *ServerInterfaceWrapper) ListPrivilegedRoleAssignmentOptions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListPrivilegedRoleAssignmentOptionsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListPrivilegedRoleAssignmentOptions(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListRoleAssignmentOptions operation middleware
+func (siw *ServerInterfaceWrapper) ListRoleAssignmentOptions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListRoleAssignmentOptionsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListRoleAssignmentOptions(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListRoleAssignmentOrganizations operation middleware
+func (siw *ServerInterfaceWrapper) ListRoleAssignmentOrganizations(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListRoleAssignmentOrganizationsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListRoleAssignmentOrganizations(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListRoleChangeRequests operation middleware
+func (siw *ServerInterfaceWrapper) ListRoleChangeRequests(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListRoleChangeRequestsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "membershipId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "membershipId", r.URL.Query(), &params.MembershipId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "membershipId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "membershipId", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListRoleChangeRequests(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetRoleChangeRequest operation middleware
+func (siw *ServerInterfaceWrapper) GetRoleChangeRequest(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "requestId" -------------
+	var requestId RoleChangeRequestId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "requestId", chi.URLParam(r, "requestId"), &requestId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "requestId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetRoleChangeRequestParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetRoleChangeRequest(w, r, requestId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ApproveRoleChangeRequest operation middleware
+func (siw *ServerInterfaceWrapper) ApproveRoleChangeRequest(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "requestId" -------------
+	var requestId RoleChangeRequestId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "requestId", chi.URLParam(r, "requestId"), &requestId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "requestId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ApproveRoleChangeRequestParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ApproveRoleChangeRequest(w, r, requestId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CancelRoleChangeRequest operation middleware
+func (siw *ServerInterfaceWrapper) CancelRoleChangeRequest(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "requestId" -------------
+	var requestId RoleChangeRequestId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "requestId", chi.URLParam(r, "requestId"), &requestId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "requestId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CancelRoleChangeRequestParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CancelRoleChangeRequest(w, r, requestId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RejectRoleChangeRequest operation middleware
+func (siw *ServerInterfaceWrapper) RejectRoleChangeRequest(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "requestId" -------------
+	var requestId RoleChangeRequestId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "requestId", chi.URLParam(r, "requestId"), &requestId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "requestId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RejectRoleChangeRequestParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RejectRoleChangeRequest(w, r, requestId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListTenantUsers operation middleware
+func (siw *ServerInterfaceWrapper) ListTenantUsers(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListTenantUsersParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListTenantUsers(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetTenantUser operation middleware
+func (siw *ServerInterfaceWrapper) GetTenantUser(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "membershipId" -------------
+	var membershipId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "membershipId", chi.URLParam(r, "membershipId"), &membershipId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "membershipId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetTenantUserParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetTenantUser(w, r, membershipId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetTenantUserRoleChangeEligibility operation middleware
+func (siw *ServerInterfaceWrapper) GetTenantUserRoleChangeEligibility(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "membershipId" -------------
+	var membershipId RoleAssignmentMembershipId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "membershipId", chi.URLParam(r, "membershipId"), &membershipId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "membershipId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetTenantUserRoleChangeEligibilityParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetTenantUserRoleChangeEligibility(w, r, membershipId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateTenantUserRoleChangeRequest operation middleware
+func (siw *ServerInterfaceWrapper) CreateTenantUserRoleChangeRequest(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "membershipId" -------------
+	var membershipId RoleAssignmentMembershipId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "membershipId", chi.URLParam(r, "membershipId"), &membershipId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "membershipId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateTenantUserRoleChangeRequestParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateTenantUserRoleChangeRequest(w, r, membershipId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListTenantUserRoleGrants operation middleware
+func (siw *ServerInterfaceWrapper) ListTenantUserRoleGrants(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "membershipId" -------------
+	var membershipId RoleAssignmentMembershipId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "membershipId", chi.URLParam(r, "membershipId"), &membershipId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "membershipId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListTenantUserRoleGrantsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListTenantUserRoleGrants(w, r, membershipId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AssignTenantUserRoleGrant operation middleware
+func (siw *ServerInterfaceWrapper) AssignTenantUserRoleGrant(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "membershipId" -------------
+	var membershipId RoleAssignmentMembershipId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "membershipId", chi.URLParam(r, "membershipId"), &membershipId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "membershipId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params AssignTenantUserRoleGrantParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AssignTenantUserRoleGrant(w, r, membershipId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RevokeTenantUserRoleGrant operation middleware
+func (siw *ServerInterfaceWrapper) RevokeTenantUserRoleGrant(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "membershipId" -------------
+	var membershipId RoleAssignmentMembershipId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "membershipId", chi.URLParam(r, "membershipId"), &membershipId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "membershipId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "grantId" -------------
+	var grantId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "grantId", chi.URLParam(r, "grantId"), &grantId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "grantId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RevokeTenantUserRoleGrantParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RevokeTenantUserRoleGrant(w, r, membershipId, grantId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SuspendTenantUser operation middleware
+func (siw *ServerInterfaceWrapper) SuspendTenantUser(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "membershipId" -------------
+	var membershipId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "membershipId", chi.URLParam(r, "membershipId"), &membershipId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "membershipId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SuspendTenantUserParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SuspendTenantUser(w, r, membershipId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListApprovalPolicies operation middleware
 func (siw *ServerInterfaceWrapper) ListApprovalPolicies(w http.ResponseWriter, r *http.Request) {
 
@@ -23728,6 +27287,231 @@ func (siw *ServerInterfaceWrapper) CreateClaim(w http.ResponseWriter, r *http.Re
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateClaim(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListClaimCaseSources operation middleware
+func (siw *ServerInterfaceWrapper) ListClaimCaseSources(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListClaimCaseSourcesParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListClaimCaseSources(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetClaimCaseSource operation middleware
+func (siw *ServerInterfaceWrapper) GetClaimCaseSource(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "caseId" -------------
+	var caseId CaseId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "caseId", chi.URLParam(r, "caseId"), &caseId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "caseId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetClaimCaseSourceParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetClaimCaseSource(w, r, caseId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateClaimFromCase operation middleware
+func (siw *ServerInterfaceWrapper) CreateClaimFromCase(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "caseId" -------------
+	var caseId CaseId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "caseId", chi.URLParam(r, "caseId"), &caseId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "caseId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateClaimFromCaseParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateClaimFromCase(w, r, caseId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -28270,6 +32054,106 @@ func (siw *ServerInterfaceWrapper) PutEncounterDiagnoses(w http.ResponseWriter, 
 	handler.ServeHTTP(w, r)
 }
 
+// EndEncounter operation middleware
+func (siw *ServerInterfaceWrapper) EndEncounter(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "encounterId" -------------
+	var encounterId EncounterId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "encounterId", chi.URLParam(r, "encounterId"), &encounterId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "encounterId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params EndEncounterParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.EndEncounter(w, r, encounterId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListEnrollments operation middleware
 func (siw *ServerInterfaceWrapper) ListEnrollments(w http.ResponseWriter, r *http.Request) {
 
@@ -32175,6 +36059,292 @@ func (siw *ServerInterfaceWrapper) PutStaySegments(w http.ResponseWriter, r *htt
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PutStaySegments(w, r, stayId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AcceptExistingInvitation operation middleware
+func (siw *ServerInterfaceWrapper) AcceptExistingInvitation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params AcceptExistingInvitationParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AcceptExistingInvitation(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AcceptNewInvitation operation middleware
+func (siw *ServerInterfaceWrapper) AcceptNewInvitation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params AcceptNewInvitationParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Invitation-Request" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Invitation-Request")]; found {
+		var XInvitationRequest AcceptNewInvitationParamsXInvitationRequest
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Invitation-Request", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Invitation-Request", valueList[0], &XInvitationRequest, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Invitation-Request", Err: err})
+			return
+		}
+
+		params.XInvitationRequest = XInvitationRequest
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Invitation-Request is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Invitation-Request", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Origin" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Origin")]; found {
+		var Origin InvitationOrigin
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Origin", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Origin", valueList[0], &Origin, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Origin", Err: err})
+			return
+		}
+
+		params.Origin = Origin
+
+	} else {
+		err := fmt.Errorf("Header parameter Origin is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Origin", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AcceptNewInvitation(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RecoverNewInvitationAcceptance operation middleware
+func (siw *ServerInterfaceWrapper) RecoverNewInvitationAcceptance(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RecoverNewInvitationAcceptanceParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Invitation-Request" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Invitation-Request")]; found {
+		var XInvitationRequest RecoverNewInvitationAcceptanceParamsXInvitationRequest
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Invitation-Request", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Invitation-Request", valueList[0], &XInvitationRequest, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Invitation-Request", Err: err})
+			return
+		}
+
+		params.XInvitationRequest = XInvitationRequest
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Invitation-Request is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Invitation-Request", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Origin" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Origin")]; found {
+		var Origin InvitationOrigin
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Origin", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Origin", valueList[0], &Origin, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Origin", Err: err})
+			return
+		}
+
+		params.Origin = Origin
+
+	} else {
+		err := fmt.Errorf("Header parameter Origin is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Origin", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RecoverNewInvitationAcceptance(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// InspectInvitation operation middleware
+func (siw *ServerInterfaceWrapper) InspectInvitation(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.InspectInvitation(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// InspectNewInvitation operation middleware
+func (siw *ServerInterfaceWrapper) InspectNewInvitation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params InspectNewInvitationParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Invitation-Request" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Invitation-Request")]; found {
+		var XInvitationRequest InspectNewInvitationParamsXInvitationRequest
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Invitation-Request", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Invitation-Request", valueList[0], &XInvitationRequest, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Invitation-Request", Err: err})
+			return
+		}
+
+		params.XInvitationRequest = XInvitationRequest
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Invitation-Request is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Invitation-Request", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Origin" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Origin")]; found {
+		var Origin InvitationOrigin
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Origin", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Origin", valueList[0], &Origin, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Origin", Err: err})
+			return
+		}
+
+		params.Origin = Origin
+
+	} else {
+		err := fmt.Errorf("Header parameter Origin is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Origin", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.InspectNewInvitation(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -38109,6 +42279,174 @@ func (siw *ServerInterfaceWrapper) ResolvePrice(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ResolvePrice(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListPriceProviderOptions operation middleware
+func (siw *ServerInterfaceWrapper) ListPriceProviderOptions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListPriceProviderOptionsParams
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListPriceProviderOptions(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListPriceServiceOptions operation middleware
+func (siw *ServerInterfaceWrapper) ListPriceServiceOptions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListPriceServiceOptionsParams
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListPriceServiceOptions(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -46371,6 +50709,81 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/invitations", wrapper.ListTenantInvitations)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/invitations", wrapper.CreateTenantInvitation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/invitations/{invitationId}", wrapper.GetTenantInvitation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/invitations/{invitationId}/cancel", wrapper.CancelTenantInvitation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/invitations/inspect", wrapper.InspectInvitation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/invitations/accept-existing", wrapper.AcceptExistingInvitation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/invitations/inspect-new", wrapper.InspectNewInvitation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/invitations/accept-new", wrapper.AcceptNewInvitation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/invitations/acceptance-receipt", wrapper.RecoverNewInvitationAcceptance)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/users", wrapper.ListTenantUsers)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/users/{membershipId}", wrapper.GetTenantUser)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/users/{membershipId}/suspend", wrapper.SuspendTenantUser)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/role-assignment-options", wrapper.ListRoleAssignmentOptions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/role-assignment-organizations", wrapper.ListRoleAssignmentOrganizations)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/users/{membershipId}/role-grants", wrapper.ListTenantUserRoleGrants)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/users/{membershipId}/role-grants", wrapper.AssignTenantUserRoleGrant)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/users/{membershipId}/role-grants/{grantId}/revoke", wrapper.RevokeTenantUserRoleGrant)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/privileged-role-assignment-options", wrapper.ListPrivilegedRoleAssignmentOptions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/users/{membershipId}/role-change-eligibility", wrapper.GetTenantUserRoleChangeEligibility)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/users/{membershipId}/role-change-requests", wrapper.CreateTenantUserRoleChangeRequest)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/role-change-requests", wrapper.ListRoleChangeRequests)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/role-change-requests/{requestId}", wrapper.GetRoleChangeRequest)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/role-change-requests/{requestId}/approve", wrapper.ApproveRoleChangeRequest)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/role-change-requests/{requestId}/reject", wrapper.RejectRoleChangeRequest)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/role-change-requests/{requestId}/cancel", wrapper.CancelRoleChangeRequest)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/health/live", wrapper.GetLiveness)
 	})
 	r.Group(func(r chi.Router) {
@@ -46842,6 +51255,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/v1/rule-evaluations/{ruleEvaluationId}", wrapper.GetRuleEvaluation)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/pricing/options/providers", wrapper.ListPriceProviderOptions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/pricing/options/services", wrapper.ListPriceServiceOptions)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/pricing/quotes", wrapper.CreatePriceQuote)
 	})
 	r.Group(func(r chi.Router) {
@@ -46995,6 +51414,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/v1/encounters/{encounterId}", wrapper.GetEncounter)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/encounters/{encounterId}/end", wrapper.EndEncounter)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/encounters/{encounterId}/diagnoses", wrapper.ListEncounterDiagnoses)
 	})
 	r.Group(func(r chi.Router) {
@@ -47059,6 +51481,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/inpatient-stays/{stayId}/reconciliation", wrapper.GetInpatientStayReconciliation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/claims/case-sources", wrapper.ListClaimCaseSources)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/claims/case-sources/{caseId}", wrapper.GetClaimCaseSource)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/claims/case-sources/{caseId}", wrapper.CreateClaimFromCase)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/claims", wrapper.ListClaims)
@@ -49634,6 +54065,2118 @@ func (response CancelWaitlistEntry409ApplicationProblemPlusJSONResponse) VisitCa
 	return err
 }
 
+type ListTenantInvitationsRequestObject struct {
+	Params ListTenantInvitationsParams
+}
+
+type ListTenantInvitationsResponseObject interface {
+	VisitListTenantInvitationsResponse(w http.ResponseWriter) error
+}
+
+type ListTenantInvitations200JSONResponse TenantInvitationPage
+
+func (response ListTenantInvitations200JSONResponse) VisitListTenantInvitationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListTenantInvitations400ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListTenantInvitations400ApplicationProblemPlusJSONResponse) VisitListTenantInvitationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListTenantInvitations401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response ListTenantInvitations401ApplicationProblemPlusJSONResponse) VisitListTenantInvitationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListTenantInvitations403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListTenantInvitations403ApplicationProblemPlusJSONResponse) VisitListTenantInvitationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateTenantInvitationRequestObject struct {
+	Params CreateTenantInvitationParams
+	Body   *CreateTenantInvitationJSONRequestBody
+}
+
+type CreateTenantInvitationResponseObject interface {
+	VisitCreateTenantInvitationResponse(w http.ResponseWriter) error
+}
+
+type CreateTenantInvitation200ResponseHeaders struct {
+	ETag *string
+}
+
+type CreateTenantInvitation200JSONResponse struct {
+	Body    TenantInvitation
+	Headers CreateTenantInvitation200ResponseHeaders
+}
+
+func (response CreateTenantInvitation200JSONResponse) VisitCreateTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateTenantInvitation400ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CreateTenantInvitation400ApplicationProblemPlusJSONResponse) VisitCreateTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateTenantInvitation401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response CreateTenantInvitation401ApplicationProblemPlusJSONResponse) VisitCreateTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateTenantInvitation403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CreateTenantInvitation403ApplicationProblemPlusJSONResponse) VisitCreateTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateTenantInvitation409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response CreateTenantInvitation409ApplicationProblemPlusJSONResponse) VisitCreateTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateTenantInvitation503ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateTenantInvitation503ApplicationProblemPlusJSONResponse) VisitCreateTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetTenantInvitationRequestObject struct {
+	InvitationId openapi_types.UUID `json:"invitationId"`
+	Params       GetTenantInvitationParams
+}
+
+type GetTenantInvitationResponseObject interface {
+	VisitGetTenantInvitationResponse(w http.ResponseWriter) error
+}
+
+type GetTenantInvitation200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetTenantInvitation200JSONResponse struct {
+	Body    TenantInvitation
+	Headers GetTenantInvitation200ResponseHeaders
+}
+
+func (response GetTenantInvitation200JSONResponse) VisitGetTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetTenantInvitation401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GetTenantInvitation401ApplicationProblemPlusJSONResponse) VisitGetTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetTenantInvitation403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetTenantInvitation403ApplicationProblemPlusJSONResponse) VisitGetTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetTenantInvitation404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetTenantInvitation404ApplicationProblemPlusJSONResponse) VisitGetTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelTenantInvitationRequestObject struct {
+	InvitationId openapi_types.UUID `json:"invitationId"`
+	Params       CancelTenantInvitationParams
+}
+
+type CancelTenantInvitationResponseObject interface {
+	VisitCancelTenantInvitationResponse(w http.ResponseWriter) error
+}
+
+type CancelTenantInvitation200ResponseHeaders struct {
+	ETag *string
+}
+
+type CancelTenantInvitation200JSONResponse struct {
+	Body    TenantInvitation
+	Headers CancelTenantInvitation200ResponseHeaders
+}
+
+func (response CancelTenantInvitation200JSONResponse) VisitCancelTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelTenantInvitation401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response CancelTenantInvitation401ApplicationProblemPlusJSONResponse) VisitCancelTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelTenantInvitation403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CancelTenantInvitation403ApplicationProblemPlusJSONResponse) VisitCancelTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelTenantInvitation404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CancelTenantInvitation404ApplicationProblemPlusJSONResponse) VisitCancelTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelTenantInvitation409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response CancelTenantInvitation409ApplicationProblemPlusJSONResponse) VisitCancelTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelTenantInvitation412ApplicationProblemPlusJSONResponse Problem
+
+func (response CancelTenantInvitation412ApplicationProblemPlusJSONResponse) VisitCancelTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelTenantInvitation428ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CancelTenantInvitation428ApplicationProblemPlusJSONResponse) VisitCancelTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPrivilegedRoleAssignmentOptionsRequestObject struct {
+	Params ListPrivilegedRoleAssignmentOptionsParams
+}
+
+type ListPrivilegedRoleAssignmentOptionsResponseObject interface {
+	VisitListPrivilegedRoleAssignmentOptionsResponse(w http.ResponseWriter) error
+}
+
+type ListPrivilegedRoleAssignmentOptions200JSONResponse PrivilegedRoleAssignmentOptions
+
+func (response ListPrivilegedRoleAssignmentOptions200JSONResponse) VisitListPrivilegedRoleAssignmentOptionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPrivilegedRoleAssignmentOptions401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response ListPrivilegedRoleAssignmentOptions401ApplicationProblemPlusJSONResponse) VisitListPrivilegedRoleAssignmentOptionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPrivilegedRoleAssignmentOptions403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListPrivilegedRoleAssignmentOptions403ApplicationProblemPlusJSONResponse) VisitListPrivilegedRoleAssignmentOptionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRoleAssignmentOptionsRequestObject struct {
+	Params ListRoleAssignmentOptionsParams
+}
+
+type ListRoleAssignmentOptionsResponseObject interface {
+	VisitListRoleAssignmentOptionsResponse(w http.ResponseWriter) error
+}
+
+type ListRoleAssignmentOptions200JSONResponse RoleAssignmentOptions
+
+func (response ListRoleAssignmentOptions200JSONResponse) VisitListRoleAssignmentOptionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRoleAssignmentOptions401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response ListRoleAssignmentOptions401ApplicationProblemPlusJSONResponse) VisitListRoleAssignmentOptionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRoleAssignmentOptions403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListRoleAssignmentOptions403ApplicationProblemPlusJSONResponse) VisitListRoleAssignmentOptionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRoleAssignmentOrganizationsRequestObject struct {
+	Params ListRoleAssignmentOrganizationsParams
+}
+
+type ListRoleAssignmentOrganizationsResponseObject interface {
+	VisitListRoleAssignmentOrganizationsResponse(w http.ResponseWriter) error
+}
+
+type ListRoleAssignmentOrganizations200JSONResponse RoleAssignmentOrganizationPage
+
+func (response ListRoleAssignmentOrganizations200JSONResponse) VisitListRoleAssignmentOrganizationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRoleAssignmentOrganizations400ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListRoleAssignmentOrganizations400ApplicationProblemPlusJSONResponse) VisitListRoleAssignmentOrganizationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRoleAssignmentOrganizations401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response ListRoleAssignmentOrganizations401ApplicationProblemPlusJSONResponse) VisitListRoleAssignmentOrganizationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRoleAssignmentOrganizations403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListRoleAssignmentOrganizations403ApplicationProblemPlusJSONResponse) VisitListRoleAssignmentOrganizationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRoleChangeRequestsRequestObject struct {
+	Params ListRoleChangeRequestsParams
+}
+
+type ListRoleChangeRequestsResponseObject interface {
+	VisitListRoleChangeRequestsResponse(w http.ResponseWriter) error
+}
+
+type ListRoleChangeRequests200JSONResponse RoleChangeRequestPage
+
+func (response ListRoleChangeRequests200JSONResponse) VisitListRoleChangeRequestsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRoleChangeRequests400ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListRoleChangeRequests400ApplicationProblemPlusJSONResponse) VisitListRoleChangeRequestsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRoleChangeRequests401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response ListRoleChangeRequests401ApplicationProblemPlusJSONResponse) VisitListRoleChangeRequestsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRoleChangeRequests403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListRoleChangeRequests403ApplicationProblemPlusJSONResponse) VisitListRoleChangeRequestsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRoleChangeRequestRequestObject struct {
+	RequestId RoleChangeRequestId `json:"requestId"`
+	Params    GetRoleChangeRequestParams
+}
+
+type GetRoleChangeRequestResponseObject interface {
+	VisitGetRoleChangeRequestResponse(w http.ResponseWriter) error
+}
+
+type GetRoleChangeRequest200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetRoleChangeRequest200JSONResponse struct {
+	Body    RoleChangeRequestDetail
+	Headers GetRoleChangeRequest200ResponseHeaders
+}
+
+func (response GetRoleChangeRequest200JSONResponse) VisitGetRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRoleChangeRequest401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GetRoleChangeRequest401ApplicationProblemPlusJSONResponse) VisitGetRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRoleChangeRequest403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetRoleChangeRequest403ApplicationProblemPlusJSONResponse) VisitGetRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRoleChangeRequest404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetRoleChangeRequest404ApplicationProblemPlusJSONResponse) VisitGetRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveRoleChangeRequestRequestObject struct {
+	RequestId RoleChangeRequestId `json:"requestId"`
+	Params    ApproveRoleChangeRequestParams
+	Body      *ApproveRoleChangeRequestJSONRequestBody
+}
+
+type ApproveRoleChangeRequestResponseObject interface {
+	VisitApproveRoleChangeRequestResponse(w http.ResponseWriter) error
+}
+
+type ApproveRoleChangeRequest200ResponseHeaders struct {
+	ETag *string
+}
+
+type ApproveRoleChangeRequest200JSONResponse struct {
+	Body    RoleChangeCommandResult
+	Headers ApproveRoleChangeRequest200ResponseHeaders
+}
+
+func (response ApproveRoleChangeRequest200JSONResponse) VisitApproveRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveRoleChangeRequest400ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ApproveRoleChangeRequest400ApplicationProblemPlusJSONResponse) VisitApproveRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveRoleChangeRequest401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response ApproveRoleChangeRequest401ApplicationProblemPlusJSONResponse) VisitApproveRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveRoleChangeRequest403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ApproveRoleChangeRequest403ApplicationProblemPlusJSONResponse) VisitApproveRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveRoleChangeRequest404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ApproveRoleChangeRequest404ApplicationProblemPlusJSONResponse) VisitApproveRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveRoleChangeRequest409ApplicationProblemPlusJSONResponse Problem
+
+func (response ApproveRoleChangeRequest409ApplicationProblemPlusJSONResponse) VisitApproveRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveRoleChangeRequest412ApplicationProblemPlusJSONResponse Problem
+
+func (response ApproveRoleChangeRequest412ApplicationProblemPlusJSONResponse) VisitApproveRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveRoleChangeRequest415ApplicationProblemPlusJSONResponse Problem
+
+func (response ApproveRoleChangeRequest415ApplicationProblemPlusJSONResponse) VisitApproveRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(415)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveRoleChangeRequest428ApplicationProblemPlusJSONResponse Problem
+
+func (response ApproveRoleChangeRequest428ApplicationProblemPlusJSONResponse) VisitApproveRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelRoleChangeRequestRequestObject struct {
+	RequestId RoleChangeRequestId `json:"requestId"`
+	Params    CancelRoleChangeRequestParams
+	Body      *CancelRoleChangeRequestJSONRequestBody
+}
+
+type CancelRoleChangeRequestResponseObject interface {
+	VisitCancelRoleChangeRequestResponse(w http.ResponseWriter) error
+}
+
+type CancelRoleChangeRequest200ResponseHeaders struct {
+	ETag *string
+}
+
+type CancelRoleChangeRequest200JSONResponse struct {
+	Body    RoleChangeCommandResult
+	Headers CancelRoleChangeRequest200ResponseHeaders
+}
+
+func (response CancelRoleChangeRequest200JSONResponse) VisitCancelRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelRoleChangeRequest400ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CancelRoleChangeRequest400ApplicationProblemPlusJSONResponse) VisitCancelRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelRoleChangeRequest401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response CancelRoleChangeRequest401ApplicationProblemPlusJSONResponse) VisitCancelRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelRoleChangeRequest403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CancelRoleChangeRequest403ApplicationProblemPlusJSONResponse) VisitCancelRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelRoleChangeRequest404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CancelRoleChangeRequest404ApplicationProblemPlusJSONResponse) VisitCancelRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelRoleChangeRequest409ApplicationProblemPlusJSONResponse Problem
+
+func (response CancelRoleChangeRequest409ApplicationProblemPlusJSONResponse) VisitCancelRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelRoleChangeRequest412ApplicationProblemPlusJSONResponse Problem
+
+func (response CancelRoleChangeRequest412ApplicationProblemPlusJSONResponse) VisitCancelRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelRoleChangeRequest415ApplicationProblemPlusJSONResponse Problem
+
+func (response CancelRoleChangeRequest415ApplicationProblemPlusJSONResponse) VisitCancelRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(415)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelRoleChangeRequest428ApplicationProblemPlusJSONResponse Problem
+
+func (response CancelRoleChangeRequest428ApplicationProblemPlusJSONResponse) VisitCancelRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectRoleChangeRequestRequestObject struct {
+	RequestId RoleChangeRequestId `json:"requestId"`
+	Params    RejectRoleChangeRequestParams
+	Body      *RejectRoleChangeRequestJSONRequestBody
+}
+
+type RejectRoleChangeRequestResponseObject interface {
+	VisitRejectRoleChangeRequestResponse(w http.ResponseWriter) error
+}
+
+type RejectRoleChangeRequest200ResponseHeaders struct {
+	ETag *string
+}
+
+type RejectRoleChangeRequest200JSONResponse struct {
+	Body    RoleChangeCommandResult
+	Headers RejectRoleChangeRequest200ResponseHeaders
+}
+
+func (response RejectRoleChangeRequest200JSONResponse) VisitRejectRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectRoleChangeRequest400ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response RejectRoleChangeRequest400ApplicationProblemPlusJSONResponse) VisitRejectRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectRoleChangeRequest401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RejectRoleChangeRequest401ApplicationProblemPlusJSONResponse) VisitRejectRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectRoleChangeRequest403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RejectRoleChangeRequest403ApplicationProblemPlusJSONResponse) VisitRejectRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectRoleChangeRequest404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RejectRoleChangeRequest404ApplicationProblemPlusJSONResponse) VisitRejectRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectRoleChangeRequest409ApplicationProblemPlusJSONResponse Problem
+
+func (response RejectRoleChangeRequest409ApplicationProblemPlusJSONResponse) VisitRejectRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectRoleChangeRequest412ApplicationProblemPlusJSONResponse Problem
+
+func (response RejectRoleChangeRequest412ApplicationProblemPlusJSONResponse) VisitRejectRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectRoleChangeRequest415ApplicationProblemPlusJSONResponse Problem
+
+func (response RejectRoleChangeRequest415ApplicationProblemPlusJSONResponse) VisitRejectRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(415)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectRoleChangeRequest428ApplicationProblemPlusJSONResponse Problem
+
+func (response RejectRoleChangeRequest428ApplicationProblemPlusJSONResponse) VisitRejectRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListTenantUsersRequestObject struct {
+	Params ListTenantUsersParams
+}
+
+type ListTenantUsersResponseObject interface {
+	VisitListTenantUsersResponse(w http.ResponseWriter) error
+}
+
+type ListTenantUsers200JSONResponse TenantUserPage
+
+func (response ListTenantUsers200JSONResponse) VisitListTenantUsersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListTenantUsers400ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListTenantUsers400ApplicationProblemPlusJSONResponse) VisitListTenantUsersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListTenantUsers401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response ListTenantUsers401ApplicationProblemPlusJSONResponse) VisitListTenantUsersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListTenantUsers403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListTenantUsers403ApplicationProblemPlusJSONResponse) VisitListTenantUsersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetTenantUserRequestObject struct {
+	MembershipId openapi_types.UUID `json:"membershipId"`
+	Params       GetTenantUserParams
+}
+
+type GetTenantUserResponseObject interface {
+	VisitGetTenantUserResponse(w http.ResponseWriter) error
+}
+
+type GetTenantUser200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetTenantUser200JSONResponse struct {
+	Body    TenantUserDetail
+	Headers GetTenantUser200ResponseHeaders
+}
+
+func (response GetTenantUser200JSONResponse) VisitGetTenantUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetTenantUser401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GetTenantUser401ApplicationProblemPlusJSONResponse) VisitGetTenantUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetTenantUser403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetTenantUser403ApplicationProblemPlusJSONResponse) VisitGetTenantUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetTenantUser404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetTenantUser404ApplicationProblemPlusJSONResponse) VisitGetTenantUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetTenantUserRoleChangeEligibilityRequestObject struct {
+	MembershipId RoleAssignmentMembershipId `json:"membershipId"`
+	Params       GetTenantUserRoleChangeEligibilityParams
+}
+
+type GetTenantUserRoleChangeEligibilityResponseObject interface {
+	VisitGetTenantUserRoleChangeEligibilityResponse(w http.ResponseWriter) error
+}
+
+type GetTenantUserRoleChangeEligibility200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetTenantUserRoleChangeEligibility200JSONResponse struct {
+	Body    RoleChangeEligibility
+	Headers GetTenantUserRoleChangeEligibility200ResponseHeaders
+}
+
+func (response GetTenantUserRoleChangeEligibility200JSONResponse) VisitGetTenantUserRoleChangeEligibilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetTenantUserRoleChangeEligibility401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GetTenantUserRoleChangeEligibility401ApplicationProblemPlusJSONResponse) VisitGetTenantUserRoleChangeEligibilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetTenantUserRoleChangeEligibility403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetTenantUserRoleChangeEligibility403ApplicationProblemPlusJSONResponse) VisitGetTenantUserRoleChangeEligibilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetTenantUserRoleChangeEligibility404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetTenantUserRoleChangeEligibility404ApplicationProblemPlusJSONResponse) VisitGetTenantUserRoleChangeEligibilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateTenantUserRoleChangeRequestRequestObject struct {
+	MembershipId RoleAssignmentMembershipId `json:"membershipId"`
+	Params       CreateTenantUserRoleChangeRequestParams
+	Body         *CreateTenantUserRoleChangeRequestJSONRequestBody
+}
+
+type CreateTenantUserRoleChangeRequestResponseObject interface {
+	VisitCreateTenantUserRoleChangeRequestResponse(w http.ResponseWriter) error
+}
+
+type CreateTenantUserRoleChangeRequest201ResponseHeaders struct {
+	ETag *string
+}
+
+type CreateTenantUserRoleChangeRequest201JSONResponse struct {
+	Body    RoleChangeCommandResult
+	Headers CreateTenantUserRoleChangeRequest201ResponseHeaders
+}
+
+func (response CreateTenantUserRoleChangeRequest201JSONResponse) VisitCreateTenantUserRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateTenantUserRoleChangeRequest400ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CreateTenantUserRoleChangeRequest400ApplicationProblemPlusJSONResponse) VisitCreateTenantUserRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateTenantUserRoleChangeRequest401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response CreateTenantUserRoleChangeRequest401ApplicationProblemPlusJSONResponse) VisitCreateTenantUserRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateTenantUserRoleChangeRequest403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CreateTenantUserRoleChangeRequest403ApplicationProblemPlusJSONResponse) VisitCreateTenantUserRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateTenantUserRoleChangeRequest404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CreateTenantUserRoleChangeRequest404ApplicationProblemPlusJSONResponse) VisitCreateTenantUserRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateTenantUserRoleChangeRequest409ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateTenantUserRoleChangeRequest409ApplicationProblemPlusJSONResponse) VisitCreateTenantUserRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateTenantUserRoleChangeRequest412ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateTenantUserRoleChangeRequest412ApplicationProblemPlusJSONResponse) VisitCreateTenantUserRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateTenantUserRoleChangeRequest415ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateTenantUserRoleChangeRequest415ApplicationProblemPlusJSONResponse) VisitCreateTenantUserRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(415)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateTenantUserRoleChangeRequest428ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateTenantUserRoleChangeRequest428ApplicationProblemPlusJSONResponse) VisitCreateTenantUserRoleChangeRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListTenantUserRoleGrantsRequestObject struct {
+	MembershipId RoleAssignmentMembershipId `json:"membershipId"`
+	Params       ListTenantUserRoleGrantsParams
+}
+
+type ListTenantUserRoleGrantsResponseObject interface {
+	VisitListTenantUserRoleGrantsResponse(w http.ResponseWriter) error
+}
+
+type ListTenantUserRoleGrants200ResponseHeaders struct {
+	ETag *string
+}
+
+type ListTenantUserRoleGrants200JSONResponse struct {
+	Body    TenantRoleGrantPage
+	Headers ListTenantUserRoleGrants200ResponseHeaders
+}
+
+func (response ListTenantUserRoleGrants200JSONResponse) VisitListTenantUserRoleGrantsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListTenantUserRoleGrants400ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListTenantUserRoleGrants400ApplicationProblemPlusJSONResponse) VisitListTenantUserRoleGrantsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListTenantUserRoleGrants401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response ListTenantUserRoleGrants401ApplicationProblemPlusJSONResponse) VisitListTenantUserRoleGrantsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListTenantUserRoleGrants403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListTenantUserRoleGrants403ApplicationProblemPlusJSONResponse) VisitListTenantUserRoleGrantsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListTenantUserRoleGrants404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ListTenantUserRoleGrants404ApplicationProblemPlusJSONResponse) VisitListTenantUserRoleGrantsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AssignTenantUserRoleGrantRequestObject struct {
+	MembershipId RoleAssignmentMembershipId `json:"membershipId"`
+	Params       AssignTenantUserRoleGrantParams
+	Body         *AssignTenantUserRoleGrantJSONRequestBody
+}
+
+type AssignTenantUserRoleGrantResponseObject interface {
+	VisitAssignTenantUserRoleGrantResponse(w http.ResponseWriter) error
+}
+
+type AssignTenantUserRoleGrant200ResponseHeaders struct {
+	ETag *string
+}
+
+type AssignTenantUserRoleGrant200JSONResponse struct {
+	Body    TenantRoleGrantResult
+	Headers AssignTenantUserRoleGrant200ResponseHeaders
+}
+
+func (response AssignTenantUserRoleGrant200JSONResponse) VisitAssignTenantUserRoleGrantResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AssignTenantUserRoleGrant400ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response AssignTenantUserRoleGrant400ApplicationProblemPlusJSONResponse) VisitAssignTenantUserRoleGrantResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AssignTenantUserRoleGrant401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response AssignTenantUserRoleGrant401ApplicationProblemPlusJSONResponse) VisitAssignTenantUserRoleGrantResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AssignTenantUserRoleGrant403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response AssignTenantUserRoleGrant403ApplicationProblemPlusJSONResponse) VisitAssignTenantUserRoleGrantResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AssignTenantUserRoleGrant404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response AssignTenantUserRoleGrant404ApplicationProblemPlusJSONResponse) VisitAssignTenantUserRoleGrantResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AssignTenantUserRoleGrant409ApplicationProblemPlusJSONResponse Problem
+
+func (response AssignTenantUserRoleGrant409ApplicationProblemPlusJSONResponse) VisitAssignTenantUserRoleGrantResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AssignTenantUserRoleGrant412ApplicationProblemPlusJSONResponse Problem
+
+func (response AssignTenantUserRoleGrant412ApplicationProblemPlusJSONResponse) VisitAssignTenantUserRoleGrantResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AssignTenantUserRoleGrant415ApplicationProblemPlusJSONResponse Problem
+
+func (response AssignTenantUserRoleGrant415ApplicationProblemPlusJSONResponse) VisitAssignTenantUserRoleGrantResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(415)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AssignTenantUserRoleGrant428ApplicationProblemPlusJSONResponse Problem
+
+func (response AssignTenantUserRoleGrant428ApplicationProblemPlusJSONResponse) VisitAssignTenantUserRoleGrantResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeTenantUserRoleGrantRequestObject struct {
+	MembershipId RoleAssignmentMembershipId `json:"membershipId"`
+	GrantId      openapi_types.UUID         `json:"grantId"`
+	Params       RevokeTenantUserRoleGrantParams
+	Body         *RevokeTenantUserRoleGrantJSONRequestBody
+}
+
+type RevokeTenantUserRoleGrantResponseObject interface {
+	VisitRevokeTenantUserRoleGrantResponse(w http.ResponseWriter) error
+}
+
+type RevokeTenantUserRoleGrant200ResponseHeaders struct {
+	ETag *string
+}
+
+type RevokeTenantUserRoleGrant200JSONResponse struct {
+	Body    TenantRoleGrantResult
+	Headers RevokeTenantUserRoleGrant200ResponseHeaders
+}
+
+func (response RevokeTenantUserRoleGrant200JSONResponse) VisitRevokeTenantUserRoleGrantResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeTenantUserRoleGrant400ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response RevokeTenantUserRoleGrant400ApplicationProblemPlusJSONResponse) VisitRevokeTenantUserRoleGrantResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeTenantUserRoleGrant401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RevokeTenantUserRoleGrant401ApplicationProblemPlusJSONResponse) VisitRevokeTenantUserRoleGrantResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeTenantUserRoleGrant403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RevokeTenantUserRoleGrant403ApplicationProblemPlusJSONResponse) VisitRevokeTenantUserRoleGrantResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeTenantUserRoleGrant404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RevokeTenantUserRoleGrant404ApplicationProblemPlusJSONResponse) VisitRevokeTenantUserRoleGrantResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeTenantUserRoleGrant409ApplicationProblemPlusJSONResponse Problem
+
+func (response RevokeTenantUserRoleGrant409ApplicationProblemPlusJSONResponse) VisitRevokeTenantUserRoleGrantResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeTenantUserRoleGrant412ApplicationProblemPlusJSONResponse Problem
+
+func (response RevokeTenantUserRoleGrant412ApplicationProblemPlusJSONResponse) VisitRevokeTenantUserRoleGrantResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeTenantUserRoleGrant415ApplicationProblemPlusJSONResponse Problem
+
+func (response RevokeTenantUserRoleGrant415ApplicationProblemPlusJSONResponse) VisitRevokeTenantUserRoleGrantResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(415)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeTenantUserRoleGrant428ApplicationProblemPlusJSONResponse Problem
+
+func (response RevokeTenantUserRoleGrant428ApplicationProblemPlusJSONResponse) VisitRevokeTenantUserRoleGrantResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SuspendTenantUserRequestObject struct {
+	MembershipId openapi_types.UUID `json:"membershipId"`
+	Params       SuspendTenantUserParams
+	Body         *SuspendTenantUserJSONRequestBody
+}
+
+type SuspendTenantUserResponseObject interface {
+	VisitSuspendTenantUserResponse(w http.ResponseWriter) error
+}
+
+type SuspendTenantUser200ResponseHeaders struct {
+	ETag *string
+}
+
+type SuspendTenantUser200JSONResponse struct {
+	Body    TenantUserDetail
+	Headers SuspendTenantUser200ResponseHeaders
+}
+
+func (response SuspendTenantUser200JSONResponse) VisitSuspendTenantUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SuspendTenantUser400ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response SuspendTenantUser400ApplicationProblemPlusJSONResponse) VisitSuspendTenantUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SuspendTenantUser401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response SuspendTenantUser401ApplicationProblemPlusJSONResponse) VisitSuspendTenantUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SuspendTenantUser403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response SuspendTenantUser403ApplicationProblemPlusJSONResponse) VisitSuspendTenantUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SuspendTenantUser404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response SuspendTenantUser404ApplicationProblemPlusJSONResponse) VisitSuspendTenantUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SuspendTenantUser409ApplicationProblemPlusJSONResponse Problem
+
+func (response SuspendTenantUser409ApplicationProblemPlusJSONResponse) VisitSuspendTenantUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SuspendTenantUser412ApplicationProblemPlusJSONResponse Problem
+
+func (response SuspendTenantUser412ApplicationProblemPlusJSONResponse) VisitSuspendTenantUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SuspendTenantUser428ApplicationProblemPlusJSONResponse Problem
+
+func (response SuspendTenantUser428ApplicationProblemPlusJSONResponse) VisitSuspendTenantUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListApprovalPoliciesRequestObject struct {
 	Params ListApprovalPoliciesParams
 }
@@ -51365,6 +57908,265 @@ func (response CreateClaim429ApplicationProblemPlusJSONResponse) VisitCreateClai
 		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
 	}
 	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListClaimCaseSourcesRequestObject struct {
+	Params ListClaimCaseSourcesParams
+}
+
+type ListClaimCaseSourcesResponseObject interface {
+	VisitListClaimCaseSourcesResponse(w http.ResponseWriter) error
+}
+
+type ListClaimCaseSources200JSONResponse ClaimCaseSourcePage
+
+func (response ListClaimCaseSources200JSONResponse) VisitListClaimCaseSourcesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListClaimCaseSources400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListClaimCaseSources400ApplicationProblemPlusJSONResponse) VisitListClaimCaseSourcesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListClaimCaseSources403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListClaimCaseSources403ApplicationProblemPlusJSONResponse) VisitListClaimCaseSourcesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetClaimCaseSourceRequestObject struct {
+	CaseId CaseId `json:"caseId"`
+	Params GetClaimCaseSourceParams
+}
+
+type GetClaimCaseSourceResponseObject interface {
+	VisitGetClaimCaseSourceResponse(w http.ResponseWriter) error
+}
+
+type GetClaimCaseSource200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetClaimCaseSource200JSONResponse struct {
+	Body    ClaimCaseSourceDetail
+	Headers GetClaimCaseSource200ResponseHeaders
+}
+
+func (response GetClaimCaseSource200JSONResponse) VisitGetClaimCaseSourceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetClaimCaseSource403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetClaimCaseSource403ApplicationProblemPlusJSONResponse) VisitGetClaimCaseSourceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetClaimCaseSource404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetClaimCaseSource404ApplicationProblemPlusJSONResponse) VisitGetClaimCaseSourceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetClaimCaseSource409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response GetClaimCaseSource409ApplicationProblemPlusJSONResponse) VisitGetClaimCaseSourceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateClaimFromCaseRequestObject struct {
+	CaseId CaseId `json:"caseId"`
+	Params CreateClaimFromCaseParams
+	Body   *CreateClaimFromCaseJSONRequestBody
+}
+
+type CreateClaimFromCaseResponseObject interface {
+	VisitCreateClaimFromCaseResponse(w http.ResponseWriter) error
+}
+
+type CreateClaimFromCase201ResponseHeaders struct {
+	ETag *string
+}
+
+type CreateClaimFromCase201JSONResponse struct {
+	Body    Claim
+	Headers CreateClaimFromCase201ResponseHeaders
+}
+
+func (response CreateClaimFromCase201JSONResponse) VisitCreateClaimFromCaseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateClaimFromCase403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CreateClaimFromCase403ApplicationProblemPlusJSONResponse) VisitCreateClaimFromCaseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateClaimFromCase404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CreateClaimFromCase404ApplicationProblemPlusJSONResponse) VisitCreateClaimFromCaseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateClaimFromCase409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response CreateClaimFromCase409ApplicationProblemPlusJSONResponse) VisitCreateClaimFromCaseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateClaimFromCase412ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateClaimFromCase412ApplicationProblemPlusJSONResponse) VisitCreateClaimFromCaseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateClaimFromCase422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CreateClaimFromCase422ApplicationProblemPlusJSONResponse) VisitCreateClaimFromCaseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateClaimFromCase428ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateClaimFromCase428ApplicationProblemPlusJSONResponse) VisitCreateClaimFromCaseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -56572,6 +63374,151 @@ func (response PutEncounterDiagnoses429ApplicationProblemPlusJSONResponse) Visit
 	return err
 }
 
+type EndEncounterRequestObject struct {
+	EncounterId EncounterId `json:"encounterId"`
+	Params      EndEncounterParams
+	Body        *EndEncounterJSONRequestBody
+}
+
+type EndEncounterResponseObject interface {
+	VisitEndEncounterResponse(w http.ResponseWriter) error
+}
+
+type EndEncounter200ResponseHeaders struct {
+	ETag *string
+}
+
+type EndEncounter200JSONResponse struct {
+	Body    Encounter
+	Headers EndEncounter200ResponseHeaders
+}
+
+func (response EndEncounter200JSONResponse) VisitEndEncounterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EndEncounter403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response EndEncounter403ApplicationProblemPlusJSONResponse) VisitEndEncounterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EndEncounter404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response EndEncounter404ApplicationProblemPlusJSONResponse) VisitEndEncounterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EndEncounter409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response EndEncounter409ApplicationProblemPlusJSONResponse) VisitEndEncounterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EndEncounter412ApplicationProblemPlusJSONResponse Problem
+
+func (response EndEncounter412ApplicationProblemPlusJSONResponse) VisitEndEncounterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EndEncounter422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response EndEncounter422ApplicationProblemPlusJSONResponse) VisitEndEncounterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EndEncounter428ApplicationProblemPlusJSONResponse Problem
+
+func (response EndEncounter428ApplicationProblemPlusJSONResponse) VisitEndEncounterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EndEncounter429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response EndEncounter429ApplicationProblemPlusJSONResponse) VisitEndEncounterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListEnrollmentsRequestObject struct {
 	Params ListEnrollmentsParams
 }
@@ -60007,6 +66954,449 @@ func (response PutStaySegments428ApplicationProblemPlusJSONResponse) VisitPutSta
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptExistingInvitationRequestObject struct {
+	Params AcceptExistingInvitationParams
+	Body   *AcceptExistingInvitationJSONRequestBody
+}
+
+type AcceptExistingInvitationResponseObject interface {
+	VisitAcceptExistingInvitationResponse(w http.ResponseWriter) error
+}
+
+type AcceptExistingInvitation200JSONResponse AcceptExistingInvitationResponse
+
+func (response AcceptExistingInvitation200JSONResponse) VisitAcceptExistingInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptExistingInvitation400ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response AcceptExistingInvitation400ApplicationProblemPlusJSONResponse) VisitAcceptExistingInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptExistingInvitation401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response AcceptExistingInvitation401ApplicationProblemPlusJSONResponse) VisitAcceptExistingInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptExistingInvitation404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response AcceptExistingInvitation404ApplicationProblemPlusJSONResponse) VisitAcceptExistingInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptExistingInvitation409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response AcceptExistingInvitation409ApplicationProblemPlusJSONResponse) VisitAcceptExistingInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptNewInvitationRequestObject struct {
+	Params AcceptNewInvitationParams
+	Body   *AcceptNewInvitationJSONRequestBody
+}
+
+type AcceptNewInvitationResponseObject interface {
+	VisitAcceptNewInvitationResponse(w http.ResponseWriter) error
+}
+
+type AcceptNewInvitation200JSONResponse AcceptNewInvitationResponse
+
+func (response AcceptNewInvitation200JSONResponse) VisitAcceptNewInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptNewInvitation400ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response AcceptNewInvitation400ApplicationProblemPlusJSONResponse) VisitAcceptNewInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptNewInvitation403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response AcceptNewInvitation403ApplicationProblemPlusJSONResponse) VisitAcceptNewInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptNewInvitation404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response AcceptNewInvitation404ApplicationProblemPlusJSONResponse) VisitAcceptNewInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptNewInvitation409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response AcceptNewInvitation409ApplicationProblemPlusJSONResponse) VisitAcceptNewInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptNewInvitation429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response AcceptNewInvitation429ApplicationProblemPlusJSONResponse) VisitAcceptNewInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RecoverNewInvitationAcceptanceRequestObject struct {
+	Params RecoverNewInvitationAcceptanceParams
+	Body   *RecoverNewInvitationAcceptanceJSONRequestBody
+}
+
+type RecoverNewInvitationAcceptanceResponseObject interface {
+	VisitRecoverNewInvitationAcceptanceResponse(w http.ResponseWriter) error
+}
+
+type RecoverNewInvitationAcceptance200JSONResponse AcceptNewInvitationResponse
+
+func (response RecoverNewInvitationAcceptance200JSONResponse) VisitRecoverNewInvitationAcceptanceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RecoverNewInvitationAcceptance400ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response RecoverNewInvitationAcceptance400ApplicationProblemPlusJSONResponse) VisitRecoverNewInvitationAcceptanceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RecoverNewInvitationAcceptance403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RecoverNewInvitationAcceptance403ApplicationProblemPlusJSONResponse) VisitRecoverNewInvitationAcceptanceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RecoverNewInvitationAcceptance404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RecoverNewInvitationAcceptance404ApplicationProblemPlusJSONResponse) VisitRecoverNewInvitationAcceptanceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RecoverNewInvitationAcceptance429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response RecoverNewInvitationAcceptance429ApplicationProblemPlusJSONResponse) VisitRecoverNewInvitationAcceptanceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type InspectInvitationRequestObject struct {
+	Body *InspectInvitationJSONRequestBody
+}
+
+type InspectInvitationResponseObject interface {
+	VisitInspectInvitationResponse(w http.ResponseWriter) error
+}
+
+type InspectInvitation200JSONResponse InspectInvitationResponse
+
+func (response InspectInvitation200JSONResponse) VisitInspectInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type InspectInvitation400ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response InspectInvitation400ApplicationProblemPlusJSONResponse) VisitInspectInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type InspectInvitation401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response InspectInvitation401ApplicationProblemPlusJSONResponse) VisitInspectInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type InspectInvitation404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response InspectInvitation404ApplicationProblemPlusJSONResponse) VisitInspectInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type InspectNewInvitationRequestObject struct {
+	Params InspectNewInvitationParams
+	Body   *InspectNewInvitationJSONRequestBody
+}
+
+type InspectNewInvitationResponseObject interface {
+	VisitInspectNewInvitationResponse(w http.ResponseWriter) error
+}
+
+type InspectNewInvitation200JSONResponse InspectInvitationResponse
+
+func (response InspectNewInvitation200JSONResponse) VisitInspectNewInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type InspectNewInvitation400ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response InspectNewInvitation400ApplicationProblemPlusJSONResponse) VisitInspectNewInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type InspectNewInvitation403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response InspectNewInvitation403ApplicationProblemPlusJSONResponse) VisitInspectNewInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type InspectNewInvitation404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response InspectNewInvitation404ApplicationProblemPlusJSONResponse) VisitInspectNewInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type InspectNewInvitation429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response InspectNewInvitation429ApplicationProblemPlusJSONResponse) VisitInspectNewInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -66439,6 +73829,142 @@ type ResolvePrice422ApplicationProblemPlusJSONResponse struct {
 }
 
 func (response ResolvePrice422ApplicationProblemPlusJSONResponse) VisitResolvePriceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPriceProviderOptionsRequestObject struct {
+	Params ListPriceProviderOptionsParams
+}
+
+type ListPriceProviderOptionsResponseObject interface {
+	VisitListPriceProviderOptionsResponse(w http.ResponseWriter) error
+}
+
+type ListPriceProviderOptions200JSONResponse PriceProviderOptionPage
+
+func (response ListPriceProviderOptions200JSONResponse) VisitListPriceProviderOptionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPriceProviderOptions400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListPriceProviderOptions400ApplicationProblemPlusJSONResponse) VisitListPriceProviderOptionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPriceProviderOptions403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListPriceProviderOptions403ApplicationProblemPlusJSONResponse) VisitListPriceProviderOptionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPriceProviderOptions422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListPriceProviderOptions422ApplicationProblemPlusJSONResponse) VisitListPriceProviderOptionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPriceServiceOptionsRequestObject struct {
+	Params ListPriceServiceOptionsParams
+}
+
+type ListPriceServiceOptionsResponseObject interface {
+	VisitListPriceServiceOptionsResponse(w http.ResponseWriter) error
+}
+
+type ListPriceServiceOptions200JSONResponse PriceServiceOptionPage
+
+func (response ListPriceServiceOptions200JSONResponse) VisitListPriceServiceOptionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPriceServiceOptions400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListPriceServiceOptions400ApplicationProblemPlusJSONResponse) VisitListPriceServiceOptionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPriceServiceOptions403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListPriceServiceOptions403ApplicationProblemPlusJSONResponse) VisitListPriceServiceOptionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPriceServiceOptions422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListPriceServiceOptions422ApplicationProblemPlusJSONResponse) VisitListPriceServiceOptionsResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -76052,6 +83578,66 @@ type StrictServerInterface interface {
 	// (POST /api/v1/accommodation/waitlist/{waitlistEntryId}/cancel)
 	CancelWaitlistEntry(ctx context.Context, request CancelWaitlistEntryRequestObject) (CancelWaitlistEntryResponseObject, error)
 
+	// (GET /api/v1/admin/invitations)
+	ListTenantInvitations(ctx context.Context, request ListTenantInvitationsRequestObject) (ListTenantInvitationsResponseObject, error)
+
+	// (POST /api/v1/admin/invitations)
+	CreateTenantInvitation(ctx context.Context, request CreateTenantInvitationRequestObject) (CreateTenantInvitationResponseObject, error)
+
+	// (GET /api/v1/admin/invitations/{invitationId})
+	GetTenantInvitation(ctx context.Context, request GetTenantInvitationRequestObject) (GetTenantInvitationResponseObject, error)
+
+	// (POST /api/v1/admin/invitations/{invitationId}/cancel)
+	CancelTenantInvitation(ctx context.Context, request CancelTenantInvitationRequestObject) (CancelTenantInvitationResponseObject, error)
+
+	// (GET /api/v1/admin/privileged-role-assignment-options)
+	ListPrivilegedRoleAssignmentOptions(ctx context.Context, request ListPrivilegedRoleAssignmentOptionsRequestObject) (ListPrivilegedRoleAssignmentOptionsResponseObject, error)
+
+	// (GET /api/v1/admin/role-assignment-options)
+	ListRoleAssignmentOptions(ctx context.Context, request ListRoleAssignmentOptionsRequestObject) (ListRoleAssignmentOptionsResponseObject, error)
+
+	// (GET /api/v1/admin/role-assignment-organizations)
+	ListRoleAssignmentOrganizations(ctx context.Context, request ListRoleAssignmentOrganizationsRequestObject) (ListRoleAssignmentOrganizationsResponseObject, error)
+
+	// (GET /api/v1/admin/role-change-requests)
+	ListRoleChangeRequests(ctx context.Context, request ListRoleChangeRequestsRequestObject) (ListRoleChangeRequestsResponseObject, error)
+
+	// (GET /api/v1/admin/role-change-requests/{requestId})
+	GetRoleChangeRequest(ctx context.Context, request GetRoleChangeRequestRequestObject) (GetRoleChangeRequestResponseObject, error)
+
+	// (POST /api/v1/admin/role-change-requests/{requestId}/approve)
+	ApproveRoleChangeRequest(ctx context.Context, request ApproveRoleChangeRequestRequestObject) (ApproveRoleChangeRequestResponseObject, error)
+
+	// (POST /api/v1/admin/role-change-requests/{requestId}/cancel)
+	CancelRoleChangeRequest(ctx context.Context, request CancelRoleChangeRequestRequestObject) (CancelRoleChangeRequestResponseObject, error)
+
+	// (POST /api/v1/admin/role-change-requests/{requestId}/reject)
+	RejectRoleChangeRequest(ctx context.Context, request RejectRoleChangeRequestRequestObject) (RejectRoleChangeRequestResponseObject, error)
+
+	// (GET /api/v1/admin/users)
+	ListTenantUsers(ctx context.Context, request ListTenantUsersRequestObject) (ListTenantUsersResponseObject, error)
+
+	// (GET /api/v1/admin/users/{membershipId})
+	GetTenantUser(ctx context.Context, request GetTenantUserRequestObject) (GetTenantUserResponseObject, error)
+
+	// (GET /api/v1/admin/users/{membershipId}/role-change-eligibility)
+	GetTenantUserRoleChangeEligibility(ctx context.Context, request GetTenantUserRoleChangeEligibilityRequestObject) (GetTenantUserRoleChangeEligibilityResponseObject, error)
+
+	// (POST /api/v1/admin/users/{membershipId}/role-change-requests)
+	CreateTenantUserRoleChangeRequest(ctx context.Context, request CreateTenantUserRoleChangeRequestRequestObject) (CreateTenantUserRoleChangeRequestResponseObject, error)
+
+	// (GET /api/v1/admin/users/{membershipId}/role-grants)
+	ListTenantUserRoleGrants(ctx context.Context, request ListTenantUserRoleGrantsRequestObject) (ListTenantUserRoleGrantsResponseObject, error)
+
+	// (POST /api/v1/admin/users/{membershipId}/role-grants)
+	AssignTenantUserRoleGrant(ctx context.Context, request AssignTenantUserRoleGrantRequestObject) (AssignTenantUserRoleGrantResponseObject, error)
+
+	// (POST /api/v1/admin/users/{membershipId}/role-grants/{grantId}/revoke)
+	RevokeTenantUserRoleGrant(ctx context.Context, request RevokeTenantUserRoleGrantRequestObject) (RevokeTenantUserRoleGrantResponseObject, error)
+
+	// (POST /api/v1/admin/users/{membershipId}/suspend)
+	SuspendTenantUser(ctx context.Context, request SuspendTenantUserRequestObject) (SuspendTenantUserResponseObject, error)
+
 	// (GET /api/v1/approval-policies)
 	ListApprovalPolicies(ctx context.Context, request ListApprovalPoliciesRequestObject) (ListApprovalPoliciesResponseObject, error)
 
@@ -76105,6 +83691,15 @@ type StrictServerInterface interface {
 
 	// (POST /api/v1/claims)
 	CreateClaim(ctx context.Context, request CreateClaimRequestObject) (CreateClaimResponseObject, error)
+
+	// (GET /api/v1/claims/case-sources)
+	ListClaimCaseSources(ctx context.Context, request ListClaimCaseSourcesRequestObject) (ListClaimCaseSourcesResponseObject, error)
+
+	// (GET /api/v1/claims/case-sources/{caseId})
+	GetClaimCaseSource(ctx context.Context, request GetClaimCaseSourceRequestObject) (GetClaimCaseSourceResponseObject, error)
+
+	// (POST /api/v1/claims/case-sources/{caseId})
+	CreateClaimFromCase(ctx context.Context, request CreateClaimFromCaseRequestObject) (CreateClaimFromCaseResponseObject, error)
 
 	// (GET /api/v1/claims/{claimId})
 	GetClaim(ctx context.Context, request GetClaimRequestObject) (GetClaimResponseObject, error)
@@ -76265,6 +83860,9 @@ type StrictServerInterface interface {
 	// (PUT /api/v1/encounters/{encounterId}/diagnoses)
 	PutEncounterDiagnoses(ctx context.Context, request PutEncounterDiagnosesRequestObject) (PutEncounterDiagnosesResponseObject, error)
 
+	// (POST /api/v1/encounters/{encounterId}/end)
+	EndEncounter(ctx context.Context, request EndEncounterRequestObject) (EndEncounterResponseObject, error)
+
 	// (GET /api/v1/enrollments)
 	ListEnrollments(ctx context.Context, request ListEnrollmentsRequestObject) (ListEnrollmentsResponseObject, error)
 
@@ -76381,6 +83979,21 @@ type StrictServerInterface interface {
 
 	// (PUT /api/v1/inpatient-stays/{stayId}/segments)
 	PutStaySegments(ctx context.Context, request PutStaySegmentsRequestObject) (PutStaySegmentsResponseObject, error)
+
+	// (POST /api/v1/invitations/accept-existing)
+	AcceptExistingInvitation(ctx context.Context, request AcceptExistingInvitationRequestObject) (AcceptExistingInvitationResponseObject, error)
+
+	// (POST /api/v1/invitations/accept-new)
+	AcceptNewInvitation(ctx context.Context, request AcceptNewInvitationRequestObject) (AcceptNewInvitationResponseObject, error)
+
+	// (POST /api/v1/invitations/acceptance-receipt)
+	RecoverNewInvitationAcceptance(ctx context.Context, request RecoverNewInvitationAcceptanceRequestObject) (RecoverNewInvitationAcceptanceResponseObject, error)
+
+	// (POST /api/v1/invitations/inspect)
+	InspectInvitation(ctx context.Context, request InspectInvitationRequestObject) (InspectInvitationResponseObject, error)
+
+	// (POST /api/v1/invitations/inspect-new)
+	InspectNewInvitation(ctx context.Context, request InspectNewInvitationRequestObject) (InspectNewInvitationResponseObject, error)
 
 	// (GET /api/v1/invoices)
 	ListInvoices(ctx context.Context, request ListInvoicesRequestObject) (ListInvoicesResponseObject, error)
@@ -76603,6 +84216,12 @@ type StrictServerInterface interface {
 
 	// (POST /api/v1/prices:resolve)
 	ResolvePrice(ctx context.Context, request ResolvePriceRequestObject) (ResolvePriceResponseObject, error)
+
+	// (GET /api/v1/pricing/options/providers)
+	ListPriceProviderOptions(ctx context.Context, request ListPriceProviderOptionsRequestObject) (ListPriceProviderOptionsResponseObject, error)
+
+	// (GET /api/v1/pricing/options/services)
+	ListPriceServiceOptions(ctx context.Context, request ListPriceServiceOptionsRequestObject) (ListPriceServiceOptionsResponseObject, error)
 
 	// (POST /api/v1/pricing/quotes)
 	CreatePriceQuote(ctx context.Context, request CreatePriceQuoteRequestObject) (CreatePriceQuoteResponseObject, error)
@@ -77766,6 +85385,596 @@ func (sh *strictHandler) CancelWaitlistEntry(w http.ResponseWriter, r *http.Requ
 	}
 }
 
+// ListTenantInvitations operation middleware
+func (sh *strictHandler) ListTenantInvitations(w http.ResponseWriter, r *http.Request, params ListTenantInvitationsParams) {
+	var request ListTenantInvitationsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListTenantInvitations(ctx, request.(ListTenantInvitationsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListTenantInvitations")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListTenantInvitationsResponseObject); ok {
+		if err := validResponse.VisitListTenantInvitationsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateTenantInvitation operation middleware
+func (sh *strictHandler) CreateTenantInvitation(w http.ResponseWriter, r *http.Request, params CreateTenantInvitationParams) {
+	var request CreateTenantInvitationRequestObject
+
+	request.Params = params
+
+	var body CreateTenantInvitationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateTenantInvitation(ctx, request.(CreateTenantInvitationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateTenantInvitation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateTenantInvitationResponseObject); ok {
+		if err := validResponse.VisitCreateTenantInvitationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetTenantInvitation operation middleware
+func (sh *strictHandler) GetTenantInvitation(w http.ResponseWriter, r *http.Request, invitationId openapi_types.UUID, params GetTenantInvitationParams) {
+	var request GetTenantInvitationRequestObject
+
+	request.InvitationId = invitationId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetTenantInvitation(ctx, request.(GetTenantInvitationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetTenantInvitation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetTenantInvitationResponseObject); ok {
+		if err := validResponse.VisitGetTenantInvitationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CancelTenantInvitation operation middleware
+func (sh *strictHandler) CancelTenantInvitation(w http.ResponseWriter, r *http.Request, invitationId openapi_types.UUID, params CancelTenantInvitationParams) {
+	var request CancelTenantInvitationRequestObject
+
+	request.InvitationId = invitationId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CancelTenantInvitation(ctx, request.(CancelTenantInvitationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CancelTenantInvitation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CancelTenantInvitationResponseObject); ok {
+		if err := validResponse.VisitCancelTenantInvitationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListPrivilegedRoleAssignmentOptions operation middleware
+func (sh *strictHandler) ListPrivilegedRoleAssignmentOptions(w http.ResponseWriter, r *http.Request, params ListPrivilegedRoleAssignmentOptionsParams) {
+	var request ListPrivilegedRoleAssignmentOptionsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPrivilegedRoleAssignmentOptions(ctx, request.(ListPrivilegedRoleAssignmentOptionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPrivilegedRoleAssignmentOptions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListPrivilegedRoleAssignmentOptionsResponseObject); ok {
+		if err := validResponse.VisitListPrivilegedRoleAssignmentOptionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListRoleAssignmentOptions operation middleware
+func (sh *strictHandler) ListRoleAssignmentOptions(w http.ResponseWriter, r *http.Request, params ListRoleAssignmentOptionsParams) {
+	var request ListRoleAssignmentOptionsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListRoleAssignmentOptions(ctx, request.(ListRoleAssignmentOptionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListRoleAssignmentOptions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListRoleAssignmentOptionsResponseObject); ok {
+		if err := validResponse.VisitListRoleAssignmentOptionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListRoleAssignmentOrganizations operation middleware
+func (sh *strictHandler) ListRoleAssignmentOrganizations(w http.ResponseWriter, r *http.Request, params ListRoleAssignmentOrganizationsParams) {
+	var request ListRoleAssignmentOrganizationsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListRoleAssignmentOrganizations(ctx, request.(ListRoleAssignmentOrganizationsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListRoleAssignmentOrganizations")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListRoleAssignmentOrganizationsResponseObject); ok {
+		if err := validResponse.VisitListRoleAssignmentOrganizationsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListRoleChangeRequests operation middleware
+func (sh *strictHandler) ListRoleChangeRequests(w http.ResponseWriter, r *http.Request, params ListRoleChangeRequestsParams) {
+	var request ListRoleChangeRequestsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListRoleChangeRequests(ctx, request.(ListRoleChangeRequestsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListRoleChangeRequests")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListRoleChangeRequestsResponseObject); ok {
+		if err := validResponse.VisitListRoleChangeRequestsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetRoleChangeRequest operation middleware
+func (sh *strictHandler) GetRoleChangeRequest(w http.ResponseWriter, r *http.Request, requestId RoleChangeRequestId, params GetRoleChangeRequestParams) {
+	var request GetRoleChangeRequestRequestObject
+
+	request.RequestId = requestId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetRoleChangeRequest(ctx, request.(GetRoleChangeRequestRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetRoleChangeRequest")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetRoleChangeRequestResponseObject); ok {
+		if err := validResponse.VisitGetRoleChangeRequestResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ApproveRoleChangeRequest operation middleware
+func (sh *strictHandler) ApproveRoleChangeRequest(w http.ResponseWriter, r *http.Request, requestId RoleChangeRequestId, params ApproveRoleChangeRequestParams) {
+	var request ApproveRoleChangeRequestRequestObject
+
+	request.RequestId = requestId
+	request.Params = params
+
+	var body ApproveRoleChangeRequestJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ApproveRoleChangeRequest(ctx, request.(ApproveRoleChangeRequestRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ApproveRoleChangeRequest")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ApproveRoleChangeRequestResponseObject); ok {
+		if err := validResponse.VisitApproveRoleChangeRequestResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CancelRoleChangeRequest operation middleware
+func (sh *strictHandler) CancelRoleChangeRequest(w http.ResponseWriter, r *http.Request, requestId RoleChangeRequestId, params CancelRoleChangeRequestParams) {
+	var request CancelRoleChangeRequestRequestObject
+
+	request.RequestId = requestId
+	request.Params = params
+
+	var body CancelRoleChangeRequestJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CancelRoleChangeRequest(ctx, request.(CancelRoleChangeRequestRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CancelRoleChangeRequest")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CancelRoleChangeRequestResponseObject); ok {
+		if err := validResponse.VisitCancelRoleChangeRequestResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RejectRoleChangeRequest operation middleware
+func (sh *strictHandler) RejectRoleChangeRequest(w http.ResponseWriter, r *http.Request, requestId RoleChangeRequestId, params RejectRoleChangeRequestParams) {
+	var request RejectRoleChangeRequestRequestObject
+
+	request.RequestId = requestId
+	request.Params = params
+
+	var body RejectRoleChangeRequestJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RejectRoleChangeRequest(ctx, request.(RejectRoleChangeRequestRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RejectRoleChangeRequest")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RejectRoleChangeRequestResponseObject); ok {
+		if err := validResponse.VisitRejectRoleChangeRequestResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListTenantUsers operation middleware
+func (sh *strictHandler) ListTenantUsers(w http.ResponseWriter, r *http.Request, params ListTenantUsersParams) {
+	var request ListTenantUsersRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListTenantUsers(ctx, request.(ListTenantUsersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListTenantUsers")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListTenantUsersResponseObject); ok {
+		if err := validResponse.VisitListTenantUsersResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetTenantUser operation middleware
+func (sh *strictHandler) GetTenantUser(w http.ResponseWriter, r *http.Request, membershipId openapi_types.UUID, params GetTenantUserParams) {
+	var request GetTenantUserRequestObject
+
+	request.MembershipId = membershipId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetTenantUser(ctx, request.(GetTenantUserRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetTenantUser")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetTenantUserResponseObject); ok {
+		if err := validResponse.VisitGetTenantUserResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetTenantUserRoleChangeEligibility operation middleware
+func (sh *strictHandler) GetTenantUserRoleChangeEligibility(w http.ResponseWriter, r *http.Request, membershipId RoleAssignmentMembershipId, params GetTenantUserRoleChangeEligibilityParams) {
+	var request GetTenantUserRoleChangeEligibilityRequestObject
+
+	request.MembershipId = membershipId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetTenantUserRoleChangeEligibility(ctx, request.(GetTenantUserRoleChangeEligibilityRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetTenantUserRoleChangeEligibility")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetTenantUserRoleChangeEligibilityResponseObject); ok {
+		if err := validResponse.VisitGetTenantUserRoleChangeEligibilityResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateTenantUserRoleChangeRequest operation middleware
+func (sh *strictHandler) CreateTenantUserRoleChangeRequest(w http.ResponseWriter, r *http.Request, membershipId RoleAssignmentMembershipId, params CreateTenantUserRoleChangeRequestParams) {
+	var request CreateTenantUserRoleChangeRequestRequestObject
+
+	request.MembershipId = membershipId
+	request.Params = params
+
+	var body CreateTenantUserRoleChangeRequestJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateTenantUserRoleChangeRequest(ctx, request.(CreateTenantUserRoleChangeRequestRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateTenantUserRoleChangeRequest")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateTenantUserRoleChangeRequestResponseObject); ok {
+		if err := validResponse.VisitCreateTenantUserRoleChangeRequestResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListTenantUserRoleGrants operation middleware
+func (sh *strictHandler) ListTenantUserRoleGrants(w http.ResponseWriter, r *http.Request, membershipId RoleAssignmentMembershipId, params ListTenantUserRoleGrantsParams) {
+	var request ListTenantUserRoleGrantsRequestObject
+
+	request.MembershipId = membershipId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListTenantUserRoleGrants(ctx, request.(ListTenantUserRoleGrantsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListTenantUserRoleGrants")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListTenantUserRoleGrantsResponseObject); ok {
+		if err := validResponse.VisitListTenantUserRoleGrantsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AssignTenantUserRoleGrant operation middleware
+func (sh *strictHandler) AssignTenantUserRoleGrant(w http.ResponseWriter, r *http.Request, membershipId RoleAssignmentMembershipId, params AssignTenantUserRoleGrantParams) {
+	var request AssignTenantUserRoleGrantRequestObject
+
+	request.MembershipId = membershipId
+	request.Params = params
+
+	var body AssignTenantUserRoleGrantJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AssignTenantUserRoleGrant(ctx, request.(AssignTenantUserRoleGrantRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AssignTenantUserRoleGrant")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AssignTenantUserRoleGrantResponseObject); ok {
+		if err := validResponse.VisitAssignTenantUserRoleGrantResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RevokeTenantUserRoleGrant operation middleware
+func (sh *strictHandler) RevokeTenantUserRoleGrant(w http.ResponseWriter, r *http.Request, membershipId RoleAssignmentMembershipId, grantId openapi_types.UUID, params RevokeTenantUserRoleGrantParams) {
+	var request RevokeTenantUserRoleGrantRequestObject
+
+	request.MembershipId = membershipId
+	request.GrantId = grantId
+	request.Params = params
+
+	var body RevokeTenantUserRoleGrantJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RevokeTenantUserRoleGrant(ctx, request.(RevokeTenantUserRoleGrantRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RevokeTenantUserRoleGrant")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RevokeTenantUserRoleGrantResponseObject); ok {
+		if err := validResponse.VisitRevokeTenantUserRoleGrantResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SuspendTenantUser operation middleware
+func (sh *strictHandler) SuspendTenantUser(w http.ResponseWriter, r *http.Request, membershipId openapi_types.UUID, params SuspendTenantUserParams) {
+	var request SuspendTenantUserRequestObject
+
+	request.MembershipId = membershipId
+	request.Params = params
+
+	var body SuspendTenantUserJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SuspendTenantUser(ctx, request.(SuspendTenantUserRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SuspendTenantUser")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SuspendTenantUserResponseObject); ok {
+		if err := validResponse.VisitSuspendTenantUserResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListApprovalPolicies operation middleware
 func (sh *strictHandler) ListApprovalPolicies(w http.ResponseWriter, r *http.Request, params ListApprovalPoliciesParams) {
 	var request ListApprovalPoliciesRequestObject
@@ -78304,6 +86513,93 @@ func (sh *strictHandler) CreateClaim(w http.ResponseWriter, r *http.Request, par
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(CreateClaimResponseObject); ok {
 		if err := validResponse.VisitCreateClaimResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListClaimCaseSources operation middleware
+func (sh *strictHandler) ListClaimCaseSources(w http.ResponseWriter, r *http.Request, params ListClaimCaseSourcesParams) {
+	var request ListClaimCaseSourcesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListClaimCaseSources(ctx, request.(ListClaimCaseSourcesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListClaimCaseSources")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListClaimCaseSourcesResponseObject); ok {
+		if err := validResponse.VisitListClaimCaseSourcesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetClaimCaseSource operation middleware
+func (sh *strictHandler) GetClaimCaseSource(w http.ResponseWriter, r *http.Request, caseId CaseId, params GetClaimCaseSourceParams) {
+	var request GetClaimCaseSourceRequestObject
+
+	request.CaseId = caseId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetClaimCaseSource(ctx, request.(GetClaimCaseSourceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetClaimCaseSource")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetClaimCaseSourceResponseObject); ok {
+		if err := validResponse.VisitGetClaimCaseSourceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateClaimFromCase operation middleware
+func (sh *strictHandler) CreateClaimFromCase(w http.ResponseWriter, r *http.Request, caseId CaseId, params CreateClaimFromCaseParams) {
+	var request CreateClaimFromCaseRequestObject
+
+	request.CaseId = caseId
+	request.Params = params
+
+	var body CreateClaimFromCaseJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateClaimFromCase(ctx, request.(CreateClaimFromCaseRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateClaimFromCase")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateClaimFromCaseResponseObject); ok {
+		if err := validResponse.VisitCreateClaimFromCaseResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -79949,6 +88245,40 @@ func (sh *strictHandler) PutEncounterDiagnoses(w http.ResponseWriter, r *http.Re
 	}
 }
 
+// EndEncounter operation middleware
+func (sh *strictHandler) EndEncounter(w http.ResponseWriter, r *http.Request, encounterId EncounterId, params EndEncounterParams) {
+	var request EndEncounterRequestObject
+
+	request.EncounterId = encounterId
+	request.Params = params
+
+	var body EndEncounterJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.EndEncounter(ctx, request.(EndEncounterRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "EndEncounter")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(EndEncounterResponseObject); ok {
+		if err := validResponse.VisitEndEncounterResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListEnrollments operation middleware
 func (sh *strictHandler) ListEnrollments(w http.ResponseWriter, r *http.Request, params ListEnrollmentsParams) {
 	var request ListEnrollmentsRequestObject
@@ -81128,6 +89458,169 @@ func (sh *strictHandler) PutStaySegments(w http.ResponseWriter, r *http.Request,
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PutStaySegmentsResponseObject); ok {
 		if err := validResponse.VisitPutStaySegmentsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AcceptExistingInvitation operation middleware
+func (sh *strictHandler) AcceptExistingInvitation(w http.ResponseWriter, r *http.Request, params AcceptExistingInvitationParams) {
+	var request AcceptExistingInvitationRequestObject
+
+	request.Params = params
+
+	var body AcceptExistingInvitationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AcceptExistingInvitation(ctx, request.(AcceptExistingInvitationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AcceptExistingInvitation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AcceptExistingInvitationResponseObject); ok {
+		if err := validResponse.VisitAcceptExistingInvitationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AcceptNewInvitation operation middleware
+func (sh *strictHandler) AcceptNewInvitation(w http.ResponseWriter, r *http.Request, params AcceptNewInvitationParams) {
+	var request AcceptNewInvitationRequestObject
+
+	request.Params = params
+
+	var body AcceptNewInvitationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AcceptNewInvitation(ctx, request.(AcceptNewInvitationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AcceptNewInvitation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AcceptNewInvitationResponseObject); ok {
+		if err := validResponse.VisitAcceptNewInvitationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RecoverNewInvitationAcceptance operation middleware
+func (sh *strictHandler) RecoverNewInvitationAcceptance(w http.ResponseWriter, r *http.Request, params RecoverNewInvitationAcceptanceParams) {
+	var request RecoverNewInvitationAcceptanceRequestObject
+
+	request.Params = params
+
+	var body RecoverNewInvitationAcceptanceJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RecoverNewInvitationAcceptance(ctx, request.(RecoverNewInvitationAcceptanceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RecoverNewInvitationAcceptance")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RecoverNewInvitationAcceptanceResponseObject); ok {
+		if err := validResponse.VisitRecoverNewInvitationAcceptanceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// InspectInvitation operation middleware
+func (sh *strictHandler) InspectInvitation(w http.ResponseWriter, r *http.Request) {
+	var request InspectInvitationRequestObject
+
+	var body InspectInvitationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.InspectInvitation(ctx, request.(InspectInvitationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "InspectInvitation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(InspectInvitationResponseObject); ok {
+		if err := validResponse.VisitInspectInvitationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// InspectNewInvitation operation middleware
+func (sh *strictHandler) InspectNewInvitation(w http.ResponseWriter, r *http.Request, params InspectNewInvitationParams) {
+	var request InspectNewInvitationRequestObject
+
+	request.Params = params
+
+	var body InspectNewInvitationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.InspectNewInvitation(ctx, request.(InspectNewInvitationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "InspectNewInvitation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(InspectNewInvitationResponseObject); ok {
+		if err := validResponse.VisitInspectNewInvitationResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -83360,6 +91853,58 @@ func (sh *strictHandler) ResolvePrice(w http.ResponseWriter, r *http.Request, pa
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ResolvePriceResponseObject); ok {
 		if err := validResponse.VisitResolvePriceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListPriceProviderOptions operation middleware
+func (sh *strictHandler) ListPriceProviderOptions(w http.ResponseWriter, r *http.Request, params ListPriceProviderOptionsParams) {
+	var request ListPriceProviderOptionsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPriceProviderOptions(ctx, request.(ListPriceProviderOptionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPriceProviderOptions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListPriceProviderOptionsResponseObject); ok {
+		if err := validResponse.VisitListPriceProviderOptionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListPriceServiceOptions operation middleware
+func (sh *strictHandler) ListPriceServiceOptions(w http.ResponseWriter, r *http.Request, params ListPriceServiceOptionsParams) {
+	var request ListPriceServiceOptionsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPriceServiceOptions(ctx, request.(ListPriceServiceOptionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPriceServiceOptions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListPriceServiceOptionsResponseObject); ok {
+		if err := validResponse.VisitListPriceServiceOptionsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

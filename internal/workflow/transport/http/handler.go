@@ -154,6 +154,8 @@ func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) 
 	var ve *domain.ValidationError
 	var claimed *application.AlreadyClaimedError
 	switch {
+	case errors.Is(err, identity.ErrOwnFile):
+		h.deny.Deny(w, r, err, PermissionClaim)
 	case errors.As(err, &ve):
 		writeValidation(w, r, ve.Fields)
 	case errors.As(err, &claimed):

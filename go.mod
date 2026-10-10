@@ -1,6 +1,6 @@
 module github.com/celikbros/kapsora
 
-go 1.27.0
+go 1.27.2
 
 require (
 	cel.dev/cel-go v0.32.0

@@ -8,7 +8,7 @@ import { App } from './App';
 import { createServices } from './services';
 
 /**
- * The provider's health screens against the mock world, as provider.a. What the desk sees
+ * The provider's health screens against the mock world, as clinical staff or billing. What each desk sees
  * of a case follows the projection the server sent, Uzat exists only while nothing is
  * undecided, and a correction stands beside the version it corrects.
  */
@@ -65,10 +65,13 @@ describe('the case', () => {
     await waitFor(() => expect(within(table).getByText(diagnosis.display)).toBeInTheDocument());
     expect(within(table).getByText(diagnosis.code)).toBeInTheDocument();
     expect(screen.queryByTestId('financial-note')).toBeNull();
-    // The chapters hang off the case: the report, the stay and the claim are its sections.
+    // The clinical desk sees report and stay sections, while the claim section stays restricted.
     expect(screen.getByRole('heading', { name: /^Tedavi raporları/ })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /^Yatış/ })).toBeInTheDocument();
-    expect(await screen.findByTestId('case-claims')).toBeInTheDocument();
+    expect(screen.queryByTestId('case-claims')).toBeNull();
+    expect(screen.getByTestId('case-claims-card')).toHaveTextContent(
+      'Claim kayıtlarını görmek için ek yetki gerekir.',
+    );
   });
 
   it('is narrowed to the financial half on a sensitive case and says so, without a diagnosis', async () => {
@@ -133,7 +136,7 @@ describe('the claim', () => {
     expect(claim, 'no returned claim in the world').toBeDefined();
     expect(claim!.currentVersionNo).toBeGreaterThan(1);
     mount(`/claims/${claim!.id}`);
-    await login('provider.a');
+    await login('billing.a');
     const correction = await screen.findByTestId('correction');
     expect(
       within(correction).getByRole('heading', {
@@ -157,7 +160,7 @@ describe('the claim', () => {
     const draft = api.world.claims.find((c) => c.status === 'DRAFT');
     expect(draft).toBeDefined();
     mount(`/claims/${draft!.id}`);
-    await login('provider.a');
+    await login('billing.a');
     const editor = await screen.findByTestId('claim-lines-editor');
     expect(within(editor).queryByRole('columnheader', { name: 'Onaylanan' })).toBeNull();
     expect(screen.queryByTestId('readiness')).toBeNull();

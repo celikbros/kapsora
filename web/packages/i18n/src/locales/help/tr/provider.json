@@ -47,6 +47,10 @@
     "purpose": "Bir hak sahibi için hizmet talebi açıp doğrudan ödeyen kuruma gönderirsiniz. Uygunluk cevabı, siz formu doldururken sağda hesaplanır.",
     "sections": [
       {
+        "label": "Plan kaydı",
+        "body": "Birden fazla geçerli kayıt bulunduğunda kullanılacak planı seçiniz. Uygunluk seçiminizle yeniden hesaplanır; cevap gelmeden talep gönderilemez."
+      },
+      {
         "label": "Hak sahibi",
         "body": "Kişiyi adıyla arayın. Kimlik numarasıyla arama parola ister; numara yalnızca o aramada kullanılır, ekranda maskeli görünür ve hiçbir yerde saklanmaz."
       },
@@ -176,6 +180,18 @@
       }
     ],
     "actions": [
+      {
+        "label": "Değişiklikleri kaydet",
+        "body": "Taslak veya iade edilen talebin tarihini ve hizmet satırlarını kaydeder. İade açıklaması neyi düzeltmeniz gerektiğini söyler; önceki sürüm değişmez."
+      },
+      {
+        "label": "Talebi gönder",
+        "body": "Kaydedilmiş taslağı aynı talep numarasıyla gönderir. Sonuç alınamazsa aynı işlemi yeniden deneyebilirsiniz."
+      },
+      {
+        "label": "Güncel kaydı yükle",
+        "body": "Kayıt değiştiğinde veya kaydetme sonucu belirsiz kaldığında sunucudaki son durumu yükler. Kaydedilmemiş değişiklikler silinir; göndermeden önce kaydı kontrol ediniz."
+      },
       {
         "label": "Vaka aç",
         "body": "Onaylanmış ya da kısmen onaylanmış bir talepten sağlık vakası açar; kişi ve plan kaydı talepten gelir. Yalnızca vaka yetkisi olan hesaplarda görünür."

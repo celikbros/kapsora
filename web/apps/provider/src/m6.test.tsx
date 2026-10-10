@@ -128,3 +128,89 @@ describe('the door', () => {
     await screen.findByText(/Çıkış kaydedildi; \d+ gece kalındı\./, { exact: false });
   });
 });
+
+describe('no-show evidence selection', () => {
+  function fixture(
+    kind: 'valid' | 'wrong type' | 'wrong booking' | 'wrong aggregate' | 'purged' | 'quarantine',
+  ) {
+    const booking = api.world.bookings.find(
+      (b) => b.status === 'CONFIRMED' && !api.world.noShows.some((n) => n.bookingId === b.id),
+    )!;
+    const property = api.world.properties.find((p) => p.id === booking.propertyId)!;
+    const template = api.world.documents.find((d) => d.scanStatus === 'CLEAN')!;
+    const doc: typeof template = {
+      ...template,
+      id: api.world.nextId(),
+      tenantId: booking.tenantId,
+      ownerOrganizationId: property.providerOrganizationId,
+      classification: 'INTERNAL' as const,
+      scanStatus: 'CLEAN' as const,
+      bucket: kind === 'quarantine' ? 'quarantine' : 'secure',
+      duplicateOfDocumentId: null,
+      purgedAt: kind === 'purged' ? new Date().toISOString() : null,
+      createdAt: new Date().toISOString(),
+    };
+    api.world.documents.push(doc);
+    const ownLink = {
+      ...api.world.documentLinks[0]!,
+      id: api.world.nextId(),
+      tenantId: booking.tenantId,
+      documentId: doc.id,
+      aggregateType: 'BOOKING',
+      aggregateId: booking.id,
+      documentTypeCode:
+        kind === 'valid' || kind === 'purged' || kind === 'quarantine'
+          ? 'NO_SHOW_EVIDENCE'
+          : 'INVOICE',
+    };
+    api.world.documentLinks.push(ownLink);
+    if (kind === 'wrong booking' || kind === 'wrong aggregate') {
+      api.world.documentLinks.push({
+        ...ownLink,
+        id: api.world.nextId(),
+        aggregateType: kind === 'wrong aggregate' ? 'SERVICE_REQUEST' : 'BOOKING',
+        aggregateId: kind === 'wrong booking' ? api.world.nextId() : booking.id,
+        documentTypeCode: 'NO_SHOW_EVIDENCE',
+      });
+    }
+    return { booking, doc };
+  }
+
+  async function openForm(reference: string) {
+    mount('/lodging/desk');
+    const user = await login('reservation.a');
+    const rows = await screen.findAllByTestId('arrival-row');
+    const row = rows.find((r) => within(r).queryByText(reference))!;
+    await user.click(within(row).getByRole('button', { name: 'Gelmedi' }));
+    const form = await within(row).findByTestId('no-show-form');
+    await within(form).findByTestId('documents-table');
+    return { user, form };
+  }
+
+  it.each(['wrong type', 'wrong booking', 'wrong aggregate', 'purged', 'quarantine'] as const)(
+    'does not enable reporting for a clean but unusable document: %s',
+    async (kind) => {
+      const { booking } = fixture(kind);
+      const { form } = await openForm(booking.reference);
+      expect(within(form).getByRole('button', { name: 'Gelmediğini bildir' })).toBeDisabled();
+      expect(api.world.noShows.some((n) => n.bookingId === booking.id)).toBe(false);
+    },
+  );
+
+  it('reports the usable typed evidence even when another clean file comes first', async () => {
+    const { booking, doc: wrong } = fixture('wrong type');
+    const { doc: evidence } = fixture('valid');
+    wrong.createdAt = '2099-01-01T00:00:00Z';
+    evidence.createdAt = '2098-01-01T00:00:00Z';
+    // Only this in-memory mock fixture changes dates; live acceptance must wait for its cutoff.
+    booking.checkIn = '2020-01-01';
+    booking.checkOut = '2020-01-04';
+    const { user, form } = await openForm(booking.reference);
+    await user.click(within(form).getByRole('button', { name: 'Gelmediğini bildir' }));
+    await screen.findByTestId('no-show-result');
+    const report = api.world.noShows.find((n) => n.bookingId === booking.id)!;
+    expect(report.evidenceDocumentId).toBe(evidence.id);
+    expect(report.status).toBe('REPORTED');
+    expect(booking.status).toBe('CONFIRMED');
+  });
+});

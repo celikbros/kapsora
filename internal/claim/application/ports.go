@@ -93,7 +93,8 @@ var (
 	ErrStageMismatch = errors.New("claim: the claim is not waiting for this review stage")
 	// ErrLineUndecided refuses an approval while a line of the current version still has no
 	// decision. A claim approved with an undecided line is a claim nobody can invoice.
-	ErrLineUndecided = errors.New("claim: a line of the current version has no decision")
+	ErrLineUndecided              = errors.New("claim: a line of the current version has no decision")
+	ErrInpatientAllocationMissing = errors.New("claim: inpatient claim has no complete applied authorization allocation")
 	// ErrLineNotFound is a decision naming a line number this version does not have.
 	ErrLineNotFound = errors.New("claim: the version has no such line")
 	// ErrApprovalNotPermitted is the approval policy refusing this caller's stage.
@@ -523,6 +524,9 @@ type EarningClaimRecord struct {
 // boundary is a repository concern too: the scope is passed down rather than checked above,
 // so a claim outside it is genuinely not there rather than fetched and then hidden.
 type Repository interface {
+	ListCaseSources(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, q CaseSourceQuery) ([]CaseSourceSummary, error)
+	LockCaseSource(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID, scope Scope, now time.Time) (CaseSource, error)
+	CaseSourceLines(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, source CaseSource) ([]CaseSourceLine, error)
 	CreateClaim(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, in NewClaimRow) (ClaimRecord, error)
 	GetClaim(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID, scope Scope) (ClaimRecord, error)
 	// LockClaim reads the row FOR UPDATE, so two commands on one claim serialise.
@@ -590,7 +594,11 @@ type Repository interface {
 	// CaseSensitivity is what decides the projection. A claim hanging off no case is
 	// STANDARD, which is the only honest answer for a claim with no episode of care.
 	CaseSensitivity(ctx context.Context, tx pgx.Tx, tenantID, caseID uuid.UUID) (string, error)
+	CaseType(ctx context.Context, tx pgx.Tx, tenantID, caseID uuid.UUID) (string, error)
 	CaseOverAuthorization(ctx context.Context, tx pgx.Tx, tenantID, caseID uuid.UUID) (bool, error)
+	InpatientStayPlan(ctx context.Context, tx pgx.Tx, tenantID, stayID, caseID, providerID, originalAuthorizationID uuid.UUID) (InpatientStayPlan, error)
+	CreateLineAllocation(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, row LineAllocation) error
+	ListVersionAllocations(ctx context.Context, tx pgx.Tx, tenantID, versionID uuid.UUID) ([]LineAllocation, error)
 	ProviderOrganizationExists(ctx context.Context, tx pgx.Tx, tenantID, orgID uuid.UUID) (bool, error)
 	ProviderProfile(ctx context.Context, tx pgx.Tx, tenantID, orgID uuid.UUID) (ProviderProfileRecord, error)
 	GetEnrollment(ctx context.Context, tx pgx.Tx, tenantID, enrollmentID uuid.UUID) (EnrollmentRecord, error)
@@ -704,8 +712,47 @@ func (NoRules) EvaluateClaimLine(context.Context, pgx.Tx, uuid.UUID, uuid.UUID, 
 // quantity down, and give back what a refused claim was holding. There is no method here that
 // would let a claim decide anything about entitlement.
 type AuthorizationPort interface {
+	UndoConsumption(ctx context.Context, tx pgx.Tx, in ConsumeRequest) error
 	Consume(ctx context.Context, tx pgx.Tx, in ConsumeRequest) (ConsumeAnswer, error)
+	ConsumeAllocations(ctx context.Context, tx pgx.Tx, in ConsumeAllocationsRequest) (ConsumeAllocationsAnswer, error)
 	ReleaseUnused(ctx context.Context, tx pgx.Tx, in ReleaseRequest) (benefitdomain.Quantity, error)
+}
+
+type LineAllocation struct {
+	VersionID, LineID, AuthorizationID, ServiceDefinitionID uuid.UUID
+	Order                                                   int
+	Planned, Applied                                        benefitdomain.Quantity
+	Key                                                     string
+}
+
+type InpatientHold struct {
+	AuthorizationID uuid.UUID
+	Days            benefitdomain.Quantity
+}
+
+type InpatientStayPlan struct {
+	Found, Discharged, OverAuthorization bool
+	ActualDays                           benefitdomain.Quantity
+	Holds                                []InpatientHold
+}
+
+type ConsumeAllocationsRequest struct {
+	TenantID, ActorID, ServiceDefinitionID uuid.UUID
+	Quantity                               benefitdomain.Quantity
+	ReasonCode                             string
+	Allocations                            []ConsumptionAllocation
+}
+
+type ConsumptionAllocation struct {
+	AuthorizationID uuid.UUID
+	Quantity        benefitdomain.Quantity
+	Key             string
+}
+
+type ConsumeAllocationsAnswer struct {
+	OverConsumed        bool
+	Remaining, Consumed benefitdomain.Quantity
+	Draws               []ConsumptionAllocation
 }
 
 // ConsumeRequest is one claim line drawing on the claim's authorization.
@@ -745,6 +792,10 @@ type NoAuthorizations struct{}
 // Consume implements AuthorizationPort.
 func (NoAuthorizations) Consume(context.Context, pgx.Tx, ConsumeRequest) (ConsumeAnswer, error) {
 	return ConsumeAnswer{Remaining: benefitdomain.ZeroQuantity(), Consumed: benefitdomain.ZeroQuantity()}, nil
+}
+
+func (NoAuthorizations) ConsumeAllocations(context.Context, pgx.Tx, ConsumeAllocationsRequest) (ConsumeAllocationsAnswer, error) {
+	return ConsumeAllocationsAnswer{OverConsumed: true}, nil
 }
 
 // ReleaseUnused implements AuthorizationPort.
@@ -825,3 +876,6 @@ type NoWorkItems struct{}
 
 // Raise implements WorkItemPort.
 func (NoWorkItems) Raise(context.Context, pgx.Tx, uuid.UUID, RaiseWorkItem) error { return nil }
+
+// UndoConsumption implements AuthorizationPort when no authorization module is configured.
+func (NoAuthorizations) UndoConsumption(context.Context, pgx.Tx, ConsumeRequest) error { return nil }

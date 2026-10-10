@@ -202,7 +202,16 @@ function NoShowForm({ booking, onDone }: { booking: Booking; onDone: () => void 
   const report = useReportNoShow();
   const documents = useLinkedDocuments('BOOKING', booking.id);
   const [result, setResult] = useState<NoShowResult | null>(null);
-  const evidence = (documents.data?.items ?? []).find((d) => d.scanStatus === 'CLEAN');
+  const evidence = (documents.data?.items ?? []).find(
+    (d) =>
+      d.downloadable &&
+      d.links.some(
+        (link) =>
+          link.aggregateType === 'BOOKING' &&
+          link.aggregateId === booking.id &&
+          link.documentTypeCode === 'NO_SHOW_EVIDENCE',
+      ),
+  );
 
   if (result) {
     return (

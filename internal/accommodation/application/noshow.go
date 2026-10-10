@@ -272,6 +272,16 @@ func (s *Service) reviewNoShow(ctx context.Context, tx pgx.Tx, rc identity.Reque
 		*report.ReportedByActorID == rc.Principal.ActorID {
 		return NoShowView{}, ErrNoShowSameActor
 	}
+	// Only the payer can decide a provider's report, even if another hotel clerk
+	// holds the legacy booking-management permission.
+	if rc.App == identity.AppProvider || rc.App == identity.AppMember || rc.PersonID.Valid {
+		return NoShowView{}, identity.ErrPermissionDenied
+	}
+	for _, scope := range rc.Scopes {
+		if scope.Type != "TENANT" {
+			return NoShowView{}, identity.ErrPermissionDenied
+		}
+	}
 	// Nor may a reviewer decide what their own no-show costs them.
 	if err := identity.RefuseOwnFile(rc, record.PersonID); err != nil {
 		return NoShowView{}, err

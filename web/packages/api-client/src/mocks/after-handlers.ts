@@ -31,6 +31,7 @@
 import { HttpResponse, http, type HttpHandler } from 'msw';
 
 import {
+  documentDownloadable,
   type MockWorld,
   type StoredBooking,
   type StoredCancellation,
@@ -41,7 +42,9 @@ import type { MockApi, MockSession } from './handlers';
 import {
   ANY,
   guardTenant,
+  grantsFor,
   organizationScope,
+  ownFile,
   parseLimit,
   pathParam,
   personScope,
@@ -163,6 +166,7 @@ export interface AfterTools {
     checkOut: string,
     adults: number,
     children: number,
+    enrollmentId: string,
   ): StoredBooking | null;
   /** Confirms a hold, exactly as `confirmBooking` does. */
   confirmHold(tenantId: string, booking: StoredBooking): Response | null;
@@ -219,6 +223,34 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
       .bookingNights.filter((n) => n.bookingId === booking.id)
       .sort((a, b) => a.stayDate.localeCompare(b.stayDate));
 
+  /** A synthetic reservation's terminal movement, in service and entitlement units. */
+  const entitlementEffect = (
+    booking: StoredBooking,
+    penaltyNights: number,
+  ): Schemas['CancellationQuote']['entitlementEffect'] => {
+    const approved = toMicros(
+      booking.approvedServiceNights ?? `${booking.quoteSnapshot.coveredNights}.000000`,
+    );
+    const consumed = BigInt(penaltyNights) * SCALE;
+    // A mock approval below the policy charge cannot prove a successful ledger movement.
+    // Keep the monetary policy quote, but omit a claim about entitlement movement.
+    if (consumed > approved) return undefined;
+    const released = approved - consumed;
+    const factor = toMicros(booking.entitlementUnitFactor ?? '1.000000');
+    const units = (service: bigint) => (service * factor + SCALE / 2n) / SCALE;
+    return {
+      consumedServiceNights: fromMicros(consumed),
+      releasedServiceNights: fromMicros(released),
+      consumedEntitlementUnits: fromMicros(units(consumed)),
+      releasedEntitlementUnits: fromMicros(units(released)),
+    };
+  };
+
+  const effectField = (booking: StoredBooking, penaltyNights: number) => {
+    const effect = entitlementEffect(booking, penaltyNights);
+    return effect ? { entitlementEffect: effect } : {};
+  };
+
   /**
    * What a cancellation now would cost and give back, from the booking's own frozen policy.
    *
@@ -238,6 +270,7 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
         free: true,
         penaltyNights: 0,
         releasedNights: covered,
+        ...effectField(booking, 0),
         feeAmount: '0.000000',
         payerFee: '0.000000',
         memberFee: '0.000000',
@@ -255,6 +288,7 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
       free: false,
       penaltyNights: 0,
       releasedNights: covered,
+      ...effectField(booking, 0),
       feeAmount: '0.000000',
       payerFee: '0.000000',
       memberFee: '0.000000',
@@ -279,6 +313,7 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
         ...base,
         penaltyNights: charged,
         releasedNights: covered - spent,
+        ...effectField(booking, spent),
         feeAmount: fromMicros(fee),
         payerFee: fromMicros(payer),
         memberFee: fromMicros(member),
@@ -321,7 +356,8 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
   };
 
   const toCancellation = (row: StoredCancellation): Schemas['Cancellation'] => {
-    const { tenantId: _tenantId, ...rest } = row;
+    const { tenantId: _tenantId, entitlementEffect: effect, ...rest } = row;
+    if (effect) return { ...rest, entitlementEffect: effect };
     return rest;
   };
 
@@ -388,6 +424,7 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
           entry.checkOut,
           entry.adults,
           entry.children,
+          entry.enrollmentId,
         );
         if (!held) continue;
         entry.status = 'OFFERED';
@@ -495,6 +532,7 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
           free: quote.free,
           penaltyNights: quote.penaltyNights,
           releasedNights: quote.releasedNights,
+          ...(quote.entitlementEffect ? { entitlementEffect: quote.entitlementEffect } : {}),
           feeAmount: quote.feeAmount,
           payerFee: quote.payerFee,
           memberFee: quote.memberFee,
@@ -689,15 +727,34 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
               'sonra bildirin.',
           });
         }
-        // The evidence: a clean document linked to this booking. A claim that costs a member
-        // money and rests on nothing is a claim nobody can review.
+        // Match the server's provider boundary and retained canonical bytes check.
+        const property = world().properties.find(
+          (p) => p.tenantId === g.tenantId && p.id === booking.propertyId,
+        );
         const evidence = world().documentLinks.find(
           (l) =>
             l.tenantId === g.tenantId &&
             l.aggregateType === 'BOOKING' &&
             l.aggregateId === booking.id &&
+            l.documentTypeCode === 'NO_SHOW_EVIDENCE' &&
             (!body?.evidenceDocumentId || l.documentId === body.evidenceDocumentId) &&
-            world().documents.some((d) => d.id === l.documentId && d.scanStatus === 'CLEAN'),
+            world().documents.some((d) => {
+              if (d.tenantId !== g.tenantId || d.id !== l.documentId || !property) return false;
+              const stored = d.duplicateOfDocumentId
+                ? world().documents.find(
+                    (c) => c.tenantId === g.tenantId && c.id === d.duplicateOfDocumentId,
+                  )
+                : d;
+              return (
+                documentDownloadable(d) &&
+                (d.ownerOrganizationId === null ||
+                  d.ownerOrganizationId === property.providerOrganizationId) &&
+                !!stored &&
+                documentDownloadable(stored) &&
+                (stored.ownerOrganizationId === null ||
+                  stored.ownerOrganizationId === property.providerOrganizationId)
+              );
+            }),
         );
         if (!evidence) {
           return problem(
@@ -751,7 +808,8 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
       `${ANY}/api/v1/accommodation/bookings/:bookingId/no-show/review`,
       async ({ request, params }) => {
         await wait(api);
-        const g = guardTenant(api, request, PERMISSION_BOOKING_MANAGE, true);
+        let g = guardTenant(api, request, 'accommodation.no_show.review', true);
+        if ('error' in g) g = guardTenant(api, request, PERMISSION_BOOKING_MANAGE, true);
         if ('error' in g) return g.error;
         const booking = findBooking(g.session, g.tenantId, pathParam(params, 'bookingId'));
         if (!booking) return bookingNotFound();
@@ -777,6 +835,21 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
             detail: 'Gelmedi bildirimini değerlendiren, bildiren kullanıcıdan farklı olmalı.',
           });
         }
+
+        const tenantCode = world().tenants.find((t) => t.id === g.tenantId)!.code;
+        const reviewScopes = grantsFor(g.session, tenantCode).scopes;
+        if (
+          g.session.app === 'provider' ||
+          g.session.app === 'member' ||
+          organizationScope(api, g.session, g.tenantId) !== null ||
+          personScope(api, g.session, g.tenantId) !== null ||
+          reviewScopes.some((s) => s.type !== 'TENANT')
+        ) {
+          return problem(api, 403, 'PERMISSION_DENIED', 'Bu işlem için yetkiniz yok');
+        }
+
+        const own = ownFile(api, g.session, g.tenantId, booking.personId);
+        if (own) return own;
 
         let consumed = 0;
         if (body.status === 'CONFIRMED') {
@@ -912,9 +985,25 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
         );
         if (!room) return problem(api, 404, 'ROOM_TYPE_NOT_FOUND', 'Oda tipi bulunamadı');
       }
-      const enrollment = world().enrollments.find(
-        (e) => e.tenantId === g.tenantId && e.personId === whose.personId && e.status === 'ACTIVE',
+      const enrollments = world().enrollments.filter(
+        (e) =>
+          e.tenantId === g.tenantId &&
+          e.personId === whose.personId &&
+          e.status === 'ACTIVE' &&
+          e.validFrom <= body.checkIn &&
+          (!e.validTo || body.checkIn < e.validTo) &&
+          (!body.programId || e.programId === body.programId) &&
+          world().programs.some(
+            (p) => p.tenantId === g.tenantId && p.id === e.programId && p.status === 'ACTIVE',
+          ),
       );
+      const enrollment = enrollments[0];
+      if (enrollments.length > 1) {
+        return problem(api, 422, 'ENROLLMENT_MULTIPLE', 'Birden fazla geçerli plan kaydı var', {
+          detail:
+            'Bu tarihler için kullanılacak plan kaydı kesinleştirilemedi. Kurum yetkilinize başvurun.',
+        });
+      }
       if (!enrollment) {
         return problem(
           api,

@@ -24,6 +24,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/celikbros/kapsora/internal/accommodation/application"
+	benefitdomain "github.com/celikbros/kapsora/internal/benefit/domain"
 	"github.com/celikbros/kapsora/internal/platform/sqlcgen"
 )
 
@@ -114,6 +115,7 @@ func (Bookings) MarkBookingNoShowRow(ctx context.Context, tx pgx.Tx, tenantID, i
 func (Bookings) CreateCancellation(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 	in application.NewCancellationRow,
 ) (application.CancellationRecord, error) {
+	consumedService, releasedService, consumedUnits, releasedUnits := cancellationEffectParams(in.EntitlementEffect)
 	row, err := sqlcgen.New(tx).CreateCancellation(ctx, sqlcgen.CreateCancellationParams{
 		TenantID: tenantID, BookingID: in.BookingID, CancelledAt: in.CancelledAt,
 		CancelledBy: actorUUID(in.CancelledBy), ReasonCode: in.ReasonCode,
@@ -121,17 +123,25 @@ func (Bookings) CreateCancellation(ctx context.Context, tx pgx.Tx, tenantID uuid
 		PenaltyNights:  int32(in.PenaltyNights),  //nolint:gosec // bounded by the stay's length
 		ReleasedNights: int32(in.ReleasedNights), //nolint:gosec // bounded by the stay's length
 		FeeAmount:      in.FeeAmount, PayerFee: in.PayerFee, MemberFee: in.MemberFee,
-		CurrencyCode: in.CurrencyCode,
+		CurrencyCode:          in.CurrencyCode,
+		ConsumedServiceNights: consumedService, ReleasedServiceNights: releasedService,
+		ConsumedEntitlementUnits: consumedUnits, ReleasedEntitlementUnits: releasedUnits,
 	})
 	if err != nil {
 		return application.CancellationRecord{}, fmt.Errorf("accommodation: create cancellation: %w", err)
+	}
+	effect, err := cancellationEffectFromRow(row.ConsumedServiceNights, row.ReleasedServiceNights,
+		row.ConsumedEntitlementUnits, row.ReleasedEntitlementUnits)
+	if err != nil {
+		return application.CancellationRecord{}, err
 	}
 	return application.CancellationRecord{
 		ID: row.ID, BookingID: row.BookingID, CancelledAt: row.CancelledAt,
 		CancelledBy: uuidPtr(row.CancelledBy), ReasonCode: row.ReasonCode,
 		PolicySnapshot: row.PolicySnapshot, Free: row.Free,
 		PenaltyNights: int(row.PenaltyNights), ReleasedNights: int(row.ReleasedNights),
-		FeeAmount: row.FeeAmount, PayerFee: row.PayerFee, MemberFee: row.MemberFee,
+		EntitlementEffect: effect,
+		FeeAmount:         row.FeeAmount, PayerFee: row.PayerFee, MemberFee: row.MemberFee,
 		CurrencyCode: row.CurrencyCode, CreatedAt: row.CreatedAt,
 	}, nil
 }
@@ -149,13 +159,57 @@ func (Bookings) GetCancellation(ctx context.Context, tx pgx.Tx, tenantID, bookin
 	if err != nil {
 		return application.CancellationRecord{}, fmt.Errorf("accommodation: read cancellation: %w", err)
 	}
+	effect, err := cancellationEffectFromRow(row.ConsumedServiceNights, row.ReleasedServiceNights,
+		row.ConsumedEntitlementUnits, row.ReleasedEntitlementUnits)
+	if err != nil {
+		return application.CancellationRecord{}, err
+	}
 	return application.CancellationRecord{
 		ID: row.ID, BookingID: row.BookingID, CancelledAt: row.CancelledAt,
 		CancelledBy: uuidPtr(row.CancelledBy), ReasonCode: row.ReasonCode,
 		PolicySnapshot: row.PolicySnapshot, Free: row.Free,
 		PenaltyNights: int(row.PenaltyNights), ReleasedNights: int(row.ReleasedNights),
-		FeeAmount: row.FeeAmount, PayerFee: row.PayerFee, MemberFee: row.MemberFee,
+		EntitlementEffect: effect,
+		FeeAmount:         row.FeeAmount, PayerFee: row.PayerFee, MemberFee: row.MemberFee,
 		CurrencyCode: row.CurrencyCode, CreatedAt: row.CreatedAt,
+	}, nil
+}
+
+func cancellationEffectParams(effect *application.EntitlementEffect) (consumedService,
+	releasedService, consumedUnits, releasedUnits *string,
+) {
+	if effect == nil {
+		return nil, nil, nil, nil
+	}
+	return &effect.ConsumedServiceNights, &effect.ReleasedServiceNights,
+		&effect.ConsumedEntitlementUnits, &effect.ReleasedEntitlementUnits
+}
+
+func cancellationEffectFromRow(values ...pgtype.Numeric) (*application.EntitlementEffect, error) {
+	if len(values) != 4 {
+		return nil, fmt.Errorf("accommodation: cancellation effect has %d fields", len(values))
+	}
+	if !values[0].Valid {
+		return nil, nil
+	}
+	parts := make([]string, 4)
+	for i, value := range values {
+		if !value.Valid {
+			return nil, fmt.Errorf("accommodation: incomplete cancellation entitlement effect")
+		}
+		encoded, err := value.Value()
+		if err != nil {
+			return nil, fmt.Errorf("accommodation: read cancellation entitlement effect: %w", err)
+		}
+		quantity, err := benefitdomain.ParseQuantity(encoded.(string))
+		if err != nil {
+			return nil, fmt.Errorf("accommodation: invalid cancellation entitlement effect: %w", err)
+		}
+		parts[i] = quantity.String()
+	}
+	return &application.EntitlementEffect{
+		ConsumedServiceNights: parts[0], ReleasedServiceNights: parts[1],
+		ConsumedEntitlementUnits: parts[2], ReleasedEntitlementUnits: parts[3],
 	}, nil
 }
 
@@ -497,4 +551,16 @@ func waitlistOf(c waitlistColumns) application.WaitlistRecord {
 		OfferExpiresAt: c.OfferExpiresAt, CreatedAt: c.CreatedAt, UpdatedAt: c.UpdatedAt,
 		RowVersion: c.RowVersion,
 	}
+}
+
+// WaitlistEnrollmentProgram returns the still-active program selected by the queued member.
+func (Bookings) WaitlistEnrollmentProgram(ctx context.Context, tx pgx.Tx, tenantID, entryID uuid.UUID) (uuid.UUID, error) {
+	id, err := sqlcgen.New(tx).GetWaitlistEnrollmentProgram(ctx, sqlcgen.GetWaitlistEnrollmentProgramParams{TenantID: tenantID, EntryID: entryID})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return uuid.Nil, application.ErrEnrollmentNotFound
+	}
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("accommodation: waitlist enrollment program: %w", err)
+	}
+	return id, nil
 }

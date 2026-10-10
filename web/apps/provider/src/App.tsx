@@ -4,11 +4,11 @@ import {
   browser,
   useAccountWatch,
   fitsApp,
+  pendingOrganizationNames,
   requireAuthenticated,
   requireTenant,
   safeReturnTo,
   tenantColor,
-  usePermission,
   useSession,
   useSessionStore,
 } from '@kapsora/auth';
@@ -19,6 +19,7 @@ import {
   Button,
   Card,
   DemoAccounts,
+  EmptyState,
   FormField,
   HelpButton,
   HelpDrawer,
@@ -46,7 +47,9 @@ import {
   useSearch,
   type RouterHistory,
 } from '@tanstack/react-router';
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type ComponentType, type FormEvent } from 'react';
+import { billingDestination, portalLanding, portalNav, type PortalArea } from './access';
+import { RouteAccess } from './RouteAccess';
 import { HELP_ROUTES } from './help';
 import { EligibilityPage } from './EligibilityPage';
 import { MyRequestsPage } from './MyRequestsPage';
@@ -131,6 +134,10 @@ function LoginPage() {
       const state = await store.login(user, pass);
       setPassword('');
       const target = safeReturnTo(search.returnTo, '/');
+      if (pendingOrganizationNames(state.me?.tenants ?? []).length > 0) {
+        await navigate({ href: `/auth/apps?returnTo=${encodeURIComponent(target)}` });
+        return;
+      }
       // The single sign-in: an account whose only app is another one goes there, one with
       // several chooses, one with none is told (APP_CHOOSER_PATH).
       const next = HANDS_OVER
@@ -253,10 +260,8 @@ function Shell() {
   });
   const me = useSession((s) => s.me);
   const active = useSession((s) => s.activeTenant);
-  const canReadClaims = usePermission('claim.read');
-  const canManageInventory = usePermission('accommodation.inventory.manage');
-  const canRunDesk = usePermission('accommodation.booking.manage');
-  const canBill = usePermission('invoice.read');
+  const visible = new Set(portalNav(active?.permissions ?? []).map((entry) => entry.key));
+  const billingPath = billingDestination(active?.permissions ?? []);
   const color = active ? tenantColor(active.tenant.code) : null;
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [helpOpen, setHelpOpen] = useState(false);
@@ -308,35 +313,43 @@ function Shell() {
     'aria-[current=page]:bg-primary-soft aria-[current=page]:text-primary block rounded px-3 py-2';
   const nav = (
     <nav className="p-3 text-sm" aria-label={t('provider.title')}>
-      <Link to="/" className={item} activeOptions={{ exact: true }}>
-        {t('provider.nav.newRequest')}
-      </Link>
-      <Link to="/requests" className={item}>
-        {t('provider.nav.myRequests')}
-      </Link>
-      <Link to="/eligibility" className={item}>
-        {t('provider.nav.eligibility')}
-      </Link>
-      <Link to="/cases" className={item}>
-        {t('provider.nav.cases')}
-      </Link>
-      {canReadClaims ? (
+      {visible.has('newRequest') ? (
+        <Link to="/" className={item} activeOptions={{ exact: true }}>
+          {t('provider.nav.newRequest')}
+        </Link>
+      ) : null}
+      {visible.has('myRequests') ? (
+        <Link to="/requests" className={item}>
+          {t('provider.nav.myRequests')}
+        </Link>
+      ) : null}
+      {visible.has('eligibility') ? (
+        <Link to="/eligibility" className={item}>
+          {t('provider.nav.eligibility')}
+        </Link>
+      ) : null}
+      {visible.has('cases') ? (
+        <Link to="/cases" className={item}>
+          {t('provider.nav.cases')}
+        </Link>
+      ) : null}
+      {visible.has('claims') ? (
         <Link to="/claims" className={item}>
           {t('provider.nav.claims')}
         </Link>
       ) : null}
-      {canManageInventory ? (
+      {visible.has('inventory') ? (
         <Link to="/lodging/inventory" className={item}>
           {t('provider.nav.inventory')}
         </Link>
       ) : null}
-      {canRunDesk ? (
+      {visible.has('desk') ? (
         <Link to="/lodging/desk" className={item}>
           {t('provider.nav.desk')}
         </Link>
       ) : null}
-      {canBill ? (
-        <Link to="/billing" className={item}>
+      {billingPath ? (
+        <Link to={billingPath} className={item}>
           {t('provider.nav.billing')}
         </Link>
       ) : null}
@@ -352,6 +365,48 @@ function Shell() {
     >
       <Outlet />
     </AppShell>
+  );
+}
+
+/** The root is the request desk for clinical staff and a safe landing for other roles. */
+function HomeEntry() {
+  const { t } = useTranslation();
+  const permissions = useSession((s) => s.activeTenant?.permissions ?? []);
+  const navigate = useNavigate();
+  const destination = portalLanding(permissions);
+  useEffect(() => {
+    if (destination && destination !== '/') void navigate({ href: destination, replace: true });
+  }, [destination, navigate]);
+  if (destination === '/')
+    return (
+      <RouteAccess area="newRequest">
+        <NewRequestPage />
+      </RouteAccess>
+    );
+  if (destination) return null;
+  return (
+    <div data-testid="provider-route-denied">
+      <EmptyState title={t('problems.PERMISSION_DENIED')} />
+    </div>
+  );
+}
+
+function guarded(area: PortalArea, Page: ComponentType) {
+  return function GuardedPage() {
+    return (
+      <RouteAccess area={area}>
+        <Page />
+      </RouteAccess>
+    );
+  };
+}
+
+function CaseOpenEntry() {
+  const search = useSearch({ from: '/app/cases/new' });
+  return (
+    <RouteAccess area="caseOpen" fromRequest={Boolean(search.requestId)}>
+      <CaseOpenPage />
+    </RouteAccess>
   );
 }
 
@@ -399,22 +454,22 @@ const appRoute = createRoute({
 const homeRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/',
-  component: NewRequestPage,
+  component: HomeEntry,
 });
 const myRequestsRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/requests',
-  component: MyRequestsPage,
+  component: guarded('requests', MyRequestsPage),
 });
 const requestRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/requests/$requestId',
-  component: RequestPage,
+  component: guarded('requests', RequestPage),
 });
 const eligibilityRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/eligibility',
-  component: EligibilityPage,
+  component: guarded('eligibility', EligibilityPage),
 });
 function idSearch<K extends string>(key: K) {
   return (raw: Record<string, unknown>): Partial<Record<K, string>> =>
@@ -425,54 +480,54 @@ function idSearch<K extends string>(key: K) {
 const casesRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/cases',
-  component: CaseListPage,
+  component: guarded('cases', CaseListPage),
 });
 const caseOpenRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/cases/new',
   validateSearch: idSearch('requestId'),
-  component: CaseOpenPage,
+  component: CaseOpenEntry,
 });
 const caseRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/cases/$caseId',
-  component: CasePage,
+  component: guarded('cases', CasePage),
 });
 const reportRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/reports/$reportId',
-  component: ReportPage,
+  component: guarded('report', ReportPage),
 });
 const stayRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/stays/$stayId',
-  component: StayPage,
+  component: guarded('stay', StayPage),
 });
 const claimsRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/claims',
-  component: ClaimListPage,
+  component: guarded('claims', ClaimListPage),
 });
 const claimNewRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/claims/new',
   validateSearch: idSearch('caseId'),
-  component: ClaimNewPage,
+  component: guarded('claimNew', ClaimNewPage),
 });
 const claimRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/claims/$claimId',
-  component: ClaimPage,
+  component: guarded('claims', ClaimPage),
 });
 const inventoryRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/lodging/inventory',
-  component: InventoryPage,
+  component: guarded('inventory', InventoryPage),
 });
 const deskRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/lodging/desk',
-  component: DeskPage,
+  component: guarded('desk', DeskPage),
 });
 function billingSearch(raw: Record<string, unknown>): {
   currency?: string;
@@ -489,44 +544,44 @@ function billingSearch(raw: Record<string, unknown>): {
 const earningsRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/billing',
-  component: EarningsPage,
+  component: guarded('earnings', EarningsPage),
 });
 const invoicesRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/billing/invoices',
-  component: InvoiceListPage,
+  component: guarded('invoices', InvoiceListPage),
 });
 const invoiceNewRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/billing/invoices/new',
   validateSearch: billingSearch,
-  component: InvoiceNewPage,
+  component: guarded('invoiceNew', InvoiceNewPage),
 });
 const invoiceRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/billing/invoices/$invoiceId',
   validateSearch: billingSearch,
-  component: InvoicePage,
+  component: guarded('invoices', InvoicePage),
 });
 const batchesRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/billing/batches',
-  component: BatchListPage,
+  component: guarded('batches', BatchListPage),
 });
 const batchNewRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/billing/batches/new',
-  component: BatchNewPage,
+  component: guarded('batchNew', BatchNewPage),
 });
 const batchRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/billing/batches/$batchId',
-  component: BatchPage,
+  component: guarded('batches', BatchPage),
 });
 const statementRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/billing/statement',
-  component: StatementPage,
+  component: guarded('statement', StatementPage),
 });
 const routeTree = rootRoute.addChildren([
   loginRoute,

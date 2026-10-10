@@ -43,12 +43,13 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:18
+        # Docker Official Image mirror avoids shared-runner Docker Hub pull limits.
+        image: public.ecr.aws/docker/library/postgres:18
         env:
           POSTGRES_USER: kapsora_owner
           POSTGRES_PASSWORD: kapsora_owner_ci
           POSTGRES_DB: postgres
-        ports: ["5432:5432"]
+        ports: ['5432:5432']
         options: >-
           --health-cmd "pg_isready -U kapsora_owner"
           --health-interval 5s
@@ -60,10 +61,381 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - name: cancellation schema upgrade acceptance preflight
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: go test -count=1 -v -timeout 5m ./db/tests -run '^(TestMigrateUpFromEmptyDatabase|TestPrivilegedRoleMigration57To58PreservesIAMState|TestCancellationEffectMigration59PreservesHistoryAndConstrainsRows)$'
+      - name: hold enrollment boundary preflight
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: go test -count=1 -v -timeout 5m ./internal/accommodation/transport/http -run '^(TestHoldAmbiguousProgramsRefuseBeforeEffects|TestHoldExplicitProgramPinsEvaluationPriceAndAccount|TestHoldSameProgramAmbiguityAndPinnedWaitlistContinuity|TestPinnedEnrollmentUnavailableLeavesQueueWaiting|TestPinnedUnfundedEnrollmentDoesNotBorrowSecondPlan|TestPinnedHoldRejectsWrongPersonProgramAndUnknownEnrollment)$'
+      - name: NIGHT entitlement conversion acceptance preflight
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: go test -count=1 -v -timeout 10m ./internal/accommodation/transport/http -run '^TestNightConversion'
+      - name: fractional checkout unused entitlement preflight
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: go test -count=1 -v -timeout 10m ./internal/accommodation/transport/http -run '^TestFractionalCheckout'
+      - name: fractional checkout old release ceiling negative control
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+
+          path = Path('internal/accommodation/application/stay.go')
+          original = path.read_text()
+          needle = 'unused := promised.Sub(benefitdomain.MustQuantity(fmt.Sprintf("%d", used)))'
+          replacement = 'unused := benefitdomain.MustQuantity(fmt.Sprintf("%d", authorized-used))'
+          if original.count(needle) != 1:
+              raise SystemExit('Expected exactly one exact unused checkout release ceiling')
+          case = 'TestFractionalCheckoutReleasesExactUnusedAuthorization'
+          try:
+              path.write_text(original.replace(needle, replacement))
+              result = subprocess.run(['go', 'test', '-count=1', '-v', '-timeout', '5m',
+                  './internal/accommodation/transport/http', '-run', '^' + case + '$'],
+                  capture_output=True, text=True)
+              output = result.stdout + result.stderr
+              print(output)
+              if result.returncode != 1 or '[build failed]' in output or '--- SKIP:' in output or \
+                      '--- FAIL: ' + case + ' ' not in output or \
+                      output.count('FRACTIONAL_CHECKOUT_RETAINED_RESERVED:') != 4:
+                  raise SystemExit('Fractional checkout control failed outside four retained-unit assertions')
+              print('All four fractional checkout cases detected the old floored release ceiling')
+          finally:
+              path.write_text(original)
+          PY
+      - name: booking authorization handoff acceptance preflight
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: go test -count=1 -v -timeout 10m ./internal/accommodation/transport/http -run '^TestBookingHandoff'
+      - name: booking handoff old terminal cleanup negative control
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          path = Path('internal/accommodation/application/bookingdecision.go')
+          original = path.read_text()
+          needle = ('err = s.auths.RetireBookingOrphan(ctx, tx, rc, in)\n'
+                    '\tif errors.Is(err, ErrBookingOrphanProvenance) {\n'
+                    '\t\treturn outbox.Permanent(err)\n'
+                    '\t}\n'
+                    '\treturn err')
+          if original.count(needle) != 1:
+              raise SystemExit('Expected exactly one terminal orphan retirement boundary')
+          case = 'TestBookingHandoffReleaseAfterCommittedAuthorization'
+          try:
+              path.write_text(original.replace(needle, 'return nil'))
+              result = subprocess.run(['go', 'test', '-count=1', '-v', '-timeout', '5m',
+                  './internal/accommodation/transport/http', '-run', '^' + case + '$'],
+                  capture_output=True, text=True)
+              output = result.stdout + result.stderr
+              print(output)
+              if result.returncode != 1 or '[build failed]' in output or '--- SKIP:' in output or \
+                      '--- FAIL: ' + case + ' ' not in output or \
+                      'HANDOFF_ORPHAN_ACTIVE_AUTHORIZATION:' not in output:
+                  raise SystemExit('Handoff control failed outside the intended orphan assertion')
+              print('Release race detected the removed terminal authorization retirement')
+          finally:
+              path.write_text(original)
+          PY
+      - name: cancellation actual entitlement reporting acceptance
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: go test -count=1 -v -timeout 10m ./internal/accommodation/transport/http -run '^(TestCancellationEffect|TestFractionalPenaltyFreeCancellationCapsToApproved)'
+      - name: cancellation old reporting negative control
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          path = Path('internal/accommodation/application/cancellation.go')
+          original = path.read_text()
+          needle = ('\tif effect != nil {\n'
+                    '\t\tquote.EntitlementEffect = effect\n'
+                    '\t\tquote.ReleasedNights, err = wholeReleasedNights(effect)\n'
+                    '\t\tif err != nil {\n'
+                    '\t\t\treturn CancellationView{}, err\n'
+                    '\t\t}\n'
+                    '\t}\n')
+          if original.count(needle) != 1:
+              raise SystemExit('Expected exactly one actual cancellation result projection')
+          case = 'TestCancellationEffectHTTPPreviewResultAndStoredRecord'
+          try:
+              path.write_text(original.replace(needle, ''))
+              result = subprocess.run(['go', 'test', '-count=1', '-v', '-timeout', '5m',
+                  './internal/accommodation/transport/http', '-run', '^' + case + '$'],
+                  capture_output=True, text=True)
+              output = result.stdout + result.stderr
+              print(output)
+              if result.returncode != 1 or '[build failed]' in output or '--- SKIP:' in output or \
+                      '--- FAIL: ' + case + ' ' not in output or \
+                      'CANCELLATION_EFFECT_HTTP_RESULT:' not in output:
+                  raise SystemExit('Reporting control failed outside the intended public result assertion')
+              print('Truthful ledger movement detected the removed public cancellation projection')
+          finally:
+              path.write_text(original)
+          PY
+      - name: partial-approval penalty policy conflict diagnostic
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+          KAPSORA_TEST_FRACTIONAL_PENALTY_REPRODUCTION: '1'
+        run: |
+          python3 - <<'PY'
+          import subprocess
+          expected = {
+              'TestFractionalPenaltyReproductionPenalizedCancellation': 'FRACTIONAL_PENALTY_CANCEL_REFUSAL:',
+              'TestFractionalPenaltyReproductionNoShow': 'FRACTIONAL_PENALTY_NOSHOW_REFUSAL:',
+              'TestFractionalPenaltyReproductionIntegerPartialNoShow': 'INTEGER_PARTIAL_PENALTY_NOSHOW_REFUSAL:',
+          }
+          result = subprocess.run(['go', 'test', '-count=1', '-v', '-timeout', '5m',
+              './internal/accommodation/transport/http', '-run', '^(' + '|'.join(expected) + ')$'],
+              capture_output=True, text=True)
+          output = result.stdout + result.stderr
+          print(output)
+          failures = [line for line in output.splitlines() if line.startswith('--- FAIL: ')]
+          if result.returncode != 1 or '[build failed]' in output or '--- SKIP:' in output or len(failures) != len(expected):
+              raise SystemExit('Partial-approval penalty diagnostic did not reach all compiled policy conflicts')
+          for case, assertion in expected.items():
+              if not any(line.startswith('--- FAIL: ' + case + ' ') for line in failures) or assertion not in output:
+                  raise SystemExit('Partial-approval penalty diagnostic failed outside intended assertion: ' + case)
+          print('Fractional and integer partial-approval penalty conflicts reproduced; policy unchanged')
+          PY
+      - name: eligibility selected enrollment and shared account regression
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: go test -count=1 -v -timeout 30m ./internal/benefit/eligibility
       - name: migrations and schema invariants
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
         run: go test -count=1 -v -timeout 30m ./db/tests/...
+      - name: tenant user directory authorization and HTTP integration
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: go test -count=1 -v -timeout 30m ./internal/identity/transport/http -run '^(TestDirectory|TestInvitation)'
+      - name: accommodation HTTP, contract and enrollment coherence regression
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: go test -count=1 -v -timeout 30m ./internal/accommodation/transport/http
+      - name: authorization adoption and entitlement quantity regression
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: go test -count=1 -v -timeout 30m ./internal/authorization/application
+      - name: accommodation payer boundary negative control
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+
+          path = Path('internal/platform/sqlcgen/accommodation.sql.go')
+          original = path.read_text()
+          predicate = 'AND c.payer_organization_id = ANY($3::uuid[])'
+          if original.count(predicate) != 1:
+              raise SystemExit('Expected exactly one accommodation price payer predicate')
+          cases = ['TestPriceCandidatesRespectProgramPayerBeforePriority',
+                   'TestWrongPayerEqualRankDoesNotCauseAmbiguity']
+          try:
+              # Preserve parameter typing while restoring the old unrestricted behavior.
+              path.write_text(original.replace(predicate,
+                  'AND ($3::uuid[] IS NULL OR $3::uuid[] IS NOT NULL)'))
+              result = subprocess.run(['go', 'test', '-count=1', '-v', '-timeout', '5m',
+                  './internal/accommodation/transport/http',
+                  '-run', '^(' + '|'.join(cases) + ')$'],
+                  capture_output=True, text=True)
+              output = result.stdout + result.stderr
+              print(output)
+              if result.returncode != 1 or '[build failed]' in output:
+                  raise SystemExit('Negative control did not fail as a compiled test')
+              for case in cases:
+                  if '--- FAIL: ' + case + ' ' not in output:
+                      raise SystemExit('Negative control did not expose ' + case)
+              for assertion in ["want payer A's 3000 despite B's priority",
+                                'wrong-payer tie changed A quote']:
+                  if assertion not in output:
+                      raise SystemExit('Negative control failed outside its payer assertion')
+              print('Both regressions detected the removed payer boundary')
+          finally:
+              path.write_text(original)
+          PY
+      - name: accommodation confirmation contract negative control
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+
+          booking = Path('internal/accommodation/application/booking.go')
+          decision = Path('internal/accommodation/application/bookingdecision.go')
+          originals = {p: p.read_text() for p in [booking, decision]}
+          helper = r'''
+          // Runner-only negative control: reproduce the old provider-wide policy lookup.
+          func (s *Service) negativeControlPolicyVersion(ctx context.Context,
+              rc identity.RequestContext, bookingID uuid.UUID) uuid.UUID {
+              var versionID uuid.UUID
+              err := s.withTx(ctx, rc, func(ctx context.Context, tx pgx.Tx) error {
+                  return tx.QueryRow(ctx, `
+                      SELECT cv.id
+                        FROM accommodation.booking b
+                        JOIN contract.contract_version cv ON cv.tenant_id = b.tenant_id
+                        JOIN contract.contract c
+                          ON c.tenant_id = cv.tenant_id AND c.id = cv.contract_id
+                       WHERE b.tenant_id = $1 AND b.id = $2
+                         AND c.provider_profile_id = (
+                             SELECT pp.id FROM provider.provider_profile pp
+                             JOIN accommodation.property p ON p.tenant_id = pp.tenant_id
+                              AND p.provider_organization_id = pp.tenant_organization_id
+                             WHERE pp.tenant_id = b.tenant_id AND p.id = b.property_id
+                               AND pp.status = 'ACTIVE' ORDER BY pp.id LIMIT 1)
+                         AND c.status = 'ACTIVE' AND cv.status = 'PUBLISHED'
+                         AND cv.valid_from <= b.check_in
+                         AND (cv.valid_to IS NULL OR cv.valid_to > b.check_in)
+                       ORDER BY (c.domain_code = 'ACCOMMODATION') DESC, cv.valid_from DESC, cv.id
+                       LIMIT 1`, rc.TenantID, bookingID).Scan(&versionID)
+              })
+              if err != nil { panic("negative control policy lookup failed") }
+              return versionID
+          }
+          '''
+          replacements = {
+              booking: ('s.policies.SnapshotPolicy(ctx, rc, prepared.contractVersionID, timeZone)',
+                  's.policies.SnapshotPolicy(ctx, rc, s.negativeControlPolicyVersion(ctx, rc, id), timeZone)'),
+              decision: ('s.policies.SnapshotPolicy(ctx, rc, versionID, timeZone)',
+                  's.policies.SnapshotPolicy(ctx, rc, s.negativeControlPolicyVersion(ctx, rc, record.ID), timeZone)')
+          }
+          case = 'TestBookingContractBindingFirstNightPolicyWinsPreflightAndApproval'
+          try:
+              for path, (needle, replacement) in replacements.items():
+                  if originals[path].count(needle) != 1:
+                      raise SystemExit('Expected one exact policy lookup in ' + str(path))
+                  mutated = originals[path].replace(needle, replacement)
+                  path.write_text(mutated + (helper if path == booking else ''))
+              result = subprocess.run(['go', 'test', '-count=1', '-v', '-timeout', '5m',
+                  './internal/accommodation/transport/http', '-run', '^' + case + '$'],
+                  capture_output=True, text=True)
+              output = result.stdout + result.stderr
+              print(output)
+              if result.returncode != 1 or '[build failed]' in output:
+                  raise SystemExit('Negative control did not fail as a compiled test')
+              if '--- FAIL: ' + case + ' ' not in output or \
+                      "want selected A's version, 48 hours and 100 percent" not in output:
+                  raise SystemExit('Negative control did not expose the wrong frozen policy')
+              print('Exact contract regression detected the old provider-wide policy lookup')
+          finally:
+              for path, original in originals.items():
+                  path.write_text(original)
+          PY
+
+      - name: accommodation enrollment coherence negative controls
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+
+          query = Path('internal/platform/sqlcgen/accommodation_booking.sql.go')
+          eligibility = Path('internal/benefit/eligibility/service.go')
+          originals = {p: p.read_text() for p in [query, eligibility]}
+          controls = [
+              (query, 'count(*) OVER () AS matching_count', '1::bigint AS matching_count',
+               'TestHoldAmbiguousProgramsRefuseBeforeEffects', 'ambiguous hold = 201',
+               './internal/accommodation/transport/http'),
+              (query, 'AND ($5::uuid IS NULL OR e.id = $5::uuid)',
+               'AND ($5::uuid IS NULL OR $5::uuid IS NOT NULL)',
+               'TestHoldSameProgramAmbiguityAndPinnedWaitlistContinuity',
+               'pinned same-program offer =', './internal/accommodation/transport/http'),
+              (eligibility, 'if in.EnrollmentID != nil {\n\t\t\tif _, ok := selectedAccounts[a.ID]; !ok {',
+               'if false {\n\t\t\tif _, ok := selectedAccounts[a.ID]; !ok {',
+               'TestHoldExplicitProgramPinsEvaluationPriceAndAccount', 'incoherent frozen quote:',
+               './internal/accommodation/transport/http'),
+              (eligibility, 'if in.EnrollmentID != nil {\n\t\t\tif _, ok := selectedAccounts[a.ID]; !ok {',
+               'if false {\n\t\t\tif _, ok := selectedAccounts[a.ID]; !ok {',
+               'TestPinnedEligibilityUsesOnlySelectedSharedPlanAccounts',
+               'selected A shared balance = 20', './internal/benefit/eligibility'),
+          ]
+          try:
+              for path, needle, replacement, case, assertion, package in controls:
+                  original = originals[path]
+                  if original.count(needle) != 1:
+                      raise SystemExit('Expected one enrollment control target in ' + str(path))
+                  path.write_text(original.replace(needle, replacement))
+                  try:
+                      result = subprocess.run(['go', 'test', '-count=1', '-v', '-timeout', '5m',
+                          package, '-run', '^' + case + '$'],
+                          capture_output=True, text=True)
+                      output = result.stdout + result.stderr
+                      print(output)
+                      if result.returncode != 1 or '[build failed]' in output:
+                          raise SystemExit('Enrollment control did not fail as a compiled test')
+                      if '--- FAIL: ' + case + ' ' not in output or assertion not in output:
+                          raise SystemExit('Enrollment control failed outside its intended assertion')
+                      print('Detected removed enrollment boundary: ' + case)
+                  finally:
+                      path.write_text(original)
+          finally:
+              for path, original in originals.items():
+                  path.write_text(original)
+          PY
+
+      - name: NIGHT conversion old-behavior negative controls
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+
+          availability = Path('internal/accommodation/application/availability.go')
+          booking = Path('internal/accommodation/application/booking.go')
+          authorization = Path('internal/authorization/application/authorization.go')
+          controls = [
+              (availability,
+               'verdict.remainingNights[definitionID] = nightsFromUnits(available, item.UnitFactor, world.nights)',
+               'verdict.remainingNights[definitionID] = wholeNights(available)',
+               {'TestNightConversionBalance3Factor2Stay2': 'NIGHT_CONVERSION_BALANCE3_COVERAGE:',
+                'TestNightConversionBalanceOnePointFiveFactorHalfStay3': 'NIGHT_CONVERSION_BALANCE1_5_COVERAGE:'}),
+              (booking,
+               'quantity, err = prepared.snapshot.NightConversion.validate(prepared.snapshot.CoveredNights)',
+               'quantity, err = benefitdomain.ParseQuantity(strconv.Itoa(prepared.snapshot.CoveredNights))',
+               {'TestNightConversionBalance4Factor2Stay2': 'NIGHT_CONVERSION_BALANCE4_UNITS:'}),
+              (authorization,
+               'lines[0].factor = e.UnitFactor',
+               'lines[0].factor = benefitdomain.MustQuantity("1")',
+               {'TestNightConversionAdoptionRetainsFactor': 'NIGHT_CONVERSION_ADOPTION_FACTOR:'}),
+          ]
+          for path, needle, replacement, expected in controls:
+              original = path.read_text()
+              if original.count(needle) != 1:
+                  raise SystemExit('Expected exactly one NIGHT conversion control target in ' + str(path))
+              try:
+                  path.write_text(original.replace(needle, replacement))
+                  result = subprocess.run([
+                      'go', 'test', '-count=1', '-v', '-timeout', '5m',
+                      './internal/accommodation/transport/http',
+                      '-run', '^(' + '|'.join(expected) + ')$',
+                  ], capture_output=True, text=True)
+                  output = result.stdout + result.stderr
+                  print(output)
+                  failures = [line for line in output.splitlines() if line.startswith('--- FAIL: ')]
+                  if result.returncode != 1 or '[build failed]' in output or '--- SKIP:' in output or \
+                          len(failures) != len(expected):
+                      raise SystemExit('NIGHT control did not produce only compiled semantic failures')
+                  for case, assertion in expected.items():
+                      if not any(line.startswith('--- FAIL: ' + case + ' ') for line in failures) or assertion not in output:
+                          raise SystemExit('NIGHT control failed outside intended assertion: ' + case)
+              finally:
+                  path.write_text(original)
+          print('Coverage, reservation units, and adoption factor regressions detected')
+          PY
+
 
   contracts:
     name: OpenAPI lint, generated code, breaking changes
@@ -113,14 +485,14 @@ jobs:
           # Allowlists for generated, high-entropy-by-construction files (see the file).
           GITLEAKS_CONFIG: .gitleaks.toml
           # Findings remain in the job summary/artifact; no PR write permission needed.
-          GITLEAKS_ENABLE_COMMENTS: "false"
+          GITLEAKS_ENABLE_COMMENTS: 'false'
       - name: trivy filesystem scan
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .
           severity: CRITICAL,HIGH
-          exit-code: "1"
+          exit-code: '1'
           ignore-unfixed: true
 
   release-binaries:

@@ -34,6 +34,8 @@ import (
 	healthapp "github.com/celikbros/kapsora/internal/health/application"
 	healthgw "github.com/celikbros/kapsora/internal/health/infrastructure/gateway"
 	healthpg "github.com/celikbros/kapsora/internal/health/infrastructure/postgres"
+	identityapp "github.com/celikbros/kapsora/internal/identity/application"
+	identitypg "github.com/celikbros/kapsora/internal/identity/infrastructure/postgres"
 	notificationapp "github.com/celikbros/kapsora/internal/notification/application"
 	"github.com/celikbros/kapsora/internal/notification/domain"
 	"github.com/celikbros/kapsora/internal/notification/infrastructure/channel"
@@ -191,6 +193,21 @@ func run() error {
 	}
 
 	dispatcher := outbox.New(pool, outbox.Options{Logger: logger})
+	invitationRepo := identitypg.NewInvitationRepository(pool, keys, keys)
+	var invitationSender mail.Sender
+	if cfg.Invitations.DeliveryEnabled {
+		invitationSender, err = mail.NewSMTP(mail.SMTPOptions{
+			Address: cfg.Notifications.SMTPAddr, From: cfg.Notifications.SMTPFrom,
+			Timeout: cfg.Notifications.SMTPTimeout,
+		})
+		if err != nil {
+			return err
+		}
+	}
+	dispatcher.Handle(identityapp.InvitationDeliveryEvent, func(ctx context.Context, delivery outbox.Delivery) error {
+		return invitationRepo.DeliverInvitation(ctx, delivery, invitationSender,
+			cfg.Invitations.LinkBase, cfg.Invitations.DeliveryEnabled)
+	})
 	// A new enrollment opens its entitlement accounts here rather than in the request
 	// that created it: the accounts follow the plan configuration, and the handler is
 	// idempotent, so a redelivery finds them already open.

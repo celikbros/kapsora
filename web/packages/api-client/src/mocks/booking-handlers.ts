@@ -133,6 +133,7 @@ export interface BookingTools {
     programId: string | null,
     serviceDate: string,
     serviceDefinitionId: string,
+    enrollmentId?: string | null,
   ): { eligible: boolean; nightsCarried: number; money: bigint | null };
 }
 
@@ -336,6 +337,7 @@ export function bookingHandlers(api: MockApi, tools: BookingTools): BookingModul
     guests: Schemas['CreateBookingGuest'][],
     programId?: string | null,
     channel?: Schemas['ServiceRequestChannel'],
+    expectedEnrollmentId?: string,
   ): StoredBooking | Response => {
     const room = tools.findRoomType(session, tenantId, roomTypeId);
     if (!room || room.status !== 'ACTIVE') {
@@ -350,26 +352,39 @@ export function bookingHandlers(api: MockApi, tools: BookingTools): BookingModul
         detail: 'Yetişkin, çocuk ve toplam kişi sınırlarını aşmayan bir oda tipi seçin.',
       });
     }
-    const enrollment = world().enrollments.find(
+    const stayDates = stayDatesOf(checkIn, nights);
+    const candidates = world().enrollments.filter(
       (e) =>
         e.tenantId === tenantId &&
         e.personId === personId &&
         e.status === 'ACTIVE' &&
-        (!programId || e.programId === programId),
+        e.validFrom <= checkIn &&
+        (!e.validTo || checkIn < e.validTo) &&
+        (!programId || e.programId === programId) &&
+        (!expectedEnrollmentId || e.id === expectedEnrollmentId) &&
+        world().programs.some(
+          (p) => p.tenantId === tenantId && p.id === e.programId && p.status === 'ACTIVE',
+        ),
     );
+    const enrollment = candidates[0];
+    if (!expectedEnrollmentId && candidates.length > 1) {
+      return problem(api, 422, 'ENROLLMENT_MULTIPLE', 'Birden fazla geçerli plan kaydı var', {
+        detail:
+          'Bu tarihler için kullanılacak plan kaydı kesinleştirilemedi. Kurum yetkilinize başvurun.',
+      });
+    }
     if (!enrollment) {
       return problem(api, 422, 'ENROLLMENT_NOT_FOUND', 'Bu tarihlerde geçerli bir plan kaydı yok', {
         detail: 'Rezervasyon, giriş tarihinde aktif bir plan kaydı üzerinden yapılır.',
       });
     }
 
-    const stayDates = stayDatesOf(checkIn, nights);
     const lastNight = stayDates[stayDates.length - 1]!;
     const reachable = tools.searchableProperties(
       session,
       tenantId,
       personId,
-      programId ?? null,
+      enrollment.programId,
       checkIn,
       lastNight,
     );
@@ -432,9 +447,10 @@ export function bookingHandlers(api: MockApi, tools: BookingTools): BookingModul
     const cover = tools.coverForService(
       tenantId,
       personId,
-      programId ?? null,
+      enrollment.programId,
       checkIn,
       room.serviceDefinitionId,
+      enrollment.id,
     );
     const priced = tools.quoteRoomType(
       tenantId,
@@ -489,6 +505,18 @@ export function bookingHandlers(api: MockApi, tools: BookingTools): BookingModul
       status: 'HOLD',
       holdExpiresAt: new Date(now.getTime() + DEFAULT_HOLD_MINUTES * 60_000).toISOString(),
       entitlementReservationId: world().nextId(),
+      approvedServiceNights: `${priced.coveredNights}.000000`,
+      entitlementUnitFactor:
+        world().entitlementMappings.find(
+          (mapping) =>
+            mapping.serviceDefinitionId === room.serviceDefinitionId &&
+            world().planVersions.some(
+              (version) =>
+                version.id === mapping.planVersionId &&
+                version.planId === enrollment.planId &&
+                version.status === 'PUBLISHED',
+            ),
+        )?.unitFactor ?? '1.000000',
       serviceRequestId: null,
       authorizationId: null,
       voucherId: null,
@@ -956,7 +984,33 @@ export function bookingHandlers(api: MockApi, tools: BookingTools): BookingModul
       moveConfirmed,
       // The sweep has nobody to hand a refusal to: a room that is not free is simply not
       // this entry's turn, so a Response becomes null and the caller tries the next room.
-      placeHold: (tenantId, personId, roomTypeId, checkIn, checkOut, adults, children) => {
+      placeHold: (
+        tenantId,
+        personId,
+        roomTypeId,
+        checkIn,
+        checkOut,
+        adults,
+        children,
+        enrollmentId,
+      ) => {
+        const enrollment = world().enrollments.find(
+          (e) =>
+            e.tenantId === tenantId &&
+            e.id === enrollmentId &&
+            e.personId === personId &&
+            e.status === 'ACTIVE' &&
+            e.validFrom <= checkIn &&
+            (!e.validTo || checkIn < e.validTo),
+        );
+        if (
+          !enrollment ||
+          !world().programs.some(
+            (p) =>
+              p.tenantId === tenantId && p.id === enrollment.programId && p.status === 'ACTIVE',
+          )
+        )
+          return null;
         const nights = nightsOf(checkIn, checkOut);
         if (nights === 0) return null;
         const session = api.session;
@@ -972,8 +1026,9 @@ export function bookingHandlers(api: MockApi, tools: BookingTools): BookingModul
           children,
           nights,
           [],
-          null,
+          enrollment.programId,
           'BACKOFFICE',
+          enrollment.id,
         );
         return held instanceof Response ? null : held;
       },

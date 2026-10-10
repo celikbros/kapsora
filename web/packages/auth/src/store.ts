@@ -62,18 +62,53 @@ function pickActive(me: UserContext, session: SessionInfo): TenantContext | null
   return me.tenants.find((t) => t.tenant.id === session.activeTenantId) ?? null;
 }
 
+function stepUpContext(state: SessionState): string {
+  return JSON.stringify([
+    state.status,
+    state.session?.actorId,
+    state.session?.expiresAt,
+    state.session?.activeTenantId,
+    state.csrfToken,
+    state.activeTenant?.tenant.id,
+    state.activeTenant?.canReadTenantUsers,
+    state.activeTenant?.canManageTenantUsers,
+    state.activeTenant?.canManageTenantRoles,
+    state.activeTenant?.permissions,
+    state.activeTenant?.scopes,
+  ]);
+}
+
 /** Creates the store bound to one Operations instance (one per app). */
 export function createSessionStore(ops: Operations): SessionStore {
   const store = createStore<SessionState>(() => ({ ...initial }));
   let inflight: Promise<SessionState> | null = null;
+  let loadEpoch = 0;
+  let contextRevision = 0;
+  let previousStepUpContext = stepUpContext(store.getState());
+  store.subscribe((state) => {
+    const next = stepUpContext(state);
+    if (next === previousStepUpContext) return;
+    previousStepUpContext = next;
+    contextRevision += 1;
+  });
 
   async function load(): Promise<SessionState> {
-    store.setState({ status: 'loading', bootstrapError: null });
+    const epoch = ++loadEpoch;
+    const prior = store.getState();
+    store.setState(
+      prior.status === 'authenticated'
+        ? { bootstrapError: null }
+        : { status: 'loading', bootstrapError: null },
+    );
+    let loadRevision = contextRevision;
     try {
       const session = await ops.session.get();
+      if (epoch !== loadEpoch || contextRevision !== loadRevision) return store.getState();
       // The token must be in place before /me so a CSRF-guarded server never sees a bare call.
       store.setState({ csrfToken: session.csrfToken, session });
+      loadRevision = contextRevision;
       const me = await ops.session.me();
+      if (epoch !== loadEpoch || contextRevision !== loadRevision) return store.getState();
       const next: SessionState = {
         status: 'authenticated',
         session,
@@ -85,16 +120,20 @@ export function createSessionStore(ops: Operations): SessionStore {
       store.setState(next);
       return next;
     } catch (err) {
+      if (epoch !== loadEpoch || contextRevision !== loadRevision) return store.getState();
       if (err instanceof ApiError && err.status === 401) {
         const next: SessionState = { ...initial, status: 'anonymous' };
         store.setState(next);
         return next;
       }
-      const next: SessionState = {
-        ...initial,
-        status: 'anonymous',
-        bootstrapError: err instanceof ApiError ? err : null,
-      };
+      const next: SessionState =
+        prior.status === 'authenticated'
+          ? { ...prior, bootstrapError: err instanceof ApiError ? err : null }
+          : {
+              ...initial,
+              status: 'anonymous',
+              bootstrapError: err instanceof ApiError ? err : null,
+            };
       store.setState(next);
       throw err;
     }
@@ -122,6 +161,7 @@ export function createSessionStore(ops: Operations): SessionStore {
       return inflight;
     },
     async login(username, password) {
+      ++loadEpoch;
       const session = await ops.session.login(username, password);
       store.setState({ csrfToken: session.csrfToken, session });
       const me = await ops.session.me();
@@ -137,6 +177,7 @@ export function createSessionStore(ops: Operations): SessionStore {
       return next;
     },
     async logout() {
+      ++loadEpoch;
       try {
         await ops.session.logout();
       } finally {
@@ -144,12 +185,31 @@ export function createSessionStore(ops: Operations): SessionStore {
       }
     },
     async stepUp(password) {
+      const before = store.getState();
+      const context = stepUpContext(before);
+      const revision = contextRevision;
+      if (before.status !== 'authenticated' || !before.session) {
+        throw new Error('Session changed during password confirmation');
+      }
       await ops.session.stepUp(password);
+      if (contextRevision !== revision || stepUpContext(store.getState()) !== context) {
+        throw new Error('Session changed during password confirmation');
+      }
       // The step-up window lives on the session, so read it back rather than guessing.
       const session = await ops.session.get();
+      if (
+        contextRevision !== revision ||
+        stepUpContext(store.getState()) !== context ||
+        session.actorId !== before.session.actorId ||
+        session.activeTenantId !== before.session.activeTenantId ||
+        session.expiresAt !== before.session.expiresAt
+      ) {
+        throw new Error('Session changed during password confirmation');
+      }
       store.setState({ session, csrfToken: session.csrfToken });
     },
     async switchTenant(tenantId) {
+      ++loadEpoch;
       const ctx = await ops.session.switchTenant(tenantId);
       const state = store.getState();
       store.setState({
@@ -161,6 +221,7 @@ export function createSessionStore(ops: Operations): SessionStore {
       return ctx;
     },
     invalidate() {
+      ++loadEpoch;
       store.setState({ ...initial, status: 'anonymous' });
     },
     async checkAccount() {

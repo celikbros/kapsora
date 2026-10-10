@@ -132,6 +132,26 @@ func (Repository) GetAuthorizationByKey(ctx context.Context, tx pgx.Tx, tenantID
 	return authorizationOf(keyedAuthorizationRow(row)), nil
 }
 
+// BookingOrphanEvidence implements application.Repository.
+func (Repository) BookingOrphanEvidence(ctx context.Context, tx pgx.Tx,
+	tenantID, authorizationID, reservationID uuid.UUID,
+) (application.BookingOrphanEvidence, error) {
+	row, err := sqlcgen.New(tx).BookingOrphanEvidence(ctx, sqlcgen.BookingOrphanEvidenceParams{
+		TenantID: tenantID, AuthorizationID: uuid.NullUUID{UUID: authorizationID, Valid: true},
+		ReservationID: reservationID,
+	})
+	if err != nil {
+		return application.BookingOrphanEvidence{}, fmt.Errorf("authorization: booking orphan evidence: %w", err)
+	}
+	return application.BookingOrphanEvidence{
+		AccountID: row.EntitlementAccountID, ReferenceType: row.ReferenceType,
+		ReferenceID: row.ReferenceID, Quantity: row.Quantity,
+		ConsumedQuantity: row.ConsumedQuantity, ReleasedQuantity: row.ReleasedQuantity,
+		Status: row.Status, BookingLinks: row.BookingLinks, Fulfilments: row.Fulfilments,
+		RedeemedVouchers: row.RedeemedVouchers, ConsumptionMovements: row.ConsumptionMovements,
+	}, nil
+}
+
 // ListAuthorizations implements application.Repository.
 func (Repository) ListAuthorizations(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 	q application.AuthorizationQuery,
@@ -242,10 +262,11 @@ func (Repository) CreateAuthorizationItem(ctx context.Context, tx pgx.Tx, tenant
 ) (uuid.UUID, error) {
 	row, err := sqlcgen.New(tx).CreateAuthorizationItem(ctx, sqlcgen.CreateAuthorizationItemParams{
 		TenantID: tenantID, AuthorizationID: in.AuthorizationID, RequestItemID: in.RequestItemID,
-		ServiceDefinitionID: in.ServiceDefinitionID,
-		ApprovedQuantity:    in.ApprovedQuantity.String(),
-		ApprovedAmount:      quantityPtr(in.ApprovedAmount),
-		MemberAmount:        in.MemberAmount.String(),
+		ServiceDefinitionID:   in.ServiceDefinitionID,
+		ApprovedQuantity:      in.ApprovedQuantity.String(),
+		EntitlementUnitFactor: in.EntitlementUnitFactor.String(),
+		ApprovedAmount:        quantityPtr(in.ApprovedAmount),
+		MemberAmount:          in.MemberAmount.String(),
 	})
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -747,4 +768,25 @@ func (Repository) ListExpiringAuthorizations(ctx context.Context, tx pgx.Tx, ten
 		})
 	}
 	return out, nil
+}
+
+// ReservationRemaining reads the ledger's remainder; only the ledger may change it.
+func (Repository) ReservationRemaining(ctx context.Context, tx pgx.Tx, tenantID, reservationID uuid.UUID) (benefitdomain.Quantity, error) {
+	r, err := sqlcgen.New(tx).GetEntitlementReservation(ctx, sqlcgen.GetEntitlementReservationParams{TenantID: tenantID, ID: reservationID})
+	if err != nil {
+		return benefitdomain.Quantity{}, err
+	}
+	quantity, err := benefitdomain.ParseQuantity(r.Quantity)
+	if err != nil {
+		return benefitdomain.Quantity{}, err
+	}
+	consumed, err := benefitdomain.ParseQuantity(r.ConsumedQuantity)
+	if err != nil {
+		return benefitdomain.Quantity{}, err
+	}
+	released, err := benefitdomain.ParseQuantity(r.ReleasedQuantity)
+	if err != nil {
+		return benefitdomain.Quantity{}, err
+	}
+	return quantity.Sub(consumed).Sub(released), nil
 }

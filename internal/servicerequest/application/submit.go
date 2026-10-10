@@ -109,7 +109,7 @@ func (s *Service) SubmitInTx(ctx context.Context, tx pgx.Tx, rc identity.Request
 // requirement all run exactly as they do for anybody else, and a caller that declared a hold
 // it does not have would still be refused by the ledger the moment it tried to spend it.
 func (s *Service) SubmitInTxHolding(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
-	id uuid.UUID, comment *string, expected int64, held map[uuid.UUID]benefitdomain.Quantity,
+	id uuid.UUID, comment *string, expected int64, held map[uuid.UUID]benefitdomain.Quantity, bookingHold ...*BookingHold,
 ) (RequestView, error) {
 	if err := domain.ValidateComment(comment); err != nil {
 		return RequestView{}, err
@@ -139,8 +139,23 @@ func (s *Service) SubmitInTxHolding(ctx context.Context, tx pgx.Tx, rc identity.
 	if err := validateForSubmit(current, items); err != nil {
 		return RequestView{}, err
 	}
+	var bound *BookingHold
+	if len(bookingHold) > 0 {
+		bound = bookingHold[0]
+	}
+	if bound != nil {
+		if len(items) != 1 || current.EnrollmentID != bound.EnrollmentID ||
+			items[0].ServiceDefinitionID != bound.ServiceDefinitionID ||
+			len(held) != 1 || held[bound.ServiceDefinitionID].Cmp(bound.Units) != 0 {
+			return RequestView{}, ErrBookingHoldInvalid
+		}
+		quantity, err := benefitdomain.ParseQuantity(items[0].RequestedQuantity)
+		if err != nil || quantity.Mul(bound.UnitFactor).Cmp(bound.Units) != 0 {
+			return RequestView{}, ErrBookingHoldInvalid
+		}
+	}
 
-	decision, err := s.runGate(ctx, tx, rc, current, items, definitions, held)
+	decision, err := s.runGate(ctx, tx, rc, current, items, definitions, held, bound)
 	if err != nil {
 		return RequestView{}, err
 	}
@@ -236,6 +251,7 @@ type gateDecision struct {
 	Status                  string
 	ReasonCode              string
 	RequiredDocumentTypes   []string
+	DocumentEvidence        []DocumentEvidence
 	EligibilityEvaluationID *uuid.UUID
 	RuleEvaluationID        *uuid.UUID
 	EligibilityOutcome      string
@@ -259,12 +275,12 @@ func (d gateDecision) metadata(versionNo int) map[string]any {
 // the plan's own answer to "does a person still have to look at this".
 func (s *Service) runGate(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
 	request RequestRecord, items []ItemRecord, definitions map[uuid.UUID]ServiceDefinitionRecord,
-	held map[uuid.UUID]benefitdomain.Quantity,
+	held map[uuid.UUID]benefitdomain.Quantity, bookingHold *BookingHold,
 ) (gateDecision, error) {
 	day := domain.DateOnly(request.ServiceDate)
 	out := gateDecision{RuleVersionIDs: []uuid.UUID{}}
 
-	result, evaluationID, err := s.resolveEligibility(ctx, tx, rc, request, items, definitions, day, held)
+	result, evaluationID, err := s.resolveEligibility(ctx, tx, rc, request, items, definitions, day, held, bookingHold)
 	if err != nil {
 		return gateDecision{}, err
 	}
@@ -283,8 +299,30 @@ func (s *Service) runGate(ctx context.Context, tx pgx.Tx, rc identity.RequestCon
 		return gateDecision{}, err
 	}
 
+	out.RequiredDocumentTypes = append([]string{}, documents...)
+	missing := len(documents) > 0
+	if missing {
+		evidence, err := s.repo.ListDocumentEvidence(ctx, tx, rc.TenantID, request.ID,
+			request.ProviderOrganizationID, documents)
+		if err != nil {
+			return gateDecision{}, err
+		}
+		out.DocumentEvidence = evidence
+		satisfied := make(map[string]bool, len(evidence))
+		for _, document := range evidence {
+			satisfied[document.DocumentTypeCode] = true
+		}
+		missing = false
+		for _, code := range documents {
+			if !satisfied[code] {
+				missing = true
+				break
+			}
+		}
+	}
+
 	switch {
-	case len(documents) > 0:
+	case missing:
 		// A missing document blocks before a review does: nobody can review what has not
 		// been produced yet, and asking for both at once tells a member two things to do
 		// when only one of them is possible.
@@ -310,9 +348,7 @@ func (s *Service) runGate(ctx context.Context, tx pgx.Tx, rc identity.RequestCon
 	if err != nil {
 		return gateDecision{}, err
 	}
-	// An empty non-nil slice says "the rules were asked and required nothing", which is a
-	// different statement from the NULL a request that has never been submitted carries.
-	out.RequiredDocumentTypes = []string{}
+	// Keep every required type, including those satisfied by retained attachments.
 	if required {
 		out.Status, out.ReasonCode = domain.StatusPendingReview, "PROGRAM_REVIEW_REQUIRED"
 		return out, nil
@@ -325,10 +361,16 @@ func (s *Service) runGate(ctx context.Context, tx pgx.Tx, rc identity.RequestCon
 // the evaluation, so the answer the gate was given survives the balances moving on.
 func (s *Service) resolveEligibility(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
 	request RequestRecord, items []ItemRecord, definitions map[uuid.UUID]ServiceDefinitionRecord,
-	day time.Time, held map[uuid.UUID]benefitdomain.Quantity,
+	day time.Time, held map[uuid.UUID]benefitdomain.Quantity, bookingHold *BookingHold,
 ) (eligibility.Result, uuid.UUID, error) {
 	program := request.ProgramID
-	loaded, err := s.repo.LoadEligibility(ctx, tx, rc.TenantID, request.PersonID, &program, day)
+	var loaded EligibilityInput
+	var err error
+	if bookingHold != nil {
+		loaded, err = s.repo.LoadBookingEligibility(ctx, tx, rc.TenantID, request.PersonID, program, day, *bookingHold)
+	} else {
+		loaded, err = s.repo.LoadEligibility(ctx, tx, rc.TenantID, request.PersonID, &program, day)
+	}
 	if err != nil {
 		return eligibility.Result{}, uuid.Nil, err
 	}
@@ -338,6 +380,9 @@ func (s *Service) resolveEligibility(ctx context.Context, tx pgx.Tx, rc identity
 		PlanVersion: loaded.PlanVersion, Accounts: loaded.Accounts,
 		Mappings: loaded.Mappings,
 		Items:    make([]eligibility.Item, 0, len(items)),
+	}
+	if bookingHold != nil {
+		input.EnrollmentID = bookingHold.EnrollmentID
 	}
 	for i, item := range items {
 		quantity, err := benefitdomain.ParseQuantity(item.RequestedQuantity)
@@ -355,6 +400,12 @@ func (s *Service) resolveEligibility(ctx context.Context, tx pgx.Tx, rc identity
 		input.Items = append(input.Items, line)
 	}
 	result := eligibility.Resolve(input)
+	if bookingHold != nil && (result.EnrollmentID != bookingHold.EnrollmentID ||
+		result.PlanVersionID != bookingHold.PlanVersionID || len(result.Items) != 1 ||
+		result.Items[0].AccountID != bookingHold.AccountID ||
+		result.Items[0].DefinitionID != bookingHold.DefinitionID) {
+		return eligibility.Result{}, uuid.Nil, ErrBookingHoldInvalid
+	}
 
 	id, err := uuid.NewV7()
 	if err != nil {
