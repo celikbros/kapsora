@@ -11,10 +11,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/go-chi/chi/v5"
+
 	"github.com/celikbros/kapsora/internal/identity"
 	"github.com/celikbros/kapsora/internal/platform/httpx"
 	"github.com/celikbros/kapsora/internal/tenantsettings/application"
-	"github.com/go-chi/chi/v5"
 )
 
 const path = "/tenant-settings/accommodation"

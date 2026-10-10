@@ -7,10 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/celikbros/kapsora/internal/identity"
-	"github.com/celikbros/kapsora/internal/tenantsettings/application"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+
+	"github.com/celikbros/kapsora/internal/identity"
+	"github.com/celikbros/kapsora/internal/tenantsettings/application"
 )
 
 type stubRepository struct{ saves int }

@@ -8,13 +8,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/celikbros/kapsora/internal/accommodation/settings"
 	"github.com/celikbros/kapsora/internal/identity"
 	identitydomain "github.com/celikbros/kapsora/internal/identity/domain"
 	identitypg "github.com/celikbros/kapsora/internal/identity/infrastructure/postgres"
 	"github.com/celikbros/kapsora/internal/platform/dbtest"
 	"github.com/celikbros/kapsora/internal/tenantsettings/application"
-	"github.com/google/uuid"
 )
 
 func fixture(t *testing.T) (*dbtest.Harness, *Repository, identity.RequestContext) {
