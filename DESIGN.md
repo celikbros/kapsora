@@ -532,8 +532,7 @@ agreeing to their share of a plan, and a share they cannot see is not agreed to.
 
 **A command that costs money carries the amount on itself.** Onayla is two lines — the verb,
 then "Ödeyeceğiniz 4.940,00 TRY" in monospace beneath it — because the button is the last
-thing the thumb touches and the last place the figure can still stop someone. A cancellation
-that costs a fee says the fee in the toast it produces, for the same reason.
+thing the thumb touches and the last place the figure can still stop someone.
 
 **A countdown renders the server's deadline and nothing else.** The hold shows `holdExpiresAt`
 through a `<time role="timer">`, ticking a local clock only to redraw it, so a screen that
@@ -584,9 +583,19 @@ ters gitti" would drop the one fact that tells the member which date to change.
 **What undoing costs is answered before undoing is offered.** İptal et is not on the
 confirmed booking until the member asks "İptal edersem ne öderim" and the server's preview has
 answered in sentences — free until a date, or a fee with its amount and the nights it covers,
-and how many nights come back to the plan. Only then does the danger button appear, beside a
-"Vazgeç" that clears the preview. A destructive command whose price is discovered afterwards
-is a trap, however clearly the policy was written somewhere else.
+and how many nights come back to the plan. Policy charge nights and fee remain distinct from
+the exact service-night and entitlement-unit movement; the server's decimal strings are shown
+as supplied, without browser arithmetic. If the preview has no exact effect, it makes no
+verified movement claim. Only then does the danger button appear, beside a "Vazgeç" that clears
+the preview. After cancellation, the committed command result replaces the preview with the
+recorded actual effect inline, without a redundant success toast. A paid cancellation also
+shows the recorded member fee in that result, separately from entitlement movement.
+A later record reload may
+not contain that effect: when it is absent, show the neutral unknown state rather than
+reconstructing a historical amount from the preview or policy. The current command result
+lives in client memory; durable historical display requires an API read that returns the
+exact effect. A destructive command whose price is discovered afterwards is a trap, however
+clearly the policy was written somewhere else.
 
 **A policy is shown as labelled rows in Turkish, never as a compact code line.** The lodging
 terms read back as a definition list — free-cancellation hours, penalty kind with its value,

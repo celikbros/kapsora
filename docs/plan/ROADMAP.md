@@ -260,8 +260,29 @@ exercised as expected failures; ordinary accommodation passed 103 functions with
 those three opt-in skips. Checkout 3, handoff 9, NIGHT 14, eligibility 20, authorization 31,
 schema 191 and directory/invitations 70 passed without skips. Web retained 756 tests and
 25 mock smoke cases, with 106 opt-in skips. The reviewed conditional implementation design
-is in the existing penalty decision note; exact cap, new reporting and migration remain
-unimplemented while the owner's business-rule decision is pending.
+is in the existing penalty decision note; the cap and no-show changes remain unimplemented
+while the owner's business-rule decision is pending. The independent reporting correction
+below supersedes only the earlier cancellation-reporting status.
+
+The independent successful-cancellation reporting correction is implemented on `2504ff5`.
+At approved 0.5 service night/factor 2 it now shows 0.5 service night and one returned unit,
+instead of two original booked nights. Locked provenance and actual ledger deltas support
+the optional exact effect; fees, cap/refusal policy and no-show remain unchanged. Migration
+59 stores nullable cancellation evidence without historical backfill or grants. Local
+58/59 application still awaits explicit approval; local schema remains 57. Focused
+frontend 80/80, blank-database Go compile/pure/vet, workspace typecheck/lint/build and
+additive contract checks passed. Ten fully intercepted synthetic views at 390/1440 had
+no overflow/errors, visible keyboard focus and resolved mobile toast/reload-copy findings;
+fresh finish review disposition ship covers those scored fixes. Final source `3051466`
+passed all six jobs in [CI 38058250522](https://github.com/celikbros/kapsora/actions/runs/38058250522).
+Reporting 8/8, schema upgrade 3/3, schema 192, accommodation 110 (only three separately
+exercised policy-diagnostic skips), authorization 31, eligibility 20 and directory 70
+passed. Handoff 9, checkout 3, NIGHT 14 and enrollment 6 passed without skips. Web passed
+762 tests and 25 browser smoke cases with 106 opt-in skips. The restored old reporting
+control and all three policy-refusal diagnostics reached their intended failures.
+Paid cancellation retains its recorded member fee inline; its focused member test passed.
+The existing [decision note](../delegation/PC06-fractional-penalty-decision.md) records the
+bounded package, restored-reporting control and still-pending business-rule decision.
 
 This is the owner's approved execution order: finish the running product, with health
 first. It takes precedence over the older "next" instructions below. The M0–M11 tables

@@ -1,6 +1,7 @@
 # PC06 · Partial-approval penalty decision gate
 
-Status: decision required; no implementation or permission policy authorized by this note.
+Status: penalty-cap decision required. The independent cancellation reporting correction
+below is implemented; it does not implement the conditional cap or no-show design.
 Planned 2026-10-10 by gpt-6-astra. All six jobs passed in final
 [CI 37995074957](https://github.com/celikbros/kapsora/actions/runs/37995074957) on bda7984.
 Its separate opt-in diagnostic step reached both compiled assertions
@@ -90,6 +91,76 @@ reserved quantities. Include existing fractional bookings and integer partial ap
 not only freshly configured fractional fixtures. No local DB, server, migration or live
 compensation action is authorized by this planning note.
 
+## Independent cancellation reporting correction (2026-10-10)
+
+Astra separated a reporting defect from the pending business-rule decision. A two-night
+hold at factor 2, approved for 0.5 service night, already cancels freely and returns one
+entitlement unit. Its old preview/result said two nights were returned. Source `2504ff5`
+corrects that successful cancellation's representation without changing settlement policy.
+
+Cancellation preview/result/record now carry optional `entitlementEffect` with the four
+exact service-night and entitlement-unit strings described below. Preview is prospective;
+the command measures actual Consume/ReleaseUnused service returns and original reservation
+counter deltas while holding authorization, item and reservation locks in that order.
+Evidence requires the same tenant, request/person, single matching service item and
+original BOOKING reservation. Only provable NIGHT evidence qualifies. Missing or ambiguous
+evidence omits the projection and preserves existing safe settlement. Excessive penalties
+still return the frozen fee preview without an effect and still refuse in the command.
+
+Migration `000059_accommodation_cancellation_entitlement_effect.up.sql` adds four nullable,
+nonnegative, all-or-none numeric(20,6) cancellation columns. It inserts evidence with the
+append-only record and leaves historical rows NULL; it adds no no-show columns or grants.
+The legacy `releasedNights` is the whole portion of actual released service when evidence
+exists. Policy `penaltyNights`, monetary fee and payer/member shares retain frozen values.
+
+The member renders service nights and entitlement units separately as exact server
+strings. The immediate completed command shows its recorded effect in past tense.
+Booking GET does not include the cancellation record, so a reload uses neutral missing-
+evidence wording rather than calling the record old or inventing a movement. Persisted
+evidence is verified through the repository and SQL; historical member read is not claimed.
+The redundant cancellation success toast is removed so mobile tabs remain unobstructed.
+A paid command still shows its recorded member fee inline, separately from entitlement
+movement; the final focused member suite passed 16/16 after this regression correction.
+The free-cancellation captures do not claim visual proof of the paid branch.
+
+Local Go compilation/pure tests and scoped vet passed with database tests disabled.
+Focused frontend tests passed 80/80; the whole frontend passed 761/761 in 92 files with
+maxWorkers=2 (357.99 seconds). The initial concurrent run had 13 timeouts; lower worker
+concurrency passed without increasing assertion timeouts. Workspace typecheck, lint and build passed. Spectral
+reported zero errors and 11 existing warnings; oasdiff reported no breaking changes.
+The old local golangci-lint could not read Go 1.27 export data, so current CI owns that
+check. Synthetic UI review captured ten 390/1440 views with all 42 API requests intercepted,
+zero unexpected requests/browser errors/overflow and visible keyboard focus. The single
+detector reported no findings; fresh finish review scored both fixes resolved, disposition
+ship for those fixes. These captures are not live business acceptance.
+
+[CI 38058250522](https://github.com/celikbros/kapsora/actions/runs/38058250522) is the
+isolated SQL/source acceptance run for final source `3051466` (the HTTP fixture mounts
+the production cancellation routes). All six jobs passed. Its eight-function preflight
+passed without skips (10.403 seconds) and covers public HTTP
+preview/result, persisted history, frozen fee shares, factors 0.5/2, six-decimal cumulative
+rounding, wrong provenance and recomputation after prior consumption/reviewer approval.
+The restored old result projection compiled and reached the expected
+CANCELLATION_EFFECT_HTTP_RESULT assertion with truthful underlying ledger movement. The three policy-refusal diagnostics
+remain required expected failures, not passing capped settlements.
+
+Full accommodation passed 110 functions (159.371 seconds), with only the three separately
+exercised opt-in policy diagnostics skipped. Schema passed 192, authorization application
+31, eligibility 20 and directory/invitation 70, all without skips. Handoff 9, checkout 3,
+NIGHT conversion 14 and enrollment 6 passed without skips. Web passed 762 tests in 92
+files and 25 mock browser smoke cases; 106 opt-in live/calendar cases remained skipped.
+The current CI lint, security, generated contract and static binary checks all passed.
+
+The schema preflight also passes fresh version 59, the bounded 57-to-58 IAM upgrade and
+58-to-59 cancellation history preservation. It checks complete/nonnegative evidence and
+append-only rejection of later update/delete. The older IAM test explicitly upgrades only
+to 58, retaining its original state-preservation assertion.
+
+Local schema remains 57. Applying migrations 58 and 59 locally requires the separate
+explicit migration approval; operator-owned processes are untouched. No cap, no-show
+effect, fee redistribution, settings authority or historical compensation is authorized
+by this independent reporting correction.
+
 ## Conditional implementation design (Astra, reviewed by Sol, 2026-10-10)
 
 This prepares option A for review. Explicit policy approval remains pending; technical
@@ -116,16 +187,16 @@ movements for a no-op or record policy quantities as actual ledger consumption.
 
 ### Additive exact contract and persistence
 
-Add optional entitlementEffect to cancellation preview/result/record and confirmed no-show
-reports, with four canonical exact decimal strings:
+Extend the independently implemented cancellation entitlementEffect to capped settlement
+and add matching evidence to confirmed no-show reports, with four canonical decimal strings:
 
 - consumedServiceNights
 - releasedServiceNights
 - consumedEntitlementUnits
 - releasedEntitlementUnits
 
-Add four nullable numeric(20,6) columns to each cancellation/no-show table, matching existing
-quantity precision. Enforce nonnegative and all-or-none nullability. Cancellation effects
+Cancellation already has four nullable numeric(20,6) columns in migration 59. Add matching
+no-show columns only after the cap decision, with nonnegative/all-or-none nullability. Cancellation effects
 are written on initial insertion; no-show effects are written atomically during confirmed
 review. Historical rows and undecided/rejected/disputed reports retain NULL, meaning no
 recorded exact evidence rather than zero. Do not require historical confirmed rows to have

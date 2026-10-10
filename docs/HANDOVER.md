@@ -1484,6 +1484,38 @@ Sol-reviewed conditional contract for exact reporting, locked actual movement de
 nullable historical evidence and unchanged financial claims. Policy approval remains
 pending; no migration, domain correction, local SQL or live business mutation was made.
 
+**Independent cancellation reporting correction (2026-10-10):** `2504ff5` fixes the
+successful free-cancellation display that claimed two returned nights for a 0.5-night
+approval at factor 2. Optional exact effect reports 0.5 service night and one entitlement
+unit. Preview uses current locked evidence; command records actual service returns and
+original reservation deltas. Tenant/request/person/item/BOOKING provenance qualifies
+NIGHT evidence, while unprovable/legacy paths keep safe settlement without an invented
+projection. Frozen fees and penalty policy are unchanged; the three excessive-penalty
+diagnostics remain expected refusals. Migration 59 adds nullable cancellation evidence
+only, with no history backfill, no no-show change and no grants. Local schema remains 57;
+neither migration 58 nor 59 is locally approved/applied.
+
+Local blank-database Go compilation/pure tests, scoped vet, frontend 80/80 focused tests,
+workspace typecheck/lint/build and additive contract checks passed. Local golangci-lint
+cannot decode Go 1.27 export data; CI's current version owns that check. Ten synthetic
+member views at 390/1440 intercepted all 42 API requests; there were no unexpected calls,
+browser errors or overflow and keyboard focus was visible. The one detector was clear;
+fresh finish review resolved neutral reload wording and the mobile toast obstruction,
+disposition ship for the scored fixes. Reload has no cancellation read API, so it makes
+no exact return claim. These are synthetic captures, not operator database acceptance.
+[CI 38058250522](https://github.com/celikbros/kapsora/actions/runs/38058250522) is the
+successful isolated acceptance run on final source `3051466`, all six jobs passed.
+Cancellation reporting passed 8/8 (10.403 s), schema-upgrade preflight 3/3, full schema
+192, accommodation 110 (159.371 s; three separately exercised policy-diagnostic skips),
+authorization 31, eligibility 20 and directory/invitation 70. Handoff 9, checkout 3,
+NIGHT 14 and enrollment 6 remained successful without skips. Web passed 762/762 in 92
+files and 25 mock browser cases; 106 opt-in live/calendar cases were skipped. The restored
+old reporting projection reached its intended compiled failure; all three penalty-refusal
+diagnostics still reached their required assertions. A paid result retains its recorded
+member fee inline; no additional paid visual acceptance is claimed. Details remain in the existing
+[penalty decision note](delegation/PC06-fractional-penalty-decision.md); its independent
+reporting section supersedes the preceding conditional-reporting status only.
+
 Lodging acceptance covers fully and partly covered bookings, member contribution, free
 and penalized cancellation, check-in, early checkout, reviewed no-show and natural waitlist
 expiry. Inventory and entitlement restoration/consumption reconcile without duplicate
