@@ -16,7 +16,10 @@ beforeAll(() => {
   initI18n('tr');
   server.listen({ onUnhandledRequest: 'error' });
 });
-afterEach(() => api.reset());
+afterEach(() => {
+  api.reset();
+  vi.restoreAllMocks();
+});
 afterAll(() => server.close());
 
 function mount(path: string) {
@@ -33,7 +36,7 @@ async function login(username: string) {
   return user;
 }
 
-it('opens a tenant membership detail with assigned roles and a working back link', async () => {
+it('keeps the Management landing as the directory for an authorized reader', async () => {
   mount('/admin');
   const user = await login('admin.a');
   const page = await screen.findByTestId('admin-users-page');
@@ -47,6 +50,28 @@ it('opens a tenant membership detail with assigned roles and a working back link
   expect(history).toHaveTextContent('geçerlilikleri');
   await user.click(within(detail).getByRole('link', { name: /Kullanıcılara dön/ }));
   expect(await screen.findByTestId('admin-users-page')).toBeInTheDocument();
+});
+
+it('denies the directory URL to a settings-only reader without querying users', async () => {
+  const tenant = api.tenantByCode('DEMO_A')!;
+  api.world.accounts.push({
+    actorId: crypto.randomUUID(),
+    username: 'settings.only.directory',
+    displayName: 'Ayar Okuyucu',
+    email: 'settings.only@example.invalid',
+    memberships: [
+      {
+        tenantCode: tenant.code,
+        permissions: ['platform.tenant_settings.read'],
+        scopes: [{ type: 'TENANT', id: null }],
+      },
+    ],
+  });
+  const services = mount('/admin/users');
+  const read = vi.spyOn(services.ops.admin, 'listUsers');
+  await login('settings.only.directory');
+  expect(await screen.findByText(/Bu işlem için yetkiniz yok/)).toBeInTheDocument();
+  expect(read).not.toHaveBeenCalled();
 });
 
 it('keeps finance out of nav and mounts no list or detail query on direct visits', async () => {
@@ -63,7 +88,7 @@ it('keeps finance out of nav and mounts no list or detail query on direct visits
 });
 
 it('clears old membership rows and pending reads when the correlated capability is revoked', async () => {
-  const services = mount('/admin');
+  const services = mount('/admin/users');
   const user = await login('admin.a');
   expect((await screen.findAllByTestId('admin-user-row')).length).toBeGreaterThan(0);
   const active = services.store.getState().activeTenant!;
@@ -101,7 +126,7 @@ it('resets paging on status change and offers a retry after a read error', async
       memberships: [{ tenantCode: 'DEMO_A', permissions: [] }],
     });
   }
-  const services = mount('/admin');
+  const services = mount('/admin/users');
   const original = services.ops.admin.listUsers;
   vi.spyOn(services.ops.admin, 'listUsers').mockRejectedValueOnce(new Error('temporary'));
   const user = await login('admin.a');
@@ -125,7 +150,7 @@ it('fails closed when the correlated capability is absent from session context',
       return withoutCapability;
     }),
   );
-  const services = mount('/admin');
+  const services = mount('/admin/users');
   const read = vi.spyOn(services.ops.admin, 'listUsers');
   await login('admin.a');
   expect(await screen.findByText(/Bu işlem için yetkiniz yok/)).toBeInTheDocument();
@@ -139,7 +164,7 @@ it('fails closed when the correlated capability is absent from session context',
 });
 
 it('drops a delayed read when actor context changes even if the capability stays present', async () => {
-  const services = mount('/admin');
+  const services = mount('/admin/users');
   const user = await login('admin.a');
   expect((await screen.findAllByTestId('admin-user-row')).length).toBeGreaterThan(0);
   const state = services.store.getState();
@@ -208,7 +233,7 @@ async function chooseSuspension(user: ReturnType<typeof userEvent.setup>) {
 }
 
 it('requires a reason and tenant-specific confirmation before suspending a membership', async () => {
-  const services = mount('/admin');
+  const services = mount('/admin/users');
   const user = await login('admin.a');
   const suspend = vi.spyOn(services.ops.admin, 'suspendUser');
   const dialog = await openSuspend(user);
@@ -230,7 +255,7 @@ it('requires a reason and tenant-specific confirmation before suspending a membe
 });
 
 it('keeps the same command on an uncertain response and requires reload after a stale version', async () => {
-  const services = mount('/admin');
+  const services = mount('/admin/users');
   const user = await login('admin.a');
   const original = services.ops.admin.suspendUser;
   const suspend = vi
@@ -280,7 +305,7 @@ it('keeps the directory readable but hides suspension when manage capability is 
       return withoutManage;
     }),
   );
-  const services = mount('/admin');
+  const services = mount('/admin/users');
   const suspend = vi.spyOn(services.ops.admin, 'suspendUser');
   const user = await login('admin.a');
   await user.click(await screen.findByRole('link', { name: 'Refik İnceleyici' }));
@@ -291,7 +316,7 @@ it('keeps the directory readable but hides suspension when manage capability is 
 });
 
 it('does not replay a delayed step-up after manage capability changes', async () => {
-  const services = mount('/admin');
+  const services = mount('/admin/users');
   const user = await login('admin.a');
   const suspend = vi.spyOn(services.ops.admin, 'suspendUser');
   const originalStepUp = services.ops.session.stepUp;
@@ -325,7 +350,7 @@ it('does not replay a delayed step-up after manage capability changes', async ()
 });
 
 it('retries the pinned command after password cancellation and an in-progress response', async () => {
-  const services = mount('/admin');
+  const services = mount('/admin/users');
   const user = await login('admin.a');
   const original = services.ops.admin.suspendUser;
   const suspend = vi

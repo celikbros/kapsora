@@ -3,8 +3,9 @@ package application
 import (
 	"context"
 
-	"github.com/celikbros/kapsora/internal/identity"
 	"github.com/jackc/pgx/v5"
+
+	"github.com/celikbros/kapsora/internal/identity"
 )
 
 // TenantSettingsAuthority rechecks identity inside the settings transaction. The caller

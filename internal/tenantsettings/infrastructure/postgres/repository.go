@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/celikbros/kapsora/internal/accommodation/settings"
 	"github.com/celikbros/kapsora/internal/audit"
@@ -21,11 +23,7 @@ import (
 	"github.com/celikbros/kapsora/internal/platform/db"
 	"github.com/celikbros/kapsora/internal/platform/sqlcgen"
 	"github.com/celikbros/kapsora/internal/tenantsettings/application"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
-
-const operation = "accommodation.update"
 
 var keys = []string{settings.KeyHoldMinutes, settings.KeyQuoteTTLMinutes}
 
@@ -93,7 +91,7 @@ func token(tenant string, found map[string]row) string {
 		h.Write([]byte{0})
 		h.Write([]byte(key))
 		if x, ok := found[key]; ok {
-			h.Write([]byte(fmt.Sprintf(":%d", x.version)))
+			_, _ = fmt.Fprintf(h, ":%d", x.version)
 		} else {
 			h.Write([]byte(":absent"))
 		}
@@ -132,12 +130,12 @@ func response(tenant string, found map[string]row, canManage bool) (application.
 }
 func (r *Repository) Read(ctx context.Context, rc identity.RequestContext) (application.Response, error) {
 	var out application.Response
-	err := r.transaction(ctx, rc, false, func(ctx context.Context, tx pgx.Tx, manage bool) error {
+	err := r.transaction(ctx, rc, false, func(ctx context.Context, tx pgx.Tx, _ bool) error {
 		found, err := rows(ctx, tx, rc.TenantID)
 		if err != nil {
 			return err
 		}
-		manage, err = r.Authority.CheckTx(ctx, tx, rc, false)
+		manage, err := r.Authority.CheckTx(ctx, tx, rc, false)
 		if err != nil {
 			return err
 		}
@@ -242,7 +240,10 @@ func (r *Repository) Save(ctx context.Context, rc identity.RequestContext, cmd a
 			return err
 		}
 		key, request := hashes(cmd)
-		err = sqlcgen.New(tx).TenantSettingsReceiptInsert(ctx, sqlcgen.TenantSettingsReceiptInsertParams{TenantID: rc.TenantID, ActorID: rc.Principal.ActorID, MembershipID: rc.MembershipID, KeyHash: key[:], RequestHash: request[:], ResponseStatus: int32(out.Status), ResponseEtag: out.ETag, ResponseBody: out.Body})
+		if out.Status != 200 {
+			return fmt.Errorf("tenantsettings: unexpected receipt status %d", out.Status)
+		}
+		err = sqlcgen.New(tx).TenantSettingsReceiptInsert(ctx, sqlcgen.TenantSettingsReceiptInsertParams{TenantID: rc.TenantID, ActorID: rc.Principal.ActorID, MembershipID: rc.MembershipID, KeyHash: key[:], RequestHash: request[:], ResponseStatus: 200, ResponseEtag: out.ETag, ResponseBody: out.Body})
 		return err
 	})
 	return out, err

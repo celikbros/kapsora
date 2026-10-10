@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+
 	"github.com/celikbros/kapsora/internal/identity"
 	"github.com/celikbros/kapsora/internal/identity/application"
 	"github.com/celikbros/kapsora/internal/identity/domain"
-	"github.com/jackc/pgx/v5"
 )
 
 type TenantSettingsAuthority struct{ IdleTimeout time.Duration }

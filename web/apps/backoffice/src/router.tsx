@@ -9,6 +9,7 @@ import {
 import { AdjustmentQueuePage } from './adjustments/AdjustmentQueuePage';
 import { AdminAccess } from './admin/AdminAccess';
 import { AdminLandingPage } from './admin/AdminLandingPage';
+import { AdminUsersPage } from './admin/AdminUsersPage';
 import { TenantSettingsPage } from './admin/TenantSettingsPage';
 import { TenantSettingsAccess } from './admin/TenantSettingsAccess';
 import { AdminUserDetailPage } from './admin/AdminUserDetailPage';
@@ -661,6 +662,15 @@ const adminUsersRoute = createRoute({
   path: '/admin',
   component: AdminLandingPage,
 });
+const adminDirectoryRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/admin/users',
+  component: () => (
+    <AdminAccess>
+      <AdminUsersPage />
+    </AdminAccess>
+  ),
+});
 const tenantSettingsRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/admin/tenant-settings',
@@ -792,6 +802,7 @@ const routeTree = rootRoute.addChildren([
     billingExportsRoute,
     reportsRoute,
     adminUsersRoute,
+    adminDirectoryRoute,
     tenantSettingsRoute,
     adminUserDetailRoute,
     adminInvitationsRoute,

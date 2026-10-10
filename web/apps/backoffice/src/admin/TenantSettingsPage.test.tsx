@@ -19,19 +19,14 @@ afterEach(() => {
 });
 afterAll(() => server.close());
 
-async function fixture(username = 'admin.a') {
+async function fixture(username = 'admin.a', path = '/admin/tenant-settings') {
   const services = createServices({ baseUrl: 'http://mock.test' });
-  render(
-    <App
-      services={services}
-      history={createMemoryHistory({ initialEntries: ['/admin/tenant-settings'] })}
-    />,
-  );
+  render(<App services={services} history={createMemoryHistory({ initialEntries: [path] })} />);
   const user = userEvent.setup();
   await user.type(await screen.findByLabelText(/Kullanıcı adı/), username);
   await user.type(screen.getByLabelText(/^Parola/), 'demo parola 2026 kapsora');
   await user.click(screen.getByRole('button', { name: 'Giriş yap' }));
-  await screen.findByTestId('tenant-settings-page');
+  if (path === '/admin/tenant-settings') await screen.findByTestId('tenant-settings-page');
   return { user, services };
 }
 
@@ -108,14 +103,18 @@ it('shows a settings-only reader the management entry without editable controls'
       },
     ],
   });
-  await fixture('settings.reader');
+  const { user } = await fixture('settings.reader', '/admin');
+  expect(await screen.findByRole('heading', { name: 'Yönetim' })).toBeInTheDocument();
+  expect(screen.queryByTestId('admin-users-page')).not.toBeInTheDocument();
+  await user.click(within(screen.getByRole('main')).getByRole('link', { name: 'Kurum ayarları' }));
+  await screen.findByTestId('tenant-settings-page');
   expect(
     await screen.findByText('Bu ayarları görüntüleyebilirsiniz. Değişiklik yapma yetkiniz yok.'),
   ).toBeInTheDocument();
   expect(
     screen.queryByRole('button', { name: 'Değişikliği gözden geçir' }),
   ).not.toBeInTheDocument();
-  expect(screen.getByRole('link', { name: 'Kurum ayarları' })).toBeInTheDocument();
+  expect(screen.getAllByRole('link', { name: 'Kurum ayarları' }).length).toBeGreaterThan(0);
 }, 20_000);
 
 it('retries an uncertain response with the original body, ETag and key', async () => {
