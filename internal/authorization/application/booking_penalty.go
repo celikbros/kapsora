@@ -70,8 +70,8 @@ func (s *Service) SettleBookingPenalty(ctx context.Context, tx pgx.Tx, in Bookin
 			ReleasedService: benefitdomain.ZeroQuantity(), ConsumedUnits: benefitdomain.ZeroQuantity(),
 			ReleasedUnits: benefitdomain.ZeroQuantity()}, nil
 	}
-	if !e.Reservation.Open() && !(e.Reservation.Status == ledger.ReservationConsumed &&
-		!e.Reservation.Remaining().IsPositive()) {
+	if !e.Reservation.Open() && (e.Reservation.Status != ledger.ReservationConsumed ||
+		e.Reservation.Remaining().IsPositive()) {
 		return BookingPenaltyResult{}, ErrBookingPenaltyEvidence
 	}
 	items, err := s.repo.ListAuthorizationItems(ctx, tx, in.TenantID, in.AuthorizationID, true)

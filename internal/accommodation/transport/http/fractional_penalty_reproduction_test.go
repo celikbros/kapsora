@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/google/uuid"
+
 	"github.com/celikbros/kapsora/api/generated/kapsorav1"
 	"github.com/celikbros/kapsora/internal/accommodation/application"
 	accommodationdomain "github.com/celikbros/kapsora/internal/accommodation/domain"
@@ -78,6 +80,85 @@ func (s *server) fractionalPenaltyBooking(t *testing.T, now, approved string) ap
 			policy, noShowRate.String(), err)
 	}
 	return final
+}
+
+func TestFractionalPenaltyFamilySharedPrincipalAccountCap(t *testing.T) {
+	s := newServer(t)
+	s.clock.At(t, beforeCheckInOpen)
+	s.putLodgingTerms(t)
+	s.replaceNightPlan(t, "4", "2", true)
+	principalEnrollment := s.enrollment
+	ctx, cancel := s.h.Ctx()
+	defer cancel()
+	var principalMembership, dependent, dependentMembership, dependentEnrollment uuid.UUID
+	if err := s.h.Admin.QueryRow(ctx, `SELECT sponsor_membership_id FROM benefit.enrollment
+		WHERE tenant_id=$1 AND id=$2`, s.tenant, principalEnrollment).Scan(&principalMembership); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.h.Admin.QueryRow(ctx, `INSERT INTO party.person
+		(tenant_id,first_name,last_name,normalized_name)
+		VALUES ($1,'Penalty','Dependent','penalty dependent') RETURNING id`, s.tenant).Scan(&dependent); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.h.Admin.QueryRow(ctx, `INSERT INTO party.sponsor_membership
+		(tenant_id,person_id,sponsor_tenant_organization_id,principal_membership_id,
+		 membership_type,status,valid_period)
+		VALUES ($1,$2,$3,$4,'MEMBER','ACTIVE',daterange('2026-01-01',NULL,'[)')) RETURNING id`,
+		s.tenant, dependent, s.sponsor, principalMembership).Scan(&dependentMembership); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.h.Admin.QueryRow(ctx, `INSERT INTO benefit.enrollment
+		(tenant_id,sponsor_membership_id,plan_id,status,valid_period)
+		VALUES ($1,$2,$3,'ACTIVE',daterange('2026-01-01',NULL,'[)')) RETURNING id`,
+		s.tenant, dependentMembership, s.plan).Scan(&dependentEnrollment); err != nil {
+		t.Fatal(err)
+	}
+	s.person, s.enrollment = dependent, dependentEnrollment
+	hold, _ := s.conversionHold(t, "2026-06-17")
+	confirmed, err := s.svc.ConfirmBooking(ctx, s.memberContext(), hold.Booking.ID)
+	if err != nil || confirmed.Booking.ServiceRequestID == nil {
+		t.Fatalf("shared confirmation: %v", err)
+	}
+	requestID := *confirmed.Booking.ServiceRequestID
+	request, err := s.requests.Get(ctx, s.deskContext(), requestID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.requests.PartiallyApprove(ctx, s.deskContext(), requestID,
+		servicerequestapp.DecisionInput{ReasonCode: "SHARED_LIMIT", ExpectedVersion: request.Request.RowVersion,
+			Items: []servicerequestdomain.DecisionItem{{LineNo: 1,
+				Status: servicerequestdomain.ItemPartiallyApproved, ApprovedQuantity: "0.5"}}}); err != nil {
+		t.Fatal(err)
+	}
+	s.deliverDecision(t, requestID)
+	booking, err := s.svc.GetBooking(ctx, s.deskContext(), hold.Booking.ID)
+	if err != nil || booking.Booking.AuthorizationID == nil {
+		t.Fatalf("shared approval: %v", err)
+	}
+	var holder uuid.UUID
+	if err := s.h.Admin.QueryRow(ctx, `SELECT enrollment_id FROM benefit.entitlement_account
+		WHERE tenant_id=$1 AND id=$2`, s.tenant, s.account).Scan(&holder); err != nil {
+		t.Fatal(err)
+	}
+	if holder != principalEnrollment || holder == dependentEnrollment {
+		t.Fatalf("shared account holder=%s", holder)
+	}
+	s.clock.At(t, afterFreeWindow)
+	preview, err := s.svc.PreviewCancellation(ctx, s.memberContext(), booking.Booking.ID)
+	want := application.EntitlementEffect{ConsumedServiceNights: "0.5", ReleasedServiceNights: "0",
+		ConsumedEntitlementUnits: "1", ReleasedEntitlementUnits: "0"}
+	if err != nil || preview.Quote.EntitlementEffect == nil || *preview.Quote.EntitlementEffect != want {
+		t.Fatalf("shared cap preview=%+v err=%v", preview.Quote, err)
+	}
+	result, err := s.svc.CancelBooking(ctx, s.memberContext(), booking.Booking.ID, "")
+	if err != nil || result.Record == nil || result.Record.EntitlementEffect == nil ||
+		*result.Record.EntitlementEffect != want {
+		t.Fatalf("shared cap result=%+v err=%v", result.Quote, err)
+	}
+	available, reserved, consumed := s.fractionalAccountState(t)
+	if available != "3.000000" || reserved != "0.000000" || consumed != "1.000000" {
+		t.Fatalf("shared principal terminal account=%s/%s/%s", available, reserved, consumed)
+	}
 }
 
 func TestFractionalPenaltyFreeCancellationCapsToApproved(t *testing.T) {

@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
@@ -45,7 +46,7 @@ func (s *Service) cancellationEvidence(ctx context.Context, tx pgx.Tx, rc identi
 	conversion, err := s.bookings.BookingConversionEvidence(ctx, tx, rc.TenantID,
 		*snapshot.EvaluationID, *record.EntitlementReservationID, snapshot.ServiceDefinitionID)
 	if err != nil {
-		if err == ErrQuoteStale {
+		if errors.Is(err, ErrQuoteStale) {
 			return nil, nil
 		}
 		return nil, err
@@ -86,8 +87,8 @@ func predictedCancellationEffect(e *cancellationEvidence, quote CancellationQuot
 		return &EntitlementEffect{ConsumedServiceNights: "0", ReleasedServiceNights: "0",
 			ConsumedEntitlementUnits: "0", ReleasedEntitlementUnits: "0"}
 	}
-	if !e.reservation.Open() && !(e.reservation.Status == ledger.ReservationConsumed &&
-		!e.reservation.Remaining().IsPositive()) {
+	if !e.reservation.Open() && (e.reservation.Status != ledger.ReservationConsumed ||
+		e.reservation.Remaining().IsPositive()) {
 		return nil
 	}
 	penalty := benefitdomain.MustQuantity(fmt.Sprintf("%d", quote.EntitlementPenalty(covered)))

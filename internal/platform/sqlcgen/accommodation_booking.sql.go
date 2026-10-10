@@ -609,7 +609,19 @@ SELECT ee.person_id, ee.enrollment_id, ee.plan_version_id, ee.service_date,
   JOIN benefit.entitlement_account a ON a.tenant_id = r.tenant_id
     AND a.id = r.entitlement_account_id
     AND a.entitlement_definition_id = m.entitlement_definition_id
-    AND a.enrollment_id = e.id
+    AND (a.enrollment_id = e.id OR
+         (d.family_shared AND EXISTS (
+             SELECT 1
+               FROM party.sponsor_membership dependent_membership
+               JOIN benefit.enrollment principal_enrollment
+                 ON principal_enrollment.tenant_id = dependent_membership.tenant_id
+                AND principal_enrollment.sponsor_membership_id = dependent_membership.principal_membership_id
+              WHERE dependent_membership.tenant_id = e.tenant_id
+                AND dependent_membership.id = e.sponsor_membership_id
+                AND principal_enrollment.id = a.enrollment_id
+                AND principal_enrollment.plan_id = e.plan_id
+                AND principal_enrollment.valid_period @> ee.service_date
+         )))
  WHERE ee.tenant_id = $3 AND ee.id = $4
 `
 
