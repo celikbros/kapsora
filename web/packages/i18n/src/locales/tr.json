@@ -1005,7 +1005,9 @@
     "CLAIM_SOURCE_NOT_READY": "Vaka faturalamaya hazır değil. Klinik ekibin kayıtları ve provizyonu kontrol etmesini isteyin.",
     "CLAIM_INPATIENT_ALLOCATION_MISSING": "Yatış günlerinin provizyon tüketimi tamamlanmamış. Gün sayısını ve onayları kontrol edin.",
     "DIAGNOSIS_IN_USE": "Tanı bir yatış veya talep satırında kullanılıyor. Bağlı kaydı düzeltmeden tanıyı değiştiremezsiniz.",
-    "ENCOUNTER_ALREADY_ENDED": "Muayene zaten sonlandırılmış. Kaydı yenileyiniz."
+    "ENCOUNTER_ALREADY_ENDED": "Muayene zaten sonlandırılmış. Kaydı yenileyiniz.",
+    "TENANT_SETTING_CONFIGURATION_CONFLICT": "Ayar yapılandırması bu ekranla uyumlu değil. Kurumun teknik yöneticisine başvurun.",
+    "TENANT_SETTINGS_INVALID": "Ayar değerlerini ve değişiklik gerekçesini kontrol edin. Her süre 1–1440 dakika arasında tam sayı olmalı."
   },
   "fieldErrors": {
     "RULE_COMPILE_FAILED": "Kural koşulu derlenemedi",

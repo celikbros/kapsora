@@ -876,7 +876,9 @@
     "CLAIM_SOURCE_NOT_READY": "This case is not ready for billing. Ask the clinical team to check the records and authorization.",
     "CLAIM_INPATIENT_ALLOCATION_MISSING": "Inpatient authorization consumption is incomplete. Check the day count and approvals.",
     "DIAGNOSIS_IN_USE": "This diagnosis is used by an inpatient stay or claim line. Correct the linked record before changing it.",
-    "ENCOUNTER_ALREADY_ENDED": "The encounter has already ended. Reload the record."
+    "ENCOUNTER_ALREADY_ENDED": "The encounter has already ended. Reload the record.",
+    "TENANT_SETTING_CONFIGURATION_CONFLICT": "This setting configuration cannot be viewed or changed here. Contact your institution’s technical administrator.",
+    "TENANT_SETTINGS_INVALID": "Check the setting values and change reason. Each duration must be a whole number from 1 to 1440 minutes."
   },
   "fieldErrors": {
     "RULE_COMPILE_FAILED": "The rule condition did not compile",
