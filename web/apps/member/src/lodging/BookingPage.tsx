@@ -398,6 +398,16 @@ function HistoryPanel({
       ) : null}
       {record.status === 'CANCELLED' && record.cancelReasonCode !== 'HOLD_RELEASED' ? (
         <div className="mt-2 grid gap-1 text-sm" data-testid="cancellation-effect-result">
+          {cancelResult?.cancellation && !cancelResult.cancellation.free ? (
+            <p>
+              {t('lodging.booking.cancelledFee', {
+                amount: money(
+                  cancelResult.cancellation.memberFee,
+                  cancelResult.cancellation.currencyCode,
+                ),
+              })}
+            </p>
+          ) : null}
           {cancellationEffectSentences(
             t,
             cancelResult?.cancellation.entitlementEffect,

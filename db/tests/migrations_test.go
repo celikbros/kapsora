@@ -52,7 +52,7 @@ func TestInvitationMigration56To57PreservesAcceptedExisting(t *testing.T) {
 }
 
 // expectedSchemaVersion is the number of the newest migration file.
-const expectedSchemaVersion = 58
+const expectedSchemaVersion = 59
 
 func TestMigrateUpFromEmptyDatabase(t *testing.T) {
 	h := dbtest.New(t)

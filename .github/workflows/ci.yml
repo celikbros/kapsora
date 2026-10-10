@@ -61,6 +61,10 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - name: cancellation schema upgrade acceptance preflight
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: go test -count=1 -v -timeout 5m ./db/tests -run '^(TestMigrateUpFromEmptyDatabase|TestPrivilegedRoleMigration57To58PreservesIAMState|TestCancellationEffectMigration59PreservesHistoryAndConstrainsRows)$'
       - name: hold enrollment boundary preflight
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable

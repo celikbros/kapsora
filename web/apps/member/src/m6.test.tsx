@@ -310,6 +310,23 @@ describe('the confirmed booking', () => {
     expect(result).toHaveTextContent('1.000000 hak birimi geri döndü');
   });
 
+  it('keeps the recorded member fee visible after a paid cancellation without a toast', async () => {
+    const booking = ownBooking('CONFIRMED');
+    booking.policySnapshot!.freeCancellationHoursBefore = 10_000;
+    mount(`/bookings/${booking.id}`);
+    const user = await login();
+    await user.click(await screen.findByRole('button', { name: 'İptal edersem ne öderim?' }));
+    const preview = await screen.findByTestId('cancellation-preview');
+    expect(preview).toHaveTextContent('İptal ücreti');
+    await user.click(within(preview).getByRole('button', { name: 'İptali onayla' }));
+    const result = await screen.findByTestId('cancellation-effect-result');
+    const recorded = api.world.cancellations.find((row) => row.bookingId === booking.id)!;
+    expect(recorded.free).toBe(false);
+    const feeLine = `İptal ücreti ${formatMoney(recorded.memberFee, recorded.currencyCode)} olarak kaydedildi.`;
+    expect(result).toHaveTextContent(feeLine);
+    expect(screen.getAllByText(feeLine)).toHaveLength(1);
+  });
+
   it('keeps six-place fractional and large exact effect strings intact', () => {
     const t = initI18n('tr').t;
     const lines = cancellationEffectSentences(

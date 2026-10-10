@@ -162,7 +162,7 @@ func TestPrivilegedRoleMigration57To58PreservesIAMState(t *testing.T) {
 	if err := h.Admin.QueryRow(ctx, stateSQL, s.tenant, ids, grantID, invitationID).Scan(&before); err != nil {
 		t.Fatalf("capture version 57 IAM state: %v", err)
 	}
-	status, err := dbmigrate.Up(h.AdminURL)
+	status, err := dbmigrate.UpTo(h.AdminURL, 58)
 	if err != nil || status.Version != 58 || status.Dirty {
 		t.Fatalf("upgrade 57 to 58: %+v %v", status, err)
 	}
