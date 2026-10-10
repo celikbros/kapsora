@@ -139,7 +139,7 @@ jobs:
           finally:
               path.write_text(original)
           PY
-      - name: fractional penalty policy conflict diagnostic
+      - name: partial-approval penalty policy conflict diagnostic
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
           KAPSORA_TEST_FRACTIONAL_PENALTY_REPRODUCTION: '1'
@@ -149,6 +149,7 @@ jobs:
           expected = {
               'TestFractionalPenaltyReproductionPenalizedCancellation': 'FRACTIONAL_PENALTY_CANCEL_REFUSAL:',
               'TestFractionalPenaltyReproductionNoShow': 'FRACTIONAL_PENALTY_NOSHOW_REFUSAL:',
+              'TestFractionalPenaltyReproductionIntegerPartialNoShow': 'INTEGER_PARTIAL_PENALTY_NOSHOW_REFUSAL:',
           }
           result = subprocess.run(['go', 'test', '-count=1', '-v', '-timeout', '5m',
               './internal/accommodation/transport/http', '-run', '^(' + '|'.join(expected) + ')$'],
@@ -156,12 +157,12 @@ jobs:
           output = result.stdout + result.stderr
           print(output)
           failures = [line for line in output.splitlines() if line.startswith('--- FAIL: ')]
-          if result.returncode != 1 or '[build failed]' in output or '--- SKIP:' in output or len(failures) != 2:
-              raise SystemExit('Fractional penalty diagnostic did not reach two compiled policy conflicts')
+          if result.returncode != 1 or '[build failed]' in output or '--- SKIP:' in output or len(failures) != len(expected):
+              raise SystemExit('Partial-approval penalty diagnostic did not reach all compiled policy conflicts')
           for case, assertion in expected.items():
               if not any(line.startswith('--- FAIL: ' + case + ' ') for line in failures) or assertion not in output:
-                  raise SystemExit('Fractional penalty diagnostic failed outside intended assertion: ' + case)
-          print('Fractional cancellation/no-show policy conflicts reproduced; policy unchanged')
+                  raise SystemExit('Partial-approval penalty diagnostic failed outside intended assertion: ' + case)
+          print('Fractional and integer partial-approval penalty conflicts reproduced; policy unchanged')
           PY
       - name: eligibility selected enrollment and shared account regression
         env:
