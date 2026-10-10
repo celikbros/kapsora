@@ -397,7 +397,9 @@ VALUES ($1, $2, $3,
 RETURNING id, booking_id, reported_by_actor_id, reported_at, evidence_document_id,
           assessed_fee_amount::text AS assessed_fee_amount, payer_amount::text AS payer_amount,
           member_amount::text AS member_amount, currency_code, status, reviewed_by,
-          reviewed_at, review_comment, consumed_nights, created_at, updated_at, row_version
+          reviewed_at, review_comment, consumed_nights,
+          consumed_service_nights, released_service_nights, consumed_entitlement_units,
+          released_entitlement_units, created_at, updated_at, row_version
 `
 
 type CreateNoShowParams struct {
@@ -414,23 +416,27 @@ type CreateNoShowParams struct {
 }
 
 type CreateNoShowRow struct {
-	ID                 uuid.UUID
-	BookingID          uuid.UUID
-	ReportedByActorID  uuid.NullUUID
-	ReportedAt         time.Time
-	EvidenceDocumentID uuid.NullUUID
-	AssessedFeeAmount  string
-	PayerAmount        string
-	MemberAmount       string
-	CurrencyCode       string
-	Status             string
-	ReviewedBy         uuid.NullUUID
-	ReviewedAt         *time.Time
-	ReviewComment      *string
-	ConsumedNights     int32
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
-	RowVersion         int64
+	ID                       uuid.UUID
+	BookingID                uuid.UUID
+	ReportedByActorID        uuid.NullUUID
+	ReportedAt               time.Time
+	EvidenceDocumentID       uuid.NullUUID
+	AssessedFeeAmount        string
+	PayerAmount              string
+	MemberAmount             string
+	CurrencyCode             string
+	Status                   string
+	ReviewedBy               uuid.NullUUID
+	ReviewedAt               *time.Time
+	ReviewComment            *string
+	ConsumedNights           int32
+	ConsumedServiceNights    pgtype.Numeric
+	ReleasedServiceNights    pgtype.Numeric
+	ConsumedEntitlementUnits pgtype.Numeric
+	ReleasedEntitlementUnits pgtype.Numeric
+	CreatedAt                time.Time
+	UpdatedAt                time.Time
+	RowVersion               int64
 }
 
 func (q *Queries) CreateNoShow(ctx context.Context, arg CreateNoShowParams) (CreateNoShowRow, error) {
@@ -462,6 +468,10 @@ func (q *Queries) CreateNoShow(ctx context.Context, arg CreateNoShowParams) (Cre
 		&i.ReviewedAt,
 		&i.ReviewComment,
 		&i.ConsumedNights,
+		&i.ConsumedServiceNights,
+		&i.ReleasedServiceNights,
+		&i.ConsumedEntitlementUnits,
+		&i.ReleasedEntitlementUnits,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.RowVersion,
@@ -631,7 +641,9 @@ const getNoShow = `-- name: GetNoShow :one
 SELECT id, booking_id, reported_by_actor_id, reported_at, evidence_document_id,
        assessed_fee_amount::text AS assessed_fee_amount, payer_amount::text AS payer_amount,
        member_amount::text AS member_amount, currency_code, status, reviewed_by,
-       reviewed_at, review_comment, consumed_nights, created_at, updated_at, row_version
+       reviewed_at, review_comment, consumed_nights,
+       consumed_service_nights, released_service_nights, consumed_entitlement_units,
+       released_entitlement_units, created_at, updated_at, row_version
   FROM accommodation.no_show
  WHERE tenant_id = $1
    AND booking_id = $2
@@ -643,23 +655,27 @@ type GetNoShowParams struct {
 }
 
 type GetNoShowRow struct {
-	ID                 uuid.UUID
-	BookingID          uuid.UUID
-	ReportedByActorID  uuid.NullUUID
-	ReportedAt         time.Time
-	EvidenceDocumentID uuid.NullUUID
-	AssessedFeeAmount  string
-	PayerAmount        string
-	MemberAmount       string
-	CurrencyCode       string
-	Status             string
-	ReviewedBy         uuid.NullUUID
-	ReviewedAt         *time.Time
-	ReviewComment      *string
-	ConsumedNights     int32
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
-	RowVersion         int64
+	ID                       uuid.UUID
+	BookingID                uuid.UUID
+	ReportedByActorID        uuid.NullUUID
+	ReportedAt               time.Time
+	EvidenceDocumentID       uuid.NullUUID
+	AssessedFeeAmount        string
+	PayerAmount              string
+	MemberAmount             string
+	CurrencyCode             string
+	Status                   string
+	ReviewedBy               uuid.NullUUID
+	ReviewedAt               *time.Time
+	ReviewComment            *string
+	ConsumedNights           int32
+	ConsumedServiceNights    pgtype.Numeric
+	ReleasedServiceNights    pgtype.Numeric
+	ConsumedEntitlementUnits pgtype.Numeric
+	ReleasedEntitlementUnits pgtype.Numeric
+	CreatedAt                time.Time
+	UpdatedAt                time.Time
+	RowVersion               int64
 }
 
 func (q *Queries) GetNoShow(ctx context.Context, arg GetNoShowParams) (GetNoShowRow, error) {
@@ -680,6 +696,10 @@ func (q *Queries) GetNoShow(ctx context.Context, arg GetNoShowParams) (GetNoShow
 		&i.ReviewedAt,
 		&i.ReviewComment,
 		&i.ConsumedNights,
+		&i.ConsumedServiceNights,
+		&i.ReleasedServiceNights,
+		&i.ConsumedEntitlementUnits,
+		&i.ReleasedEntitlementUnits,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.RowVersion,
@@ -1035,7 +1055,9 @@ const lockNoShow = `-- name: LockNoShow :one
 SELECT id, booking_id, reported_by_actor_id, reported_at, evidence_document_id,
        assessed_fee_amount::text AS assessed_fee_amount, payer_amount::text AS payer_amount,
        member_amount::text AS member_amount, currency_code, status, reviewed_by,
-       reviewed_at, review_comment, consumed_nights, created_at, updated_at, row_version
+       reviewed_at, review_comment, consumed_nights,
+       consumed_service_nights, released_service_nights, consumed_entitlement_units,
+       released_entitlement_units, created_at, updated_at, row_version
   FROM accommodation.no_show
  WHERE tenant_id = $1
    AND id = $2
@@ -1048,23 +1070,27 @@ type LockNoShowParams struct {
 }
 
 type LockNoShowRow struct {
-	ID                 uuid.UUID
-	BookingID          uuid.UUID
-	ReportedByActorID  uuid.NullUUID
-	ReportedAt         time.Time
-	EvidenceDocumentID uuid.NullUUID
-	AssessedFeeAmount  string
-	PayerAmount        string
-	MemberAmount       string
-	CurrencyCode       string
-	Status             string
-	ReviewedBy         uuid.NullUUID
-	ReviewedAt         *time.Time
-	ReviewComment      *string
-	ConsumedNights     int32
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
-	RowVersion         int64
+	ID                       uuid.UUID
+	BookingID                uuid.UUID
+	ReportedByActorID        uuid.NullUUID
+	ReportedAt               time.Time
+	EvidenceDocumentID       uuid.NullUUID
+	AssessedFeeAmount        string
+	PayerAmount              string
+	MemberAmount             string
+	CurrencyCode             string
+	Status                   string
+	ReviewedBy               uuid.NullUUID
+	ReviewedAt               *time.Time
+	ReviewComment            *string
+	ConsumedNights           int32
+	ConsumedServiceNights    pgtype.Numeric
+	ReleasedServiceNights    pgtype.Numeric
+	ConsumedEntitlementUnits pgtype.Numeric
+	ReleasedEntitlementUnits pgtype.Numeric
+	CreatedAt                time.Time
+	UpdatedAt                time.Time
+	RowVersion               int64
 }
 
 // The report FOR UPDATE, for the review that is about to decide it. The maker-checker rule
@@ -1088,6 +1114,10 @@ func (q *Queries) LockNoShow(ctx context.Context, arg LockNoShowParams) (LockNoS
 		&i.ReviewedAt,
 		&i.ReviewComment,
 		&i.ConsumedNights,
+		&i.ConsumedServiceNights,
+		&i.ReleasedServiceNights,
+		&i.ConsumedEntitlementUnits,
+		&i.ReleasedEntitlementUnits,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.RowVersion,
@@ -1241,20 +1271,29 @@ const reviewNoShow = `-- name: ReviewNoShow :execrows
 UPDATE accommodation.no_show
    SET status = $1, reviewed_by = $2,
        reviewed_at = $3, review_comment = $4,
-       consumed_nights = $5::int, updated_by = $2
- WHERE tenant_id = $6
-   AND id = $7
+       consumed_nights = $5::int,
+       consumed_service_nights = $6::numeric,
+       released_service_nights = $7::numeric,
+       consumed_entitlement_units = $8::numeric,
+       released_entitlement_units = $9::numeric,
+       updated_by = $2
+ WHERE tenant_id = $10
+   AND id = $11
    AND status = 'REPORTED'
 `
 
 type ReviewNoShowParams struct {
-	Status         string
-	ReviewedBy     uuid.NullUUID
-	ReviewedAt     *time.Time
-	ReviewComment  *string
-	ConsumedNights int32
-	TenantID       uuid.UUID
-	ID             uuid.UUID
+	Status                   string
+	ReviewedBy               uuid.NullUUID
+	ReviewedAt               *time.Time
+	ReviewComment            *string
+	ConsumedNights           int32
+	ConsumedServiceNights    pgtype.Numeric
+	ReleasedServiceNights    pgtype.Numeric
+	ConsumedEntitlementUnits pgtype.Numeric
+	ReleasedEntitlementUnits pgtype.Numeric
+	TenantID                 uuid.UUID
+	ID                       uuid.UUID
 }
 
 // The payer's answer. The REPORTED predicate is the whole of its idempotency, and
@@ -1268,6 +1307,10 @@ func (q *Queries) ReviewNoShow(ctx context.Context, arg ReviewNoShowParams) (int
 		arg.ReviewedAt,
 		arg.ReviewComment,
 		arg.ConsumedNights,
+		arg.ConsumedServiceNights,
+		arg.ReleasedServiceNights,
+		arg.ConsumedEntitlementUnits,
+		arg.ReleasedEntitlementUnits,
 		arg.TenantID,
 		arg.ID,
 	)

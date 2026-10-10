@@ -162,13 +162,17 @@ VALUES (sqlc.arg('tenant_id'), sqlc.arg('booking_id'), sqlc.narg('reported_by_ac
 RETURNING id, booking_id, reported_by_actor_id, reported_at, evidence_document_id,
           assessed_fee_amount::text AS assessed_fee_amount, payer_amount::text AS payer_amount,
           member_amount::text AS member_amount, currency_code, status, reviewed_by,
-          reviewed_at, review_comment, consumed_nights, created_at, updated_at, row_version;
+          reviewed_at, review_comment, consumed_nights,
+          consumed_service_nights, released_service_nights, consumed_entitlement_units,
+          released_entitlement_units, created_at, updated_at, row_version;
 
 -- name: GetNoShow :one
 SELECT id, booking_id, reported_by_actor_id, reported_at, evidence_document_id,
        assessed_fee_amount::text AS assessed_fee_amount, payer_amount::text AS payer_amount,
        member_amount::text AS member_amount, currency_code, status, reviewed_by,
-       reviewed_at, review_comment, consumed_nights, created_at, updated_at, row_version
+       reviewed_at, review_comment, consumed_nights,
+       consumed_service_nights, released_service_nights, consumed_entitlement_units,
+       released_entitlement_units, created_at, updated_at, row_version
   FROM accommodation.no_show
  WHERE tenant_id = sqlc.arg('tenant_id')
    AND booking_id = sqlc.arg('booking_id');
@@ -180,7 +184,9 @@ SELECT id, booking_id, reported_by_actor_id, reported_at, evidence_document_id,
 SELECT id, booking_id, reported_by_actor_id, reported_at, evidence_document_id,
        assessed_fee_amount::text AS assessed_fee_amount, payer_amount::text AS payer_amount,
        member_amount::text AS member_amount, currency_code, status, reviewed_by,
-       reviewed_at, review_comment, consumed_nights, created_at, updated_at, row_version
+       reviewed_at, review_comment, consumed_nights,
+       consumed_service_nights, released_service_nights, consumed_entitlement_units,
+       released_entitlement_units, created_at, updated_at, row_version
   FROM accommodation.no_show
  WHERE tenant_id = sqlc.arg('tenant_id')
    AND id = sqlc.arg('id')
@@ -194,7 +200,12 @@ SELECT id, booking_id, reported_by_actor_id, reported_at, evidence_document_id,
 UPDATE accommodation.no_show
    SET status = sqlc.arg('status'), reviewed_by = sqlc.arg('reviewed_by'),
        reviewed_at = sqlc.arg('reviewed_at'), review_comment = sqlc.narg('review_comment'),
-       consumed_nights = sqlc.arg('consumed_nights')::int, updated_by = sqlc.narg('reviewed_by')
+       consumed_nights = sqlc.arg('consumed_nights')::int,
+       consumed_service_nights = sqlc.narg('consumed_service_nights')::numeric,
+       released_service_nights = sqlc.narg('released_service_nights')::numeric,
+       consumed_entitlement_units = sqlc.narg('consumed_entitlement_units')::numeric,
+       released_entitlement_units = sqlc.narg('released_entitlement_units')::numeric,
+       updated_by = sqlc.narg('reviewed_by')
  WHERE tenant_id = sqlc.arg('tenant_id')
    AND id = sqlc.arg('id')
    AND status = 'REPORTED';

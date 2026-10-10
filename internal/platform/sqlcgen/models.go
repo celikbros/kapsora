@@ -108,26 +108,30 @@ type AccommodationInventoryDay struct {
 }
 
 type AccommodationNoShow struct {
-	ID                 uuid.UUID
-	TenantID           uuid.UUID
-	BookingID          uuid.UUID
-	ReportedByActorID  uuid.NullUUID
-	ReportedAt         time.Time
-	EvidenceDocumentID uuid.NullUUID
-	AssessedFeeAmount  pgtype.Numeric
-	PayerAmount        pgtype.Numeric
-	MemberAmount       pgtype.Numeric
-	CurrencyCode       string
-	Status             string
-	ReviewedBy         uuid.NullUUID
-	ReviewedAt         *time.Time
-	ReviewComment      *string
-	ConsumedNights     int32
-	CreatedAt          time.Time
-	CreatedBy          uuid.NullUUID
-	UpdatedAt          time.Time
-	UpdatedBy          uuid.NullUUID
-	RowVersion         int64
+	ID                       uuid.UUID
+	TenantID                 uuid.UUID
+	BookingID                uuid.UUID
+	ReportedByActorID        uuid.NullUUID
+	ReportedAt               time.Time
+	EvidenceDocumentID       uuid.NullUUID
+	AssessedFeeAmount        pgtype.Numeric
+	PayerAmount              pgtype.Numeric
+	MemberAmount             pgtype.Numeric
+	CurrencyCode             string
+	Status                   string
+	ReviewedBy               uuid.NullUUID
+	ReviewedAt               *time.Time
+	ReviewComment            *string
+	ConsumedNights           int32
+	CreatedAt                time.Time
+	CreatedBy                uuid.NullUUID
+	UpdatedAt                time.Time
+	UpdatedBy                uuid.NullUUID
+	RowVersion               int64
+	ConsumedServiceNights    pgtype.Numeric
+	ReleasedServiceNights    pgtype.Numeric
+	ConsumedEntitlementUnits pgtype.Numeric
+	ReleasedEntitlementUnits pgtype.Numeric
 }
 
 type AccommodationProperty struct {

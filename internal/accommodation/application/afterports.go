@@ -230,6 +230,7 @@ type NoShowRecord struct {
 	ReviewedAt         *time.Time
 	ReviewComment      *string
 	ConsumedNights     int
+	EntitlementEffect  *EntitlementEffect
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
 	RowVersion         int64
@@ -250,12 +251,13 @@ type NewNoShowRow struct {
 
 // NoShowReviewRow is the payer's answer as it is written.
 type NoShowReviewRow struct {
-	ID             uuid.UUID
-	Status         string
-	ReviewedBy     uuid.UUID
-	ReviewedAt     time.Time
-	ReviewComment  *string
-	ConsumedNights int
+	ID                uuid.UUID
+	Status            string
+	ReviewedBy        uuid.UUID
+	ReviewedAt        time.Time
+	ReviewComment     *string
+	ConsumedNights    int
+	EntitlementEffect *EntitlementEffect
 }
 
 // WaitlistRecord is one accommodation.waitlist_entry row.
@@ -379,6 +381,13 @@ type BookingAuthorizationLine struct {
 type BookingCancellationEvidence struct {
 	Approved, Consumed, Remaining, UnitFactor benefitdomain.Quantity
 	Reservation                               ledger.Reservation
+}
+
+type BookingPenaltySettlement struct {
+	TenantID, ActorID, AuthorizationID, RequestID, PersonID uuid.UUID
+	BookingID, ReservationID, ServiceDefinitionID           uuid.UUID
+	EvaluationID, EnrollmentID                              uuid.UUID
+	PolicyPenalty, ConsumeKey, ConsumeReason, ReleaseReason string
 }
 
 // RaiseWorkItem is one piece of work for a person to look at.

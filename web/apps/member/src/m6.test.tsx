@@ -312,16 +312,24 @@ describe('the confirmed booking', () => {
 
   it('keeps the recorded member fee visible after a paid cancellation without a toast', async () => {
     const booking = ownBooking('CONFIRMED');
-    booking.policySnapshot!.freeCancellationHoursBefore = 10_000;
+    booking.policySnapshot!.freeCancellationHoursBefore = 0;
+    booking.checkIn = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+    booking.approvedServiceNights = '0.500000';
+    booking.entitlementUnitFactor = '2.000000';
     mount(`/bookings/${booking.id}`);
     const user = await login();
     await user.click(await screen.findByRole('button', { name: 'İptal edersem ne öderim?' }));
     const preview = await screen.findByTestId('cancellation-preview');
     expect(preview).toHaveTextContent('İptal ücreti');
+    expect(preview).toHaveTextContent('0.500000 gece kullanılır');
+    expect(preview).toHaveTextContent('1.000000 hak birimi kullanılır');
     await user.click(within(preview).getByRole('button', { name: 'İptali onayla' }));
     const result = await screen.findByTestId('cancellation-effect-result');
     const recorded = api.world.cancellations.find((row) => row.bookingId === booking.id)!;
     expect(recorded.free).toBe(false);
+    expect(recorded.penaltyNights).toBe(1);
+    expect(recorded.entitlementEffect?.consumedServiceNights).toBe('0.500000');
+    expect(result).toHaveTextContent('0.500000 gece kullanıldı');
     const feeLine = `İptal ücreti ${formatMoney(recorded.memberFee, recorded.currencyCode)} olarak kaydedildi.`;
     expect(result).toHaveTextContent(feeLine);
     expect(screen.getAllByText(feeLine)).toHaveLength(1);
@@ -357,5 +365,47 @@ describe('the cancelled booking', () => {
     expect(history).toHaveTextContent('Bu iptal kaydında kesin hak hareketi gösterilemiyor');
     expect(history).not.toHaveTextContent('eski');
     expect(history).not.toHaveTextContent('gece geri döndü');
+  });
+});
+
+describe('the recorded no-show', () => {
+  it('shows a confirmed exact effect and the unchanged recorded member fee', async () => {
+    const booking = ownBooking('CONFIRMED');
+    booking.status = 'NO_SHOW';
+    const historical = api.world.noShows.find((row) => row.status === 'CONFIRMED')!;
+    const report = {
+      ...historical,
+      id: api.world.nextId(),
+      bookingId: booking.id,
+      consumedNights: 1,
+      entitlementEffect: {
+        consumedServiceNights: '1.500000',
+        releasedServiceNights: '0.000000',
+        consumedEntitlementUnits: '3.000000',
+        releasedEntitlementUnits: '0.000000',
+      },
+    };
+    api.world.noShows.push(report);
+    mount(`/bookings/${booking.id}`);
+    await login();
+    const history = await screen.findByTestId('no-show-history');
+    expect(history).toHaveTextContent('1.500000 gece kullanıldı');
+    expect(history).toHaveTextContent('3.000000 hak birimi kullanıldı');
+    expect(screen.getByTestId('no-show-fee')).toHaveTextContent(
+      formatMoney(report.memberAmount, report.currencyCode),
+    );
+  });
+
+  it('keeps a historical report without exact evidence neutral', async () => {
+    const booking = ownBooking('CONFIRMED');
+    booking.status = 'NO_SHOW';
+    const historical = api.world.noShows.find((row) => row.status === 'CONFIRMED')!;
+    api.world.noShows.push({ ...historical, id: api.world.nextId(), bookingId: booking.id });
+    mount(`/bookings/${booking.id}`);
+    await login();
+    expect(await screen.findByTestId('no-show-history')).toHaveTextContent(
+      'kesin hak hareketi gösterilemiyor',
+    );
+    expect(screen.queryByText(/hak birimi kullanıldı/)).toBeNull();
   });
 });

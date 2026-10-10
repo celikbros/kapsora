@@ -3630,6 +3630,12 @@
       "actualNights_other": "{{count}} gece kalındı",
       "noShowReported": "Tesis gelmediğinizi bildirdi; kayıt inceleniyor.",
       "noShow": "Gelmediğiniz kaydedildi.",
+      "noShowFee": "Gelmeme ücreti {{amount}} olarak kaydedildi.",
+      "noShowEffectUnknown": "Bu gelmeme kaydında kesin hak hareketi gösterilemiyor.",
+      "noShowEffect": {
+        "service": "Konaklama hakkınızdan {{consumed}} gece kullanıldı, {{released}} gece geri döndü.",
+        "entitlement": "Plan hesabınızdan {{consumed}} hak birimi kullanıldı, {{released}} hak birimi geri döndü."
+      },
       "goToHold": "Onaya git",
       "sequence": "Ne oldu"
     },
@@ -3786,6 +3792,12 @@
         "payer": "Ödeyen payı",
         "member": "Üye payı",
         "consumedNights": "Harcanan gece",
+        "effect": "Hak hareketi",
+        "effectUnknown": "Bu kayıtta kesin hak hareketi gösterilemiyor.",
+        "consumedServiceNights": "Kullanılan konaklama gecesi",
+        "releasedServiceNights": "Geri dönen konaklama gecesi",
+        "consumedEntitlementUnits": "Kullanılan plan hak birimi",
+        "releasedEntitlementUnits": "Geri dönen plan hak birimi",
         "status": {
           "REPORTED": "Bildirildi",
           "CONFIRMED": "Onaylandı",

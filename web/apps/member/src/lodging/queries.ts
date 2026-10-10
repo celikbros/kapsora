@@ -4,6 +4,7 @@ import type {
   CreateHoldRequest,
   JoinWaitlistRequest,
 } from '@kapsora/api-client';
+import { ApiError } from '@kapsora/api-client';
 import { useSession, useTenantId } from '@kapsora/auth';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -151,6 +152,24 @@ export function useCancel(bookingId: string) {
   return useMutation({
     mutationFn: () => ops.lodging.cancel(tenantId, bookingId),
     onSuccess: () => invalidate(bookingId),
+  });
+}
+
+/** The report is separate from Booking GET; a missing historical report has no exact evidence. */
+export function useNoShow(bookingId: string) {
+  const ops = useOps();
+  const tenantId = useTenantId();
+  return useQuery({
+    queryKey: ['member', tenantId, 'no-show', bookingId],
+    queryFn: async () => {
+      try {
+        return await ops.lodging.getNoShow(tenantId, bookingId);
+      } catch (error) {
+        if (error instanceof ApiError && error.problem.status === 404) return null;
+        throw error;
+      }
+    },
+    retry: false,
   });
 }
 

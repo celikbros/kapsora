@@ -610,6 +610,7 @@ type AuthorizationPort interface {
 	CancellationEvidence(ctx context.Context, tx pgx.Tx, tenantID, authorizationID,
 		requestID, personID, bookingID, reservationID, serviceDefinitionID uuid.UUID) (
 		*BookingCancellationEvidence, error)
+	SettleBookingPenalty(ctx context.Context, tx pgx.Tx, in BookingPenaltySettlement) (EntitlementEffect, error)
 }
 
 // BookingOrphanInput carries frozen booking provenance across the module boundary.
@@ -702,6 +703,10 @@ func (NoAuthorizations) ReleaseUnused(context.Context, pgx.Tx, BookingReleaseInp
 // Consume implements AuthorizationPort.
 func (NoAuthorizations) Consume(context.Context, pgx.Tx, BookingConsumeInput) (string, error) {
 	return "", errors.New("accommodation: this process cannot consume an authorization")
+}
+
+func (NoAuthorizations) SettleBookingPenalty(context.Context, pgx.Tx, BookingPenaltySettlement) (EntitlementEffect, error) {
+	return EntitlementEffect{}, errors.New("accommodation: this process cannot settle a booking penalty")
 }
 
 // RecordStayFulfilment implements AuthorizationPort.

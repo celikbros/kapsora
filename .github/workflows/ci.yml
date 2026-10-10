@@ -181,30 +181,42 @@ jobs:
           finally:
               path.write_text(original)
           PY
-      - name: partial-approval penalty policy conflict diagnostic
+      - name: partial-approval penalty cap preflight
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
-          KAPSORA_TEST_FRACTIONAL_PENALTY_REPRODUCTION: '1'
+        run: go test -count=1 -v -timeout 10m ./internal/accommodation/transport/http -run '^(TestFractionalPenalty|TestCancellationPenalty|TestBookingPenalty)'
+      - name: penalty cap negative control
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
         run: |
           python3 - <<'PY'
+          from pathlib import Path
           import subprocess
-          expected = {
-              'TestFractionalPenaltyReproductionPenalizedCancellation': 'FRACTIONAL_PENALTY_CANCEL_REFUSAL:',
-              'TestFractionalPenaltyReproductionNoShow': 'FRACTIONAL_PENALTY_NOSHOW_REFUSAL:',
-              'TestFractionalPenaltyReproductionIntegerPartialNoShow': 'INTEGER_PARTIAL_PENALTY_NOSHOW_REFUSAL:',
-          }
-          result = subprocess.run(['go', 'test', '-count=1', '-v', '-timeout', '5m',
-              './internal/accommodation/transport/http', '-run', '^(' + '|'.join(expected) + ')$'],
-              capture_output=True, text=True)
-          output = result.stdout + result.stderr
-          print(output)
-          failures = [line for line in output.splitlines() if line.startswith('--- FAIL: ')]
-          if result.returncode != 1 or '[build failed]' in output or '--- SKIP:' in output or len(failures) != len(expected):
-              raise SystemExit('Partial-approval penalty diagnostic did not reach all compiled policy conflicts')
-          for case, assertion in expected.items():
-              if not any(line.startswith('--- FAIL: ' + case + ' ') for line in failures) or assertion not in output:
-                  raise SystemExit('Partial-approval penalty diagnostic failed outside intended assertion: ' + case)
-          print('Fractional and integer partial-approval penalty conflicts reproduced; policy unchanged')
+          path = Path('internal/authorization/application/booking_penalty.go')
+          original = path.read_text()
+          needle = 'consumed := in.PolicyPenalty.Min(e.Remaining)'
+          if original.count(needle) != 1:
+              raise SystemExit('Expected exactly one penalty cap')
+          try:
+              path.write_text(original.replace(needle, 'consumed := in.PolicyPenalty'))
+              expected = {
+                  'TestFractionalPenaltyReproductionPenalizedCancellation': 'PENALTY_CAP_CANCEL_ASSERTION:',
+                  'TestFractionalPenaltyReproductionNoShow': 'PENALTY_CAP_NOSHOW_ASSERTION:',
+                  'TestFractionalPenaltyReproductionIntegerPartialNoShow': 'PENALTY_CAP_INTEGER_ASSERTION:',
+              }
+              result = subprocess.run(['go', 'test', '-count=1', '-v', '-timeout', '10m',
+                  './internal/accommodation/transport/http', '-run', '^(' + '|'.join(expected) + ')$'],
+                  capture_output=True, text=True)
+              output = result.stdout + result.stderr
+              print(output)
+              if result.returncode != 1 or '[build failed]' in output or '--- SKIP:' in output:
+                  raise SystemExit('Penalty cap control did not reach running assertions')
+              for case, assertion in expected.items():
+                  if '--- FAIL: ' + case + ' ' not in output or assertion not in output:
+                      raise SystemExit('Cap removal did not reach intended assertion in ' + case)
+              print('Removing the cap fails all three partial-approval settlements')
+          finally:
+              path.write_text(original)
           PY
       - name: eligibility selected enrollment and shared account regression
         env:

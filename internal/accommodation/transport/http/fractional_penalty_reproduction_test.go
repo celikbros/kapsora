@@ -1,10 +1,10 @@
 package accommodationhttp_test
 
 import (
-	"os"
-	"strings"
+	"net/http"
 	"testing"
 
+	"github.com/celikbros/kapsora/api/generated/kapsorav1"
 	"github.com/celikbros/kapsora/internal/accommodation/application"
 	accommodationdomain "github.com/celikbros/kapsora/internal/accommodation/domain"
 	benefitdomain "github.com/celikbros/kapsora/internal/benefit/domain"
@@ -132,35 +132,32 @@ func TestFractionalPenaltyFreeCancellationCapsToApproved(t *testing.T) {
 }
 
 func TestFractionalPenaltyReproductionPenalizedCancellation(t *testing.T) {
-	if os.Getenv("KAPSORA_TEST_FRACTIONAL_PENALTY_REPRODUCTION") != "1" {
-		t.Skip("opt-in diagnostic: fractional cancellation penalty policy remains undecided")
-	}
 	s := newServer(t)
 	booking := s.fractionalPenaltyBooking(t, beforeCheckInOpen, "0.5")
 	s.clock.At(t, afterFreeWindow)
 	ctx, cancel := s.h.Ctx()
 	defer cancel()
 	preview, previewErr := s.svc.PreviewCancellation(ctx, s.memberContext(), booking.Booking.ID)
-	if previewErr != nil || preview.Quote.EntitlementEffect != nil ||
+	if previewErr != nil || preview.Quote.EntitlementEffect == nil ||
+		preview.Quote.EntitlementEffect.ConsumedServiceNights != "0.5" ||
+		preview.Quote.EntitlementEffect.ConsumedEntitlementUnits != "1" ||
 		preview.Quote.PenaltyNights != 1 || preview.Quote.FeeAmount != "1000" {
-		t.Fatalf("fractional penalized preview policy/effect=%+v error=%v, want frozen fee and no provable effect",
+		t.Fatalf("fractional penalized preview policy/effect=%+v error=%v, want frozen fee and capped effect",
 			preview.Quote, previewErr)
 	}
 	result, err := s.svc.CancelBooking(ctx, s.memberContext(), booking.Booking.ID, "")
-	if err == nil {
-		t.Fatalf("fractional penalized cancellation unexpectedly succeeded: %+v", result)
+	if err != nil || result.Record == nil || result.Record.EntitlementEffect == nil ||
+		*result.Record.EntitlementEffect != *preview.Quote.EntitlementEffect ||
+		result.Quote.FeeAmount != "1000" || result.Quote.PenaltyNights != 1 {
+		t.Fatalf("PENALTY_CAP_CANCEL_ASSERTION: result=%+v error=%v", result.Quote, err)
 	}
-	if !strings.Contains(err.Error(), "penalty of 1 nights is more than") {
-		t.Fatalf("fractional penalized cancellation unexpected error: %v", err)
-	}
-	penaltyErr := err
 	current, err := s.svc.GetBooking(ctx, s.deskContext(), booking.Booking.ID)
-	if err != nil || current.Booking.Status != accommodationdomain.BookingConfirmed {
-		t.Fatalf("fractional penalized cancellation rollback booking=%+v %v", current.Booking, err)
+	if err != nil || current.Booking.Status != accommodationdomain.BookingCancelled {
+		t.Fatalf("fractional penalized cancellation booking=%+v %v", current.Booking, err)
 	}
 	available, reserved, consumed := s.fractionalAccountState(t)
-	if available != "3.000000" || reserved != "1.000000" || consumed != "0.000000" {
-		t.Fatalf("fractional penalized cancellation rollback account=%s/%s/%s, want 3/1/0",
+	if available != "3.000000" || reserved != "0.000000" || consumed != "1.000000" {
+		t.Fatalf("fractional penalized cancellation account=%s/%s/%s, want 3/0/1",
 			available, reserved, consumed)
 	}
 	var cancellationRows int
@@ -169,19 +166,15 @@ func TestFractionalPenaltyReproductionPenalizedCancellation(t *testing.T) {
 		Scan(&cancellationRows); err != nil {
 		t.Fatal(err)
 	}
-	if cancellationRows != 0 {
-		t.Fatalf("fractional penalized cancellation rollback rows=%d, want 0", cancellationRows)
+	if cancellationRows != 1 {
+		t.Fatalf("fractional penalized cancellation rows=%d, want 1", cancellationRows)
 	}
-	if _, _, confirmed := s.inventoryOf(t, s.roomType, checkIn); confirmed != 1 {
-		t.Fatalf("fractional penalized cancellation rollback inventory=%d, want one confirmed room", confirmed)
+	if _, _, confirmed := s.inventoryOf(t, s.roomType, checkIn); confirmed != 0 {
+		t.Fatalf("fractional penalized cancellation inventory=%d, want zero confirmed rooms", confirmed)
 	}
-	t.Fatalf("FRACTIONAL_PENALTY_CANCEL_REFUSAL: approved 0.5 NIGHT, frozen one-night penalty, reservation still holds 1 unit after %v", penaltyErr)
 }
 
 func TestFractionalPenaltyReproductionNoShow(t *testing.T) {
-	if os.Getenv("KAPSORA_TEST_FRACTIONAL_PENALTY_REPRODUCTION") != "1" {
-		t.Skip("opt-in diagnostic: fractional no-show penalty policy remains undecided")
-	}
 	s := newServer(t)
 	booking := s.fractionalPenaltyBooking(t, beforeCheckInOpen, "1.5")
 	clerk := s.h.CreateActor("fractional-no-show-desk", "Fractional Desk")
@@ -195,22 +188,27 @@ func TestFractionalPenaltyReproductionNoShow(t *testing.T) {
 	if err != nil || reported.Report.Status != application.NoShowReported {
 		t.Fatalf("fractional no-show report: %+v %v", reported.Report, err)
 	}
+	if reported.Report.EntitlementEffect != nil {
+		t.Fatalf("reported no-show invented entitlement effect: %+v", reported.Report.EntitlementEffect)
+	}
 	result, err := s.svc.ReviewNoShow(ctx, s.payerContext(reviewer), booking.Booking.ID,
 		application.ReviewNoShowInput{Status: application.NoShowConfirmed})
-	if err == nil {
-		t.Fatalf("fractional no-show confirmation unexpectedly succeeded: %+v", result.Report)
+	if err != nil || result.Report.Status != application.NoShowConfirmed ||
+		result.Report.EntitlementEffect == nil || result.Report.ConsumedNights != 1 ||
+		result.Report.EntitlementEffect.ConsumedServiceNights != "1.5" ||
+		result.Report.EntitlementEffect.ConsumedEntitlementUnits != "3" ||
+		result.Report.AssessedFeeAmount != reported.Report.AssessedFeeAmount ||
+		result.Report.PayerAmount != reported.Report.PayerAmount ||
+		result.Report.MemberAmount != reported.Report.MemberAmount {
+		t.Fatalf("PENALTY_CAP_NOSHOW_ASSERTION: result=%+v error=%v", result.Report, err)
 	}
-	if !strings.Contains(err.Error(), "penalty of 2 nights is more than") {
-		t.Fatalf("fractional no-show unexpected error: %v", err)
-	}
-	penaltyErr := err
 	current, err := s.svc.GetBooking(ctx, s.deskContext(), booking.Booking.ID)
-	if err != nil || current.Booking.Status != accommodationdomain.BookingConfirmed {
-		t.Fatalf("fractional no-show rollback booking=%+v %v", current.Booking, err)
+	if err != nil || current.Booking.Status != accommodationdomain.BookingNoShow {
+		t.Fatalf("fractional no-show booking=%+v %v", current.Booking, err)
 	}
 	available, reserved, consumed := s.fractionalAccountState(t)
-	if available != "1.000000" || reserved != "3.000000" || consumed != "0.000000" {
-		t.Fatalf("fractional no-show rollback account=%s/%s/%s, want 1/3/0",
+	if available != "1.000000" || reserved != "0.000000" || consumed != "3.000000" {
+		t.Fatalf("fractional no-show account=%s/%s/%s, want 1/0/3",
 			available, reserved, consumed)
 	}
 	var reportStatus string
@@ -218,22 +216,31 @@ func TestFractionalPenaltyReproductionNoShow(t *testing.T) {
 		WHERE tenant_id=$1 AND booking_id=$2`, s.tenant, booking.Booking.ID).Scan(&reportStatus); err != nil {
 		t.Fatal(err)
 	}
-	if reportStatus != application.NoShowReported {
-		t.Fatalf("fractional no-show rollback report=%s, want REPORTED", reportStatus)
+	if reportStatus != application.NoShowConfirmed {
+		t.Fatalf("fractional no-show report=%s, want CONFIRMED", reportStatus)
 	}
-	if _, _, confirmed := s.inventoryOf(t, s.roomType, checkIn); confirmed != 1 {
-		t.Fatalf("fractional no-show rollback inventory=%d, want one confirmed room", confirmed)
+	response := s.do(t, http.MethodGet,
+		"/api/v1/accommodation/bookings/"+booking.Booking.ID.String()+"/no-show",
+		bookerPermissions, nil, s.memberHeaders()...)
+	if response.Code != http.StatusOK {
+		t.Fatalf("persisted no-show HTTP=%d %s", response.Code, response.Body.String())
 	}
-	t.Fatalf("FRACTIONAL_PENALTY_NOSHOW_REFUSAL: approved 1.5 NIGHT, frozen two-night no-show penalty, reservation still holds 3 units after %v", penaltyErr)
+	public := decode[kapsorav1.NoShowResult](t, response)
+	if public.Report.EntitlementEffect == nil ||
+		public.Report.EntitlementEffect.ConsumedServiceNights != "1.5" ||
+		public.Report.EntitlementEffect.ConsumedEntitlementUnits != "3" ||
+		public.Report.ConsumedNights != 1 {
+		t.Fatalf("persisted no-show HTTP effect=%+v", public.Report)
+	}
+	if _, _, confirmed := s.inventoryOf(t, s.roomType, checkIn); confirmed != 0 {
+		t.Fatalf("fractional no-show inventory=%d, want zero confirmed rooms", confirmed)
+	}
 }
 
 // An integer partial approval has the same ceiling problem. Keeping this case
 // separate from the fractional proof distinguishes the penalty-policy question
 // from decimal arithmetic at checkout.
 func TestFractionalPenaltyReproductionIntegerPartialNoShow(t *testing.T) {
-	if os.Getenv("KAPSORA_TEST_FRACTIONAL_PENALTY_REPRODUCTION") != "1" {
-		t.Skip("opt-in diagnostic: partial-approval no-show penalty policy remains undecided")
-	}
 	s := newServer(t)
 	booking := s.fractionalPenaltyBooking(t, beforeCheckInOpen, "1")
 	available, reserved, consumed := s.fractionalAccountState(t)
@@ -254,20 +261,19 @@ func TestFractionalPenaltyReproductionIntegerPartialNoShow(t *testing.T) {
 	}
 	result, err := s.svc.ReviewNoShow(ctx, s.payerContext(reviewer), booking.Booking.ID,
 		application.ReviewNoShowInput{Status: application.NoShowConfirmed})
-	if err == nil {
-		t.Fatalf("integer partial no-show confirmation unexpectedly succeeded: %+v", result.Report)
+	if err != nil || result.Report.EntitlementEffect == nil ||
+		result.Report.ConsumedNights != 1 ||
+		result.Report.EntitlementEffect.ConsumedServiceNights != "1" ||
+		result.Report.EntitlementEffect.ConsumedEntitlementUnits != "2" {
+		t.Fatalf("PENALTY_CAP_INTEGER_ASSERTION: result=%+v error=%v", result.Report, err)
 	}
-	if !strings.Contains(err.Error(), "penalty of 2 nights is more than") {
-		t.Fatalf("integer partial no-show unexpected error: %v", err)
-	}
-	penaltyErr := err
 	current, err := s.svc.GetBooking(ctx, s.deskContext(), booking.Booking.ID)
-	if err != nil || current.Booking.Status != accommodationdomain.BookingConfirmed {
-		t.Fatalf("integer partial no-show rollback booking=%+v %v", current.Booking, err)
+	if err != nil || current.Booking.Status != accommodationdomain.BookingNoShow {
+		t.Fatalf("integer partial no-show booking=%+v %v", current.Booking, err)
 	}
 	available, reserved, consumed = s.fractionalAccountState(t)
-	if available != "2.000000" || reserved != "2.000000" || consumed != "0.000000" {
-		t.Fatalf("integer partial no-show rollback account=%s/%s/%s, want 2/2/0",
+	if available != "2.000000" || reserved != "0.000000" || consumed != "2.000000" {
+		t.Fatalf("integer partial no-show account=%s/%s/%s, want 2/0/2",
 			available, reserved, consumed)
 	}
 	var reportStatus, reservationRemaining string
@@ -280,12 +286,11 @@ func TestFractionalPenaltyReproductionIntegerPartialNoShow(t *testing.T) {
 		s.tenant, *booking.Booking.EntitlementReservationID).Scan(&reservationRemaining); err != nil {
 		t.Fatal(err)
 	}
-	if reportStatus != application.NoShowReported || reservationRemaining != "2.000000" {
-		t.Fatalf("integer partial no-show rollback report/reservation=%s/%s, want REPORTED/2",
+	if reportStatus != application.NoShowConfirmed || reservationRemaining != "0.000000" {
+		t.Fatalf("integer partial no-show report/reservation=%s/%s, want CONFIRMED/0",
 			reportStatus, reservationRemaining)
 	}
-	if _, _, confirmed := s.inventoryOf(t, s.roomType, checkIn); confirmed != 1 {
-		t.Fatalf("integer partial no-show rollback inventory=%d, want one confirmed room", confirmed)
+	if _, _, confirmed := s.inventoryOf(t, s.roomType, checkIn); confirmed != 0 {
+		t.Fatalf("integer partial no-show inventory=%d, want zero confirmed rooms", confirmed)
 	}
-	t.Fatalf("INTEGER_PARTIAL_PENALTY_NOSHOW_REFUSAL: approved 1 NIGHT, frozen two-night no-show penalty, reservation still holds 2 units after %v", penaltyErr)
 }

@@ -24,6 +24,7 @@ import {
   useCancel,
   useCancellationPreview,
   useConfirm,
+  useNoShow,
   useRelease,
   useVoucher,
 } from './queries';
@@ -32,6 +33,7 @@ import {
   cancellationEffectSentences,
   cancellationSentences,
   money,
+  noShowEffectSentences,
   policySentences,
   stayDates,
 } from './words';
@@ -386,9 +388,7 @@ function HistoryPanel({
   ].filter((e) => !!e.at);
   return (
     <Card>
-      {record.status === 'NO_SHOW' ? (
-        <p className="text-sm">{t('lodging.booking.noShow')}</p>
-      ) : null}
+      {record.status === 'NO_SHOW' ? <NoShowHistory bookingId={record.id} /> : null}
       {record.status === 'COMPLETED' &&
       record.actualNights !== null &&
       record.actualNights !== undefined ? (
@@ -433,5 +433,31 @@ function HistoryPanel({
         </>
       ) : null}
     </Card>
+  );
+}
+
+function NoShowHistory({ bookingId }: { bookingId: string }) {
+  const { t } = useTranslation();
+  const noShow = useNoShow(bookingId);
+  return (
+    <div className="grid gap-1 text-sm" data-testid="no-show-history">
+      <p>{t('lodging.booking.noShow')}</p>
+      {noShow.isPending ? <Spinner /> : null}
+      {noShow.isError ? <ProblemAlert problem={problemOf(noShow.error)} /> : null}
+      {!noShow.isPending && !noShow.isError ? (
+        <>
+          {noShow.data?.report.status === 'CONFIRMED' ? (
+            <p data-testid="no-show-fee">
+              {t('lodging.booking.noShowFee', {
+                amount: money(noShow.data.report.memberAmount, noShow.data.report.currencyCode),
+              })}
+            </p>
+          ) : null}
+          {noShowEffectSentences(t, noShow.data?.report ?? null).map((line) => (
+            <p key={line}>{line}</p>
+          ))}
+        </>
+      ) : null}
+    </div>
   );
 }

@@ -426,7 +426,8 @@ func noShowResultView(in application.NoShowView) kapsorav1.NoShowResult {
 		CurrencyCode: in.Report.CurrencyCode,
 		Status:       kapsorav1.NoShowStatus(in.Report.Status),
 		ReviewedBy:   in.Report.ReviewedBy, ReviewComment: in.Report.ReviewComment,
-		ConsumedNights: in.Report.ConsumedNights,
+		ConsumedNights:    in.Report.ConsumedNights,
+		EntitlementEffect: cancellationEntitlementEffectView(in.Report.EntitlementEffect),
 	}
 	if in.Report.ReviewedAt != nil {
 		at := in.Report.ReviewedAt.UTC()

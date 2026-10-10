@@ -609,6 +609,7 @@ SELECT ee.person_id, ee.enrollment_id, ee.plan_version_id, ee.service_date,
   JOIN benefit.entitlement_account a ON a.tenant_id = r.tenant_id
     AND a.id = r.entitlement_account_id
     AND a.entitlement_definition_id = m.entitlement_definition_id
+    AND a.enrollment_id = e.id
  WHERE ee.tenant_id = $3 AND ee.id = $4
 `
 

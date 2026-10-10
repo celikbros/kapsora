@@ -767,6 +767,9 @@ func TestNoShowCostsNothingUntilASecondPersonConfirmsIt(t *testing.T) {
 	if reported.Report.Status != application.NoShowReported {
 		t.Errorf("report status = %q, want REPORTED", reported.Report.Status)
 	}
+	if reported.Report.EntitlementEffect != nil {
+		t.Errorf("unreviewed report invented entitlement effect: %+v", reported.Report.EntitlementEffect)
+	}
 	// 100 % of the member's own share of the stay.
 	if reported.Report.AssessedFeeAmount != "300.000000" ||
 		reported.Report.MemberAmount != "300.000000" || reported.Report.PayerAmount != "0.000000" {
@@ -865,6 +868,9 @@ func TestRejectedNoShowLeavesTheBookingBookable(t *testing.T) {
 	if reviewed.Report.ConsumedNights != 0 {
 		t.Errorf("a rejected report consumed %d nights, want none", reviewed.Report.ConsumedNights)
 	}
+	if reviewed.Report.EntitlementEffect != nil {
+		t.Errorf("rejected report invented entitlement effect: %+v", reviewed.Report.EntitlementEffect)
+	}
 	available, reserved, consumed := s.balances(t)
 	if available != "9.000000" || reserved != "3.000000" || consumed != "0.000000" {
 		t.Errorf("a rejected report moved the plan: available=%q reserved=%q consumed=%q; want 9/3/0",
@@ -908,9 +914,13 @@ func TestDisputedNoShowRaisesWorkForAPerson(t *testing.T) {
 		application.ReportNoShowInput{EvidenceDocumentID: &evidence}); err != nil {
 		t.Fatalf("report: %v", err)
 	}
-	if _, err := s.svc.ReviewNoShow(ctx, s.payerContext(reviewer), booking.Booking.ID,
-		application.ReviewNoShowInput{Status: application.NoShowDisputed}); err != nil {
+	disputed, err := s.svc.ReviewNoShow(ctx, s.payerContext(reviewer), booking.Booking.ID,
+		application.ReviewNoShowInput{Status: application.NoShowDisputed})
+	if err != nil {
 		t.Fatalf("dispute: %v", err)
+	}
+	if disputed.Report.EntitlementEffect != nil {
+		t.Errorf("disputed report invented entitlement effect: %+v", disputed.Report.EntitlementEffect)
 	}
 
 	var items int

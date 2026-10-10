@@ -84,9 +84,13 @@ func (s *Service) BookingCancellationEvidence(ctx context.Context, tx pgx.Tx,
 	if err != nil {
 		return nil, err
 	}
-	if reservation.ReferenceType != ledger.ReferenceBooking || reservation.ReferenceID != in.BookingID ||
-		reservation.Remaining().Cmp(approved.Mul(factor).Sub(consumed.Mul(factor))) != 0 {
+	if reservation.ReferenceType != ledger.ReferenceBooking || reservation.ReferenceID != in.BookingID {
 		return nil, nil
+	}
+	if reservation.Remaining().Cmp(approved.Mul(factor).Sub(consumed.Mul(factor))) != 0 {
+		// A prior release with no matching item service counter cannot be inverted
+		// reliably at six decimals. Refuse this anomalous confirmed settlement.
+		return nil, ErrBookingPenaltyEvidence
 	}
 	return &BookingCancellationEvidence{Approved: approved, Consumed: consumed,
 		Remaining: remaining, UnitFactor: factor, Reservation: reservation}, nil

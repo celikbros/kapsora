@@ -1,7 +1,8 @@
 # PC06 · Partial-approval penalty decision gate
 
-Status: penalty-cap decision required. The independent cancellation reporting correction
-below is implemented; it does not implement the conditional cap or no-show design.
+Status: penalty-cap policy approved; implementation in progress. The independent
+cancellation reporting correction below is implemented; capped cancellation/no-show
+settlement and exact evidence remain in progress.
 Planned 2026-10-10 by gpt-6-astra. All six jobs passed in final
 [CI 37995074957](https://github.com/celikbros/kapsora/actions/runs/37995074957) on bda7984.
 Its separate opt-in diagnostic step reached both compiled assertions
@@ -194,8 +195,17 @@ acceptance and Oct 15/30 calendar gates remain open.
 
 ## Conditional implementation design (Astra, reviewed by Sol, 2026-10-10)
 
-This prepares option A for review. Explicit policy approval remains pending; technical
-preparation does not authorize implementation.
+The owner approved option A: consume only the exact remaining approved service
+quantity when it is below the frozen policy penalty, while preserving the existing
+monetary fee and payer/member split. Apply cancellation and confirmed no-show commands
+to existing confirmed and new bookings; preserve historical movements and frozen money.
+Implementation is in progress. Migration 60 is authored and has not been applied
+locally or authorized for local application. The UI slice is implemented and reviewed:
+12 synthetic 390/1440 views, all API calls stubbed, with zero errors, overflow or unknown
+requests; detector result `[]`;
+independent Sol review found no blockers. This is synthetic evidence, not live settlement
+acceptance. Three positive former-diagnostic cases and a negative control are being added;
+CI is pending, so no result is claimed yet. MGT-04 settings authority remains unapproved.
 
 Exact capped settlement is bounded to provable NIGHT-mapped authorization quantities.
 MONEY and other entitlement-unit paths retain existing behavior and remain outside this

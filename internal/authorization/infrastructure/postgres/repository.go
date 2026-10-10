@@ -50,6 +50,32 @@ type Repository struct {
 // owns those and drives the engine itself.
 func New() *Repository { return &Repository{ledger: ledger.NewLedger(nil)} }
 
+// BookingNightProvenance checks the original eligibility mapping and its account in
+// the caller's tenant transaction before a terminal booking penalty can use the NIGHT cap.
+func (Repository) BookingNightProvenance(ctx context.Context, tx pgx.Tx, tenantID,
+	evaluationID, reservationID, serviceDefinitionID, personID, enrollmentID, bookingID,
+	accountID uuid.UUID, factor benefitdomain.Quantity,
+) (bool, error) {
+	row, err := sqlcgen.New(tx).GetBookingConversionEvidence(ctx,
+		sqlcgen.GetBookingConversionEvidenceParams{TenantID: tenantID,
+			EvaluationID: evaluationID, ReservationID: reservationID,
+			ServiceDefinitionID: serviceDefinitionID})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("authorization: booking NIGHT provenance: %w", err)
+	}
+	storedFactor, err := benefitdomain.ParseQuantity(row.UnitFactor)
+	if err != nil {
+		return false, nil
+	}
+	return row.PersonID == personID && row.EnrollmentID.Valid &&
+		row.EnrollmentID.UUID == enrollmentID && row.UnitType == "NIGHT" &&
+		row.EntitlementAccountID == accountID && row.ReferenceType == ledger.ReferenceBooking &&
+		row.ReferenceID == bookingID && storedFactor.Cmp(factor) == 0, nil
+}
+
 var _ application.Repository = (*Repository)(nil)
 
 // CreateAuthorization implements application.Repository.

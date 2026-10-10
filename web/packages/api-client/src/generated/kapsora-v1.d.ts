@@ -7580,9 +7580,9 @@ export interface components {
             releasedNights: number;
         };
         /**
-         * @description Exact service-night and entitlement-unit effects of this cancellation. On a
-         *     preview these are prospective under the current authorization state; the command
-         *     recomputes them in its transaction. A cancellation record carries the actual
+         * @description Exact service-night and entitlement-unit effects of a cancellation or confirmed
+         *     no-show. Cancellation preview is prospective under the current authorization state;
+         *     each command recomputes in its transaction. A completed record carries actual
          *     committed effects. Absent means exact evidence is unavailable or was not recorded,
          *     not zero. These quantities do not change the frozen policy's monetary charge.
          */
@@ -10729,12 +10729,12 @@ export interface components {
             /** Format: uuid */
             bookingId: string;
             /**
-             * @description What a confirmation actually took off the plan, in whole nights. It is recorded
-             *     because the policy is a percentage and the entitlement is nights: the row says
-             *     what was consumed rather than leaving a reader to redo the rounding.
+             * @description Whole-number portion of actual consumedServiceNights when entitlementEffect is
+             *     present. Prefer the exact effect for display; historical rows may lack it.
              */
             consumedNights: number;
             currencyCode: string;
+            entitlementEffect?: components["schemas"]["CancellationEntitlementEffect"];
             /** Format: uuid */
             evidenceDocumentId?: string | null;
             /** Format: uuid */

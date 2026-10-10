@@ -59,12 +59,16 @@ describe('bookings', () => {
       );
     }
     const report = api.world.noShows.find((n) => n.status === 'REPORTED')!;
+    const booking = api.world.bookings.find((b) => b.id === report.bookingId)!;
+    booking.approvedServiceNights = '1.500000';
+    booking.entitlementUnitFactor = '2.000000';
     mount(`/lodging/bookings/${report.bookingId}`);
     const user = await login();
     const sequence = await screen.findByTestId('booking-sequence');
     expect(within(sequence).getByText('Arandı ve gösterildi')).toBeInTheDocument();
     expect(within(sequence).getByText('Kapıda')).toBeInTheDocument();
     expect(await screen.findByTestId('no-show-status')).toHaveTextContent('Bildirildi');
+    expect(screen.queryByTestId('no-show-consumed-service')).toBeNull();
     await user.click(
       within(await screen.findByTestId('no-show-review')).getByRole('button', { name: 'Onayla' }),
     );
@@ -74,6 +78,21 @@ describe('bookings', () => {
     await waitFor(() =>
       expect(screen.getByTestId('booking-status')).toHaveTextContent('Gelinmedi'),
     );
+    expect(screen.getByTestId('no-show-consumed-service')).toHaveTextContent('1.500000');
+    expect(screen.getByTestId('no-show-consumed-units')).toHaveTextContent('3.000000');
+    expect(screen.getByText('Hesaplanan ücret').nextElementSibling).toHaveTextContent(
+      formatMoney(report.assessedFeeAmount, report.currencyCode),
+    );
+  });
+
+  it('does not invent exact movement for a historical confirmed no-show', async () => {
+    const report = api.world.noShows.find((n) => n.status === 'CONFIRMED')!;
+    mount(`/lodging/bookings/${report.bookingId}`);
+    await login();
+    expect(await screen.findByTestId('no-show-effect-unknown')).toHaveTextContent(
+      'kesin hak hareketi gösterilemiyor',
+    );
+    expect(screen.queryByTestId('no-show-consumed-service')).toBeNull();
   });
 });
 

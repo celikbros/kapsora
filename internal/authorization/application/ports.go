@@ -430,6 +430,7 @@ type Repository interface {
 // the compiler agrees this package cannot post a GRANT or an ADJUST.
 type Ledger interface {
 	LockReservation(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID) (ledger.Reservation, error)
+	ReadReservation(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID) (ledger.Reservation, error)
 	Reverse(ctx context.Context, tx pgx.Tx, in ledger.ReverseInput) (ledger.Entry, error)
 	Reserve(ctx context.Context, tx pgx.Tx, in ledger.ReserveInput) (ledger.Reservation, error)
 	Release(ctx context.Context, tx pgx.Tx, in ledger.MovementInput) (ledger.Reservation, error)

@@ -597,6 +597,14 @@ lives in client memory; durable historical display requires an API read that ret
 exact effect. A destructive command whose price is discovered afterwards is a trap, however
 clearly the policy was written somewhere else.
 
+**A partial approval caps entitlement movement, not the frozen fee.** When the approved
+service remainder is below the policy penalty, a confirmed cancellation or no-show consumes
+only that exact service remainder and releases the unused mapped plan units. Keep the existing
+fee and payer/member split unchanged. Show actual service nights separately from entitlement
+units; a confirmed no-show may include persisted exact movement evidence. When historical
+evidence is absent, show an unknown state rather than reconstructing it. Synthetic 390/1440
+review supports the UI behavior only and does not establish live settlement acceptance.
+
 **A policy is shown as labelled rows in Turkish, never as a compact code line.** The lodging
 terms read back as a definition list — free-cancellation hours, penalty kind with its value,
 no-show percent, hold minutes, night bounds — and the member's copy of the same terms is a

@@ -231,10 +231,8 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
     const approved = toMicros(
       booking.approvedServiceNights ?? `${booking.quoteSnapshot.coveredNights}.000000`,
     );
-    const consumed = BigInt(penaltyNights) * SCALE;
-    // A mock approval below the policy charge cannot prove a successful ledger movement.
-    // Keep the monetary policy quote, but omit a claim about entitlement movement.
-    if (consumed > approved) return undefined;
+    const policyConsumption = BigInt(penaltyNights) * SCALE;
+    const consumed = policyConsumption < approved ? policyConsumption : approved;
     const released = approved - consumed;
     const factor = toMicros(booking.entitlementUnitFactor ?? '1.000000');
     const units = (service: bigint) => (service * factor + SCALE / 2n) / SCALE;
@@ -249,6 +247,11 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
   const effectField = (booking: StoredBooking, penaltyNights: number) => {
     const effect = entitlementEffect(booking, penaltyNights);
     return effect ? { entitlementEffect: effect } : {};
+  };
+
+  const releasedWholeNights = (booking: StoredBooking, penaltyNights: number): number => {
+    const effect = entitlementEffect(booking, penaltyNights);
+    return effect ? Number(toMicros(effect.releasedServiceNights) / SCALE) : 0;
   };
 
   /**
@@ -269,7 +272,7 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
       return {
         free: true,
         penaltyNights: 0,
-        releasedNights: covered,
+        releasedNights: releasedWholeNights(booking, 0),
         ...effectField(booking, 0),
         feeAmount: '0.000000',
         payerFee: '0.000000',
@@ -287,7 +290,7 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
     const base: Schemas['CancellationQuote'] = {
       free: false,
       penaltyNights: 0,
-      releasedNights: covered,
+      releasedNights: releasedWholeNights(booking, 0),
       ...effectField(booking, 0),
       feeAmount: '0.000000',
       payerFee: '0.000000',
@@ -312,7 +315,7 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
       return {
         ...base,
         penaltyNights: charged,
-        releasedNights: covered - spent,
+        releasedNights: releasedWholeNights(booking, spent),
         ...effectField(booking, spent),
         feeAmount: fromMicros(fee),
         payerFee: fromMicros(payer),
@@ -351,7 +354,8 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
     world().noShows.find((n) => n.bookingId === booking.id);
 
   const toNoShow = (row: StoredNoShow): Schemas['NoShowReport'] => {
-    const { tenantId: _tenantId, ...rest } = row;
+    const { tenantId: _tenantId, entitlementEffect: effect, ...rest } = row;
+    if (effect) return { ...rest, entitlementEffect: effect };
     return rest;
   };
 
@@ -531,7 +535,9 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
           policySnapshot: booking.policySnapshot,
           free: quote.free,
           penaltyNights: quote.penaltyNights,
-          releasedNights: quote.releasedNights,
+          releasedNights: quote.entitlementEffect
+            ? Number(toMicros(quote.entitlementEffect.releasedServiceNights) / SCALE)
+            : quote.releasedNights,
           ...(quote.entitlementEffect ? { entitlementEffect: quote.entitlementEffect } : {}),
           feeAmount: quote.feeAmount,
           payerFee: quote.payerFee,
@@ -856,7 +862,9 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
           if (booking.status !== 'CONFIRMED') return transitionInvalid();
           const quote = quoteNoShow(booking);
           if (!quote) return policyMissing();
-          consumed = quote.nights;
+          const effect = entitlementEffect(booking, quote.nights);
+          consumed = effect ? Number(toMicros(effect.consumedServiceNights) / SCALE) : quote.nights;
+          if (effect) report.entitlementEffect = effect;
           // The room goes back: the guest did not come, so the hotel may sell those nights.
           tools.moveConfirmed(booking, -1);
           booking.status = 'NO_SHOW';

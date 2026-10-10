@@ -47,7 +47,15 @@ current-source bounded live reads now pass for Management (9/9), paid reimbursem
 (1/1), and the shared-door provider/member journey (2/2), as recorded below. No suspension,
 invitation, role grant, privileged request, booking, payment or financial command was
 created. Management MGT-02 and MGT-03 remain ACTIVE pending local mutation proof; MGT-04
-settings and the PC-06 penalty cap remain unapproved. PR #11 remains draft and unmerged.
+settings remain unapproved. The PC-06 cap policy is APPROVED and implementation is in
+progress: consume the exact approved remainder when below the frozen penalty, preserving
+fees and payer/member shares. The UI slice is implemented and reviewed in 12 synthetic
+390/1440 views with all API calls stubbed, zero errors/overflow/unknown requests, detector
+`[]`, and no blockers in independent Sol review. This is not live settlement acceptance.
+Migration 60 is authored and not applied locally or authorized for local application.
+Backend work continues; three positive former-diagnostic cases plus a negative control are
+being added, and CI is pending. Schema remains 59, dirty=false; operator API PID 27972 is
+retained. PR #11 remains draft and unmerged.
 All six CI checks passed on calendar-preparation code head `5bb2349`
 ([run 37152681278](https://github.com/celikbros/kapsora/actions/runs/37152681278));
 current Management CI is tracked in PR #11's checks. The historical local migration
@@ -83,8 +91,12 @@ financial command was performed. The role-request list may be empty. App-role DE
 inventory contains zero cancellable CONFIRMED/PENDING_APPROVAL rows, so no live exact-effect
 cancellation preview/settlement fixture was available; source/CI proof remains the evidence
 for that path. Schema remains 59, dirty=false. Formal owner/Oct 15/30 calendar gates remain
-open. MGT-02/03 stay ACTIVE for unclaimed local mutation proof; MGT-04 settings and the
-PC-06 penalty cap remain unapproved.
+open. MGT-02/03 stay ACTIVE for unclaimed local mutation proof; MGT-04 settings remain
+unapproved. The PC-06 cap policy is APPROVED and implementation is in progress. The UI
+slice has synthetic review evidence only; no live settlement was accepted. Migration 60 is
+authored, not applied locally or authorized for local application. Three positive former-
+diagnostic cases and a negative control are being added; CI is pending. Schema remains 59,
+dirty=false; current operator API PID 27972 is retained.
 
 The first live health checkpoint passed: provider catalog access, single-enrollment
 eligibility, insufficient-quantity refusal, request submission, medical approval and the

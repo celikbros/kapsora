@@ -39,8 +39,32 @@ func (s *Service) cancellationEvidence(ctx context.Context, tx pgx.Tx, rc identi
 	if evidence == nil {
 		return nil, nil
 	}
+	if snapshot.EvaluationID == nil {
+		return nil, nil
+	}
+	conversion, err := s.bookings.BookingConversionEvidence(ctx, tx, rc.TenantID,
+		*snapshot.EvaluationID, *record.EntitlementReservationID, snapshot.ServiceDefinitionID)
+	if err != nil {
+		if err == ErrQuoteStale {
+			return nil, nil
+		}
+		return nil, err
+	}
+	conversionFactor, err := benefitdomain.ParseQuantity(conversion.UnitFactor)
+	if err != nil {
+		return nil, nil
+	}
+	if conversion.PersonID != record.PersonID || conversion.EnrollmentID != record.EnrollmentID ||
+		!domain.Day(conversion.ServiceDate).Equal(domain.Day(record.CheckIn)) ||
+		conversion.UnitType != domain.UnitNight || conversion.AccountID != evidence.Reservation.AccountID ||
+		conversion.ReferenceType != ledger.ReferenceBooking || conversion.ReferenceID != record.ID ||
+		conversionFactor.Cmp(evidence.UnitFactor) != 0 {
+		return nil, nil
+	}
 	if snapshot.NightConversion != nil &&
-		(snapshot.NightConversion.AccountID != evidence.Reservation.AccountID ||
+		(snapshot.NightConversion.PlanVersionID != conversion.PlanVersionID ||
+			snapshot.NightConversion.DefinitionID != conversion.DefinitionID ||
+			snapshot.NightConversion.AccountID != evidence.Reservation.AccountID ||
 			snapshot.NightConversion.UnitFactor != evidence.UnitFactor.String()) {
 		return nil, nil
 	}
@@ -55,17 +79,20 @@ func predictedCancellationEffect(e *cancellationEvidence, quote CancellationQuot
 	if e == nil {
 		return nil
 	}
+	if !e.remaining.IsPositive() {
+		if e.reservation.Status != ledger.ReservationConsumed || e.reservation.Remaining().IsPositive() {
+			return nil
+		}
+		return &EntitlementEffect{ConsumedServiceNights: "0", ReleasedServiceNights: "0",
+			ConsumedEntitlementUnits: "0", ReleasedEntitlementUnits: "0"}
+	}
+	if !e.reservation.Open() && !(e.reservation.Status == ledger.ReservationConsumed &&
+		!e.reservation.Remaining().IsPositive()) {
+		return nil
+	}
 	penalty := benefitdomain.MustQuantity(fmt.Sprintf("%d", quote.EntitlementPenalty(covered)))
-	if penalty.Cmp(e.remaining) > 0 {
-		// The command still refuses this frozen penalty. Preview retains its fee quote
-		// and makes no claim that entitlement will move.
-		return nil
-	}
+	penalty = penalty.Min(e.remaining)
 	released := e.remaining.Sub(penalty)
-	ceiling := benefitdomain.MustQuantity(fmt.Sprintf("%d", quote.ReleasedNights))
-	if released.Cmp(ceiling) > 0 {
-		return nil
-	}
 	consumedUnits := e.consumed.Add(penalty).Mul(e.factor).Sub(e.consumed.Mul(e.factor))
 	if consumedUnits.Cmp(e.reservation.Remaining()) > 0 {
 		return nil

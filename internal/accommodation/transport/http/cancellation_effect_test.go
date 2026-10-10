@@ -2,6 +2,7 @@ package accommodationhttp_test
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"testing"
 
@@ -328,6 +329,223 @@ func TestCancellationEffectPreviewRecomputesAfterAuthorizationConsumption(t *tes
 	if available != "3.000000" || reserved != "0.000000" || consumed != "1.000000" {
 		t.Fatalf("CANCELLATION_EFFECT_RECOMPUTE_LEDGER: account=%s/%s/%s, want 3/0/1",
 			available, reserved, consumed)
+	}
+}
+
+func TestCancellationPenaltyFullyConsumedReservationRecordsZeroActualEffect(t *testing.T) {
+	s := newServer(t)
+	booking := s.fractionalPenaltyBooking(t, beforeCheckInOpen, "0.5")
+	s.clock.At(t, afterFreeWindow)
+	ctx, cancel := s.h.Ctx()
+	defer cancel()
+	if err := db.WithTenantTx(ctx, s.h.App, db.TenantContext{TenantID: s.tenant, ActorID: s.actor},
+		func(ctx context.Context, tx pgx.Tx) error {
+			_, consumeErr := s.deps.Authorizations.Consume(ctx, tx, application.BookingConsumeInput{
+				TenantID: s.tenant, ActorID: s.actor, AuthorizationID: *booking.Booking.AuthorizationID,
+				ServiceDefinitionID: s.definition, Nights: "0.5",
+				Key: "test:fully-consumed:" + booking.Booking.ID.String(), ReasonCode: "TEST_PRIOR_USE",
+			})
+			return consumeErr
+		}); err != nil {
+		t.Fatal(err)
+	}
+	preview, err := s.svc.PreviewCancellation(ctx, s.memberContext(), booking.Booking.ID)
+	want := application.EntitlementEffect{ConsumedServiceNights: "0", ReleasedServiceNights: "0",
+		ConsumedEntitlementUnits: "0", ReleasedEntitlementUnits: "0"}
+	if err != nil || preview.Quote.EntitlementEffect == nil ||
+		*preview.Quote.EntitlementEffect != want || preview.Quote.FeeAmount != "1000" {
+		t.Fatalf("fully consumed preview=%+v err=%v", preview.Quote, err)
+	}
+	result, err := s.svc.CancelBooking(ctx, s.memberContext(), booking.Booking.ID, "")
+	if err != nil || result.Record == nil || result.Record.EntitlementEffect == nil ||
+		*result.Record.EntitlementEffect != want {
+		t.Fatalf("fully consumed result=%+v err=%v", result.Quote, err)
+	}
+	if count, _ := s.fractionalMovements(t, *booking.Booking.EntitlementReservationID,
+		application.ReasonCancellationPenalty); count != 0 {
+		t.Fatalf("fully consumed cancellation posted %d penalty movements", count)
+	}
+	_, reserved, consumed := s.fractionalAccountState(t)
+	if reserved != "0.000000" || consumed != "1.000000" {
+		t.Fatalf("fully consumed terminal balance=%s/%s", reserved, consumed)
+	}
+}
+
+func TestCancellationPenaltyTinyServiceRemainderHasZeroRoundedUnitDelta(t *testing.T) {
+	s := newServer(t)
+	booking := s.fractionalCheckoutBooking(t, "1", "0.333333", "1.5")
+	s.clock.At(t, afterFreeWindow)
+	ctx, cancel := s.h.Ctx()
+	defer cancel()
+	if err := db.WithTenantTx(ctx, s.h.App, db.TenantContext{TenantID: s.tenant, ActorID: s.actor},
+		func(ctx context.Context, tx pgx.Tx) error {
+			_, consumeErr := s.deps.Authorizations.Consume(ctx, tx, application.BookingConsumeInput{
+				TenantID: s.tenant, ActorID: s.actor, AuthorizationID: *booking.Booking.AuthorizationID,
+				ServiceDefinitionID: s.definition, Nights: "1.499999",
+				Key: "test:tiny-prior-consume:" + booking.Booking.ID.String(), ReasonCode: "TEST_PRIOR_USE",
+			})
+			return consumeErr
+		}); err != nil {
+		t.Fatal(err)
+	}
+	preview, err := s.svc.PreviewCancellation(ctx, s.memberContext(), booking.Booking.ID)
+	want := application.EntitlementEffect{ConsumedServiceNights: "0.000001", ReleasedServiceNights: "0",
+		ConsumedEntitlementUnits: "0", ReleasedEntitlementUnits: "0"}
+	if err != nil || preview.Quote.EntitlementEffect == nil || *preview.Quote.EntitlementEffect != want {
+		t.Fatalf("tiny rounded preview=%+v err=%v", preview.Quote, err)
+	}
+	result, err := s.svc.CancelBooking(ctx, s.memberContext(), booking.Booking.ID, "")
+	if err != nil || result.Record == nil || result.Record.EntitlementEffect == nil ||
+		*result.Record.EntitlementEffect != want {
+		t.Fatalf("tiny rounded result=%+v err=%v", result.Quote, err)
+	}
+	if count, _ := s.fractionalMovements(t, *booking.Booking.EntitlementReservationID,
+		application.ReasonCancellationPenalty); count != 0 {
+		t.Fatalf("tiny rounded penalty posted %d zero-unit movements", count)
+	}
+	var itemConsumed string
+	if err := s.h.Admin.QueryRow(ctx, `SELECT consumed_quantity::text FROM service.authorization_item
+		WHERE tenant_id=$1 AND authorization_id=$2`, s.tenant,
+		*booking.Booking.AuthorizationID).Scan(&itemConsumed); err != nil {
+		t.Fatal(err)
+	}
+	if itemConsumed != "1.500000" {
+		t.Fatalf("tiny rounded item consumed=%s", itemConsumed)
+	}
+}
+
+func TestCancellationPenaltyKeepsConfirmedStoredFactorAfterPlanChange(t *testing.T) {
+	s := newServer(t)
+	booking := s.fractionalPenaltyBooking(t, beforeCheckInOpen, "0.5")
+	s.replaceNightPlan(t, "4", "1")
+	s.clock.At(t, afterFreeWindow)
+	ctx, cancel := s.h.Ctx()
+	defer cancel()
+	preview, err := s.svc.PreviewCancellation(ctx, s.memberContext(), booking.Booking.ID)
+	want := application.EntitlementEffect{ConsumedServiceNights: "0.5", ReleasedServiceNights: "0",
+		ConsumedEntitlementUnits: "1", ReleasedEntitlementUnits: "0"}
+	if err != nil || preview.Quote.EntitlementEffect == nil || *preview.Quote.EntitlementEffect != want {
+		t.Fatalf("stored-factor preview=%+v err=%v", preview.Quote, err)
+	}
+	result, err := s.svc.CancelBooking(ctx, s.memberContext(), booking.Booking.ID, "")
+	if err != nil || result.Record == nil || result.Record.EntitlementEffect == nil ||
+		*result.Record.EntitlementEffect != want {
+		t.Fatalf("stored-factor result=%+v err=%v", result.Quote, err)
+	}
+	var consumedUnits, remaining string
+	if err := s.h.Admin.QueryRow(ctx, `SELECT consumed_quantity::text,
+		(quantity-consumed_quantity-released_quantity)::text
+		FROM benefit.entitlement_reservation WHERE tenant_id=$1 AND id=$2`,
+		s.tenant, *booking.Booking.EntitlementReservationID).Scan(&consumedUnits, &remaining); err != nil {
+		t.Fatal(err)
+	}
+	if consumedUnits != "1.000000" || remaining != "0.000000" {
+		t.Fatalf("stored-factor original reservation consumed/remaining=%s/%s", consumedUnits, remaining)
+	}
+}
+
+func TestCancellationPenaltyRecomputesCapAfterPriorConsumption(t *testing.T) {
+	s := newServer(t)
+	booking := s.fractionalPenaltyBooking(t, beforeCheckInOpen, "1.5")
+	s.clock.At(t, afterFreeWindow)
+	ctx, cancel := s.h.Ctx()
+	defer cancel()
+	before, err := s.svc.PreviewCancellation(ctx, s.memberContext(), booking.Booking.ID)
+	if err != nil || before.Quote.EntitlementEffect == nil ||
+		before.Quote.EntitlementEffect.ConsumedServiceNights != "1" {
+		t.Fatalf("pre-consumption penalty preview=%+v err=%v", before.Quote, err)
+	}
+	if err := db.WithTenantTx(ctx, s.h.App, db.TenantContext{TenantID: s.tenant, ActorID: s.actor},
+		func(ctx context.Context, tx pgx.Tx) error {
+			_, consumeErr := s.deps.Authorizations.Consume(ctx, tx, application.BookingConsumeInput{
+				TenantID: s.tenant, ActorID: s.actor, AuthorizationID: *booking.Booking.AuthorizationID,
+				ServiceDefinitionID: s.definition, Nights: "1",
+				Key: "test:cap-prior-consume:" + booking.Booking.ID.String(), ReasonCode: "TEST_PRIOR_USE",
+			})
+			return consumeErr
+		}); err != nil {
+		t.Fatal(err)
+	}
+	after, err := s.svc.PreviewCancellation(ctx, s.memberContext(), booking.Booking.ID)
+	want := application.EntitlementEffect{ConsumedServiceNights: "0.5", ReleasedServiceNights: "0",
+		ConsumedEntitlementUnits: "1", ReleasedEntitlementUnits: "0"}
+	if err != nil || after.Quote.EntitlementEffect == nil || *after.Quote.EntitlementEffect != want ||
+		after.Quote.FeeAmount != before.Quote.FeeAmount {
+		t.Fatalf("recomputed capped preview=%+v err=%v", after.Quote, err)
+	}
+	result, err := s.svc.CancelBooking(ctx, s.memberContext(), booking.Booking.ID, "")
+	if err != nil || result.Record == nil || result.Record.EntitlementEffect == nil ||
+		*result.Record.EntitlementEffect != want || result.Quote.FeeAmount != before.Quote.FeeAmount {
+		t.Fatalf("recomputed capped result=%+v err=%v", result.Quote, err)
+	}
+	_, reserved, consumed := s.fractionalAccountState(t)
+	if reserved != "0.000000" || consumed != "3.000000" {
+		t.Fatalf("recomputed capped terminal account=%s/%s", reserved, consumed)
+	}
+}
+
+func TestCancellationPenaltyRefusesUnaccountedPriorPartialRelease(t *testing.T) {
+	s := newServer(t)
+	booking := s.fractionalPenaltyBooking(t, beforeCheckInOpen, "1.5")
+	s.clock.At(t, afterFreeWindow)
+	ctx, cancel := s.h.Ctx()
+	defer cancel()
+	if err := db.WithTenantTx(ctx, s.h.App, db.TenantContext{TenantID: s.tenant, ActorID: s.actor},
+		func(ctx context.Context, tx pgx.Tx) error {
+			_, releaseErr := s.deps.Authorizations.ReleaseUnused(ctx, tx, application.BookingReleaseInput{
+				TenantID: s.tenant, ActorID: s.actor, AuthorizationID: *booking.Booking.AuthorizationID,
+				Nights: "0.5", ReasonCode: "TEST_PRIOR_RELEASE",
+			})
+			return releaseErr
+		}); err != nil {
+		t.Fatal(err)
+	}
+	_, err := s.svc.CancelBooking(ctx, s.memberContext(), booking.Booking.ID, "")
+	if err == nil {
+		t.Fatal("unaccounted prior release silently settled")
+	}
+	current, err := s.svc.GetBooking(ctx, s.deskContext(), booking.Booking.ID)
+	if err != nil || current.Booking.Status != "CONFIRMED" {
+		t.Fatalf("prior-release refusal booking=%+v err=%v", current.Booking, err)
+	}
+	_, reserved, consumed := s.fractionalAccountState(t)
+	if reserved != "2.000000" || consumed != "0.000000" {
+		t.Fatalf("prior-release refusal balance=%s/%s, want 2/0", reserved, consumed)
+	}
+}
+
+func TestBookingPenaltyDirectCallRequiresOriginalNightProof(t *testing.T) {
+	s := newServer(t)
+	booking := s.fractionalPenaltyBooking(t, beforeCheckInOpen, "0.5")
+	ctx, cancel := s.h.Ctx()
+	defer cancel()
+	var snapshot application.QuoteSnapshot
+	if err := json.Unmarshal(booking.Booking.QuoteSnapshot, &snapshot); err != nil {
+		t.Fatal(err)
+	}
+	err := db.WithTenantTx(ctx, s.h.App, db.TenantContext{TenantID: s.tenant, ActorID: s.actor},
+		func(ctx context.Context, tx pgx.Tx) error {
+			_, settleErr := s.deps.Authorizations.SettleBookingPenalty(ctx, tx,
+				application.BookingPenaltySettlement{
+					TenantID: s.tenant, ActorID: s.actor,
+					AuthorizationID: *booking.Booking.AuthorizationID,
+					RequestID:       *booking.Booking.ServiceRequestID,
+					PersonID:        booking.Booking.PersonID, BookingID: booking.Booking.ID,
+					ReservationID:       *booking.Booking.EntitlementReservationID,
+					ServiceDefinitionID: snapshot.ServiceDefinitionID,
+					EvaluationID:        uuid.New(), EnrollmentID: booking.Booking.EnrollmentID,
+					PolicyPenalty: "1", ConsumeKey: "test:invalid-night-proof:" + booking.Booking.ID.String(),
+					ConsumeReason: application.ReasonCancellationPenalty,
+					ReleaseReason: application.ReasonCancellationRelease,
+				})
+			return settleErr
+		})
+	if err == nil {
+		t.Fatal("direct penalty with foreign evaluation proof moved entitlement")
+	}
+	_, reserved, consumed := s.fractionalAccountState(t)
+	if reserved != "1.000000" || consumed != "0.000000" {
+		t.Fatalf("rejected direct penalty balance=%s/%s", reserved, consumed)
 	}
 }
 

@@ -26,7 +26,12 @@ approval of migrations 58 and 59; dirty=false. The operator restarted `dev.ps1 u
 reimbursement layout (1/1) and shared-door provider/member flow (2/2), as detailed in the
 checkpoint below. No live suspension, invitation creation, role grant, privileged request,
 booking, payment or financial command occurred. MGT-02/03 remain ACTIVE pending local
-mutation proof; MGT-04 settings and the PC-06 penalty cap remain unapproved. Bounded role
+mutation proof; MGT-04 settings remain unapproved. The PC-06 penalty-cap policy is
+APPROVED and implementation is in progress. Its UI slice has 12 synthetic 390/1440 views
+with all API calls stubbed, zero errors/overflow/unknown requests, detector `[]`, and no
+blockers in independent Sol review; no live settlement is claimed. Backend work continues;
+migration 60 is authored but not locally applied or authorized for local application. Three
+positive former-diagnostic cases and a negative control are being added; CI is pending. Bounded role
 assignment and revocation are implemented; isolated database acceptance passed on
 `e26bcc8`. Privileged role approval is authorized and has bounded isolated acceptance on
 `9893196`; local B migration is applied. PR #11 remains draft/unmerged;
@@ -75,8 +80,13 @@ No suspension, invitation creation, role grant, privileged request, booking, pay
 financial command was performed. The role-request list may be empty. DEMO_A has no
 cancellable CONFIRMED/PENDING_APPROVAL row, so live exact-effect cancellation preview and
 settlement remain unavailable; source/CI evidence applies. Schema remains 59, dirty=false.
-MGT-02/03 stay ACTIVE pending local mutation proof. MGT-04 settings, penalty-cap policy,
-formal owner acceptance, and Oct 15/30 calendar gates remain open.
+MGT-02/03 stay ACTIVE pending local mutation proof. MGT-04 settings, formal owner
+acceptance, and Oct 15/30 calendar gates remain open. The PC-06 penalty-cap policy is
+APPROVED and implementation is in progress. UI review is synthetic and does not establish
+live settlement acceptance. Migration 60 is authored, not applied locally or authorized for
+local application. Three positive former-diagnostic cases and a negative control are being
+added; CI is pending. Schema remains 59, dirty=false; current operator API PID 27972 is
+retained.
 
 **MGT-01 first delivery:** `GET /api/v1/admin/users` and membership-ID detail, opened from
 Management. Require an active TENANT-scoped grant carrying `identity.user.read`, rather

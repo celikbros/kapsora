@@ -250,7 +250,7 @@ func (Bookings) CreateNoShow(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 		}
 		return application.NoShowRecord{}, fmt.Errorf("accommodation: create no-show: %w", err)
 	}
-	return noShowOf(noShowColumns(row)), nil
+	return noShowOf(noShowColumns(row))
 }
 
 // GetNoShow implements application.BookingRepository.
@@ -266,7 +266,7 @@ func (Bookings) GetNoShow(ctx context.Context, tx pgx.Tx, tenantID, bookingID uu
 	if err != nil {
 		return application.NoShowRecord{}, fmt.Errorf("accommodation: read no-show: %w", err)
 	}
-	return noShowOf(noShowColumns(row)), nil
+	return noShowOf(noShowColumns(row))
 }
 
 // LockNoShow implements application.BookingRepository.
@@ -280,7 +280,7 @@ func (Bookings) LockNoShow(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUI
 	if err != nil {
 		return application.NoShowRecord{}, fmt.Errorf("accommodation: lock no-show: %w", err)
 	}
-	return noShowOf(noShowColumns(row)), nil
+	return noShowOf(noShowColumns(row))
 }
 
 // ReviewNoShowRow implements application.BookingRepository.
@@ -292,11 +292,30 @@ func (Bookings) LockNoShow(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUI
 func (Bookings) ReviewNoShowRow(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 	in application.NoShowReviewRow,
 ) (bool, error) {
+	consumedService, releasedService, consumedUnits, releasedUnits := cancellationEffectParams(in.EntitlementEffect)
+	cs, err := numericEvidenceParam(consumedService)
+	if err != nil {
+		return false, err
+	}
+	rs, err := numericEvidenceParam(releasedService)
+	if err != nil {
+		return false, err
+	}
+	cu, err := numericEvidenceParam(consumedUnits)
+	if err != nil {
+		return false, err
+	}
+	ru, err := numericEvidenceParam(releasedUnits)
+	if err != nil {
+		return false, err
+	}
 	affected, err := sqlcgen.New(tx).ReviewNoShow(ctx, sqlcgen.ReviewNoShowParams{
 		TenantID: tenantID, ID: in.ID, Status: in.Status,
 		ReviewedBy: uuid.NullUUID{UUID: in.ReviewedBy, Valid: in.ReviewedBy != uuid.Nil},
 		ReviewedAt: &in.ReviewedAt, ReviewComment: in.ReviewComment,
-		ConsumedNights: int32(in.ConsumedNights), //nolint:gosec // bounded by the stay's length
+		ConsumedNights:        int32(in.ConsumedNights), //nolint:gosec // bounded by the stay's length
+		ConsumedServiceNights: cs, ReleasedServiceNights: rs,
+		ConsumedEntitlementUnits: cu, ReleasedEntitlementUnits: ru,
 	})
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -308,29 +327,49 @@ func (Bookings) ReviewNoShowRow(ctx context.Context, tx pgx.Tx, tenantID uuid.UU
 	return affected == 1, nil
 }
 
+func numericEvidenceParam(value *string) (pgtype.Numeric, error) {
+	var out pgtype.Numeric
+	if value == nil {
+		return out, nil
+	}
+	if err := out.Scan(*value); err != nil {
+		return pgtype.Numeric{}, err
+	}
+	return out, nil
+}
+
 // noShowColumns is the one shape every no-show read comes back as, so the three generated
 // row types convert into it directly and one mapper turns it into the application record.
 type noShowColumns struct {
-	ID                 uuid.UUID
-	BookingID          uuid.UUID
-	ReportedByActorID  uuid.NullUUID
-	ReportedAt         time.Time
-	EvidenceDocumentID uuid.NullUUID
-	AssessedFeeAmount  string
-	PayerAmount        string
-	MemberAmount       string
-	CurrencyCode       string
-	Status             string
-	ReviewedBy         uuid.NullUUID
-	ReviewedAt         *time.Time
-	ReviewComment      *string
-	ConsumedNights     int32
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
-	RowVersion         int64
+	ID                       uuid.UUID
+	BookingID                uuid.UUID
+	ReportedByActorID        uuid.NullUUID
+	ReportedAt               time.Time
+	EvidenceDocumentID       uuid.NullUUID
+	AssessedFeeAmount        string
+	PayerAmount              string
+	MemberAmount             string
+	CurrencyCode             string
+	Status                   string
+	ReviewedBy               uuid.NullUUID
+	ReviewedAt               *time.Time
+	ReviewComment            *string
+	ConsumedNights           int32
+	ConsumedServiceNights    pgtype.Numeric
+	ReleasedServiceNights    pgtype.Numeric
+	ConsumedEntitlementUnits pgtype.Numeric
+	ReleasedEntitlementUnits pgtype.Numeric
+	CreatedAt                time.Time
+	UpdatedAt                time.Time
+	RowVersion               int64
 }
 
-func noShowOf(c noShowColumns) application.NoShowRecord {
+func noShowOf(c noShowColumns) (application.NoShowRecord, error) {
+	effect, err := cancellationEffectFromRow(c.ConsumedServiceNights, c.ReleasedServiceNights,
+		c.ConsumedEntitlementUnits, c.ReleasedEntitlementUnits)
+	if err != nil {
+		return application.NoShowRecord{}, err
+	}
 	return application.NoShowRecord{
 		ID: c.ID, BookingID: c.BookingID, ReportedByActorID: uuidPtr(c.ReportedByActorID),
 		ReportedAt: c.ReportedAt, EvidenceDocumentID: uuidPtr(c.EvidenceDocumentID),
@@ -338,8 +377,9 @@ func noShowOf(c noShowColumns) application.NoShowRecord {
 		MemberAmount: c.MemberAmount, CurrencyCode: c.CurrencyCode, Status: c.Status,
 		ReviewedBy: uuidPtr(c.ReviewedBy), ReviewedAt: c.ReviewedAt,
 		ReviewComment: c.ReviewComment, ConsumedNights: int(c.ConsumedNights),
-		CreatedAt: c.CreatedAt, UpdatedAt: c.UpdatedAt, RowVersion: c.RowVersion,
-	}
+		EntitlementEffect: effect,
+		CreatedAt:         c.CreatedAt, UpdatedAt: c.UpdatedAt, RowVersion: c.RowVersion,
+	}, nil
 }
 
 // ---------------------------------------------------------------------------

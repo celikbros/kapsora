@@ -353,6 +353,26 @@ func (s *Service) settleCancellation(ctx context.Context, tx pgx.Tx, rc identity
 	if err != nil {
 		return nil, err
 	}
+	if evidence != nil {
+		settled, settleErr := s.auths.SettleBookingPenalty(ctx, tx, BookingPenaltySettlement{
+			TenantID: rc.TenantID, ActorID: rc.Principal.ActorID,
+			AuthorizationID: *record.AuthorizationID, RequestID: *record.ServiceRequestID,
+			PersonID: record.PersonID, BookingID: record.ID,
+			EvaluationID: *snapshot.EvaluationID, EnrollmentID: record.EnrollmentID,
+			ReservationID:       *record.EntitlementReservationID,
+			ServiceDefinitionID: snapshot.ServiceDefinitionID,
+			PolicyPenalty:       fmt.Sprintf("%d", quote.EntitlementPenalty(snapshot.CoveredNights)),
+			ConsumeKey:          cancellationPenaltyKey(record.ID), ConsumeReason: ReasonCancellationPenalty,
+			ReleaseReason: ReasonCancellationRelease,
+		})
+		if settleErr != nil {
+			return nil, settleErr
+		}
+		if err := s.auths.RevokeVouchers(ctx, tx, rc, *record.AuthorizationID, ReasonVoucherCancelled); err != nil {
+			return nil, err
+		}
+		return &settled, nil
+	}
 	canReport := predictedCancellationEffect(evidence, quote, snapshot.CoveredNights) != nil
 	consumedService, releasedService := benefitdomain.ZeroQuantity(), benefitdomain.ZeroQuantity()
 	penalty := quote.EntitlementPenalty(snapshot.CoveredNights)

@@ -1859,6 +1859,12 @@
       "actualNights_other": "{{count}} nights stayed",
       "noShowReported": "The property reported a no-show; the record is under review.",
       "noShow": "Recorded as a no-show.",
+      "noShowFee": "A no-show fee of {{amount}} was recorded.",
+      "noShowEffectUnknown": "The exact entitlement movement cannot be shown for this no-show record.",
+      "noShowEffect": {
+        "service": "{{consumed}} lodging nights were used and {{released}} lodging nights returned.",
+        "entitlement": "Your plan account used {{consumed}} entitlement units and received {{released}} entitlement units back."
+      },
       "goToHold": "Go to confirmation",
       "sequence": "What happened"
     },
@@ -2015,6 +2021,12 @@
         "payer": "Payer share",
         "member": "Member share",
         "consumedNights": "Consumed nights",
+        "effect": "Entitlement movement",
+        "effectUnknown": "The exact entitlement movement cannot be shown for this record.",
+        "consumedServiceNights": "Lodging nights used",
+        "releasedServiceNights": "Lodging nights returned",
+        "consumedEntitlementUnits": "Plan units used",
+        "releasedEntitlementUnits": "Plan units returned",
         "status": {
           "REPORTED": "Reported",
           "CONFIRMED": "Confirmed",

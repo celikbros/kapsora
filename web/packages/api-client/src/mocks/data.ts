@@ -1317,6 +1317,7 @@ export interface StoredNoShow {
   reviewedAt: string | null;
   reviewComment: string | null;
   consumedNights: number;
+  entitlementEffect?: Schemas['CancellationQuote']['entitlementEffect'];
   rowVersion: number;
 }
 

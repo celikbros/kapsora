@@ -6985,9 +6985,9 @@ type Cancellation struct {
 	CancelledBy  *openapi_types.UUID `json:"cancelledBy,omitempty"`
 	CurrencyCode string              `json:"currencyCode"`
 
-	// EntitlementEffect Exact service-night and entitlement-unit effects of this cancellation. On a
-	// preview these are prospective under the current authorization state; the command
-	// recomputes them in its transaction. A cancellation record carries the actual
+	// EntitlementEffect Exact service-night and entitlement-unit effects of a cancellation or confirmed
+	// no-show. Cancellation preview is prospective under the current authorization state;
+	// each command recomputes in its transaction. A completed record carries actual
 	// committed effects. Absent means exact evidence is unavailable or was not recorded,
 	// not zero. These quantities do not change the frozen policy's monetary charge.
 	EntitlementEffect *CancellationEntitlementEffect `json:"entitlementEffect,omitempty"`
@@ -7015,9 +7015,9 @@ type Cancellation struct {
 	ReleasedNights int `json:"releasedNights"`
 }
 
-// CancellationEntitlementEffect Exact service-night and entitlement-unit effects of this cancellation. On a
-// preview these are prospective under the current authorization state; the command
-// recomputes them in its transaction. A cancellation record carries the actual
+// CancellationEntitlementEffect Exact service-night and entitlement-unit effects of a cancellation or confirmed
+// no-show. Cancellation preview is prospective under the current authorization state;
+// each command recomputes in its transaction. A completed record carries actual
 // committed effects. Absent means exact evidence is unavailable or was not recorded,
 // not zero. These quantities do not change the frozen policy's monetary charge.
 type CancellationEntitlementEffect struct {
@@ -7061,9 +7061,9 @@ type CancellationPreview struct {
 type CancellationQuote struct {
 	CurrencyCode string `json:"currencyCode"`
 
-	// EntitlementEffect Exact service-night and entitlement-unit effects of this cancellation. On a
-	// preview these are prospective under the current authorization state; the command
-	// recomputes them in its transaction. A cancellation record carries the actual
+	// EntitlementEffect Exact service-night and entitlement-unit effects of a cancellation or confirmed
+	// no-show. Cancellation preview is prospective under the current authorization state;
+	// each command recomputes in its transaction. A completed record carries actual
 	// committed effects. Absent means exact evidence is unavailable or was not recorded,
 	// not zero. These quantities do not change the frozen policy's monetary charge.
 	EntitlementEffect *CancellationEntitlementEffect `json:"entitlementEffect,omitempty"`
@@ -10276,13 +10276,19 @@ type NoShowReport struct {
 	AssessedFeeAmount string             `json:"assessedFeeAmount"`
 	BookingId         openapi_types.UUID `json:"bookingId"`
 
-	// ConsumedNights What a confirmation actually took off the plan, in whole nights. It is recorded
-	// because the policy is a percentage and the entitlement is nights: the row says
-	// what was consumed rather than leaving a reader to redo the rounding.
-	ConsumedNights     int                 `json:"consumedNights"`
-	CurrencyCode       string              `json:"currencyCode"`
-	EvidenceDocumentId *openapi_types.UUID `json:"evidenceDocumentId,omitempty"`
-	Id                 openapi_types.UUID  `json:"id"`
+	// ConsumedNights Whole-number portion of actual consumedServiceNights when entitlementEffect is
+	// present. Prefer the exact effect for display; historical rows may lack it.
+	ConsumedNights int    `json:"consumedNights"`
+	CurrencyCode   string `json:"currencyCode"`
+
+	// EntitlementEffect Exact service-night and entitlement-unit effects of a cancellation or confirmed
+	// no-show. Cancellation preview is prospective under the current authorization state;
+	// each command recomputes in its transaction. A completed record carries actual
+	// committed effects. Absent means exact evidence is unavailable or was not recorded,
+	// not zero. These quantities do not change the frozen policy's monetary charge.
+	EntitlementEffect  *CancellationEntitlementEffect `json:"entitlementEffect,omitempty"`
+	EvidenceDocumentId *openapi_types.UUID            `json:"evidenceDocumentId,omitempty"`
+	Id                 openapi_types.UUID             `json:"id"`
 
 	// MemberAmount Exact decimal as a string; nothing here passes through a float.
 	MemberAmount string `json:"memberAmount"`

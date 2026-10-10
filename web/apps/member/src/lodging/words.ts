@@ -3,6 +3,7 @@ import type {
   BookingStatus,
   CancellationQuote,
   LodgingPolicySnapshot,
+  NoShowReport,
 } from '@kapsora/api-client';
 import { formatDate, formatMoney, formatNumber } from '@kapsora/i18n';
 import type { BadgeTone } from '@kapsora/ui';
@@ -127,6 +128,22 @@ export function cancellationEffectSentences(
       released: effect.releasedServiceNights,
     }),
     t(`lodging.booking.cancelEffect.${phase}.entitlement`, {
+      consumed: effect.consumedEntitlementUnits,
+      released: effect.releasedEntitlementUnits,
+    }),
+  ];
+}
+
+/** A confirmed no-show's recorded movement; no report or null evidence stays neutral. */
+export function noShowEffectSentences(t: TFunction, report: NoShowReport | null): string[] {
+  const effect = report?.status === 'CONFIRMED' ? report.entitlementEffect : undefined;
+  if (!effect) return [t('lodging.booking.noShowEffectUnknown')];
+  return [
+    t('lodging.booking.noShowEffect.service', {
+      consumed: effect.consumedServiceNights,
+      released: effect.releasedServiceNights,
+    }),
+    t('lodging.booking.noShowEffect.entitlement', {
       consumed: effect.consumedEntitlementUnits,
       released: effect.releasedEntitlementUnits,
     }),

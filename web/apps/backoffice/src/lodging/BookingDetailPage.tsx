@@ -211,11 +211,23 @@ function Step({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function Row({ label, value, mono }: { label: string; value: ReactNode; mono?: boolean }) {
+function Row({
+  label,
+  value,
+  mono,
+  testId,
+}: {
+  label: string;
+  value: ReactNode;
+  mono?: boolean;
+  testId?: string;
+}) {
   return (
     <>
       <dt className="text-fg-muted">{label}</dt>
-      <dd className={mono ? 'font-mono text-xs tabular-nums' : ''}>{value}</dd>
+      <dd data-testid={testId} className={mono ? 'font-mono text-xs tabular-nums' : ''}>
+        {value}
+      </dd>
     </>
   );
 }
@@ -282,8 +294,40 @@ function NoShowReview({ booking, result }: { booking: Booking; result: NoShowRes
       <dd className="font-mono tabular-nums">
         {formatMoney(report.memberAmount, report.currencyCode)}
       </dd>
-      <dt className="text-fg-muted">{t('lodging.office.noShow.consumedNights')}</dt>
-      <dd>{report.consumedNights}</dd>
+      {report.status === 'CONFIRMED' && report.entitlementEffect ? (
+        <>
+          <Row
+            label={t('lodging.office.noShow.consumedServiceNights')}
+            value={report.entitlementEffect.consumedServiceNights}
+            mono
+            testId="no-show-consumed-service"
+          />
+          <Row
+            label={t('lodging.office.noShow.releasedServiceNights')}
+            value={report.entitlementEffect.releasedServiceNights}
+            mono
+            testId="no-show-released-service"
+          />
+          <Row
+            label={t('lodging.office.noShow.consumedEntitlementUnits')}
+            value={report.entitlementEffect.consumedEntitlementUnits}
+            mono
+            testId="no-show-consumed-units"
+          />
+          <Row
+            label={t('lodging.office.noShow.releasedEntitlementUnits')}
+            value={report.entitlementEffect.releasedEntitlementUnits}
+            mono
+            testId="no-show-released-units"
+          />
+        </>
+      ) : report.status === 'CONFIRMED' ? (
+        <Row
+          label={t('lodging.office.noShow.effect')}
+          value={t('lodging.office.noShow.effectUnknown')}
+          testId="no-show-effect-unknown"
+        />
+      ) : null}
       {report.reviewedAt ? (
         <>
           <dt className="text-fg-muted">{t('lodging.office.noShow.reviewedAt')}</dt>

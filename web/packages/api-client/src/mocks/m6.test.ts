@@ -1276,7 +1276,7 @@ describe('cancelling a stay', () => {
       )
     ).data;
     expect(preview.quote.free).toBe(true);
-    expect(preview.quote.releasedNights).toBe(2);
+    expect(preview.quote.releasedNights).toBe(0);
     expect(preview.quote.entitlementEffect).toEqual({
       consumedServiceNights: '0.000000',
       releasedServiceNights: '0.500000',
@@ -1298,6 +1298,88 @@ describe('cancelling a stay', () => {
     expect(result.cancellation.entitlementEffect).toEqual(preview.quote.entitlementEffect);
     expect(result.quote.feeAmount).toBe('0.000000');
     expect(result.cancellation.policySnapshot).toEqual(stored.policySnapshot);
+  });
+
+  it('caps a paid penalty at the approved half night without repricing the frozen charge', async () => {
+    const s = await signIn('admin.a');
+    const booking = await confirmedStay(
+      s,
+      personByFirstName('Kaan').id,
+      roomTypeByCode('STD_DBL').id,
+      2,
+      0,
+    );
+    const stored = api.world.bookings.find((row) => row.id === booking.id)!;
+    stored.approvedServiceNights = '0.500000';
+    stored.entitlementUnitFactor = '2.000000';
+    const preview = (
+      await unwrap(
+        s.c.POST('/api/v1/accommodation/bookings/{bookingId}/cancellation-preview', {
+          params: { header: tenant(s), path: { bookingId: booking.id } },
+        }),
+      )
+    ).data.quote;
+    expect(preview.free).toBe(false);
+    expect(preview.penaltyNights).toBe(1);
+    expect(preview.entitlementEffect).toEqual({
+      consumedServiceNights: '0.500000',
+      releasedServiceNights: '0.000000',
+      consumedEntitlementUnits: '1.000000',
+      releasedEntitlementUnits: '0.000000',
+    });
+    const firstNight = api.world.bookingNights.find((row) => row.bookingId === booking.id)!;
+    expect(preview.feeAmount).toBe(firstNight.unitAmount);
+    expect(preview.payerFee).toBe(firstNight.payerAmount);
+    expect(preview.memberFee).toBe(firstNight.memberAmount);
+    const idempotencyKey = key();
+    const cancel = () =>
+      unwrap(
+        s.c.POST('/api/v1/accommodation/bookings/{bookingId}/cancel', {
+          params: {
+            header: { ...tenant(s), 'Idempotency-Key': idempotencyKey },
+            path: { bookingId: booking.id },
+          },
+          body: {},
+        }),
+      );
+    const result = (await cancel()).data;
+    expect(result.quote).toEqual(preview);
+    expect(result.cancellation.entitlementEffect).toEqual(preview.entitlementEffect);
+    expect(result.cancellation.releasedNights).toBe(0);
+    expect((await cancel()).data).toEqual(result);
+    expect(api.world.cancellations.filter((row) => row.bookingId === booking.id)).toHaveLength(1);
+  });
+
+  it('caps an integer partial approval below a two-night cancellation policy', async () => {
+    const s = await signIn('admin.a');
+    const booking = await confirmedStay(
+      s,
+      personByFirstName('Kaan').id,
+      roomTypeByCode('STD_DBL').id,
+      2,
+      0,
+    );
+    const stored = api.world.bookings.find((row) => row.id === booking.id)!;
+    stored.approvedServiceNights = '1.000000';
+    stored.entitlementUnitFactor = '2.000000';
+    stored.policySnapshot!.penaltyNights = 2;
+    const preview = (
+      await unwrap(
+        s.c.POST('/api/v1/accommodation/bookings/{bookingId}/cancellation-preview', {
+          params: { header: tenant(s), path: { bookingId: booking.id } },
+        }),
+      )
+    ).data.quote;
+    expect(preview.penaltyNights).toBe(2);
+    expect(preview.entitlementEffect?.consumedServiceNights).toBe('1.000000');
+    expect(preview.entitlementEffect?.consumedEntitlementUnits).toBe('2.000000');
+    expect(preview.feeAmount).toBe(
+      sum(
+        ...api.world.bookingNights
+          .filter((row) => row.bookingId === booking.id)
+          .map((row) => row.unitAmount),
+      ),
+    );
   });
 
   /**
@@ -1697,6 +1779,8 @@ describe('a no-show', () => {
     const payer = await signIn('admin.a');
     const seeded = api.world.noShows[0]!;
     const booking = api.world.bookings.find((b) => b.id === seeded.bookingId)!;
+    booking.approvedServiceNights = '1.500000';
+    booking.entitlementUnitFactor = '2.000000';
     // A claim nobody has answered leaves the stay exactly as it was.
     expect(booking.status).toBe('CONFIRMED');
 
@@ -1708,6 +1792,7 @@ describe('a no-show', () => {
       )
     ).data;
     expect(read.report.status).toBe('REPORTED');
+    expect(read.report.entitlementEffect).toBeUndefined();
     expect(read.booking.status).toBe('CONFIRMED');
     expect(sum(read.report.payerAmount, read.report.memberAmount)).toBe(
       read.report.assessedFeeAmount,
@@ -1745,8 +1830,31 @@ describe('a no-show', () => {
     ).data;
     expect(reviewed.report.status).toBe('CONFIRMED');
     expect(reviewed.booking.status).toBe('NO_SHOW');
-    expect(reviewed.report.consumedNights).toBeGreaterThan(0);
+    expect(reviewed.report.entitlementEffect).toEqual({
+      consumedServiceNights: '1.500000',
+      releasedServiceNights: '0.000000',
+      consumedEntitlementUnits: '3.000000',
+      releasedEntitlementUnits: '0.000000',
+    });
+    expect(reviewed.report.consumedNights).toBe(1);
+    expect(reviewed.report.assessedFeeAmount).toBe(read.report.assessedFeeAmount);
+    expect(reviewed.report.payerAmount).toBe(read.report.payerAmount);
+    expect(reviewed.report.memberAmount).toBe(read.report.memberAmount);
   });
+});
+
+it('leaves historical confirmed no-show exact evidence absent', async () => {
+  const s = await signIn('admin.a');
+  const historical = api.world.noShows.find((row) => row.status === 'CONFIRMED')!;
+  const read = (
+    await unwrap(
+      s.c.GET('/api/v1/accommodation/bookings/{bookingId}/no-show', {
+        params: { header: tenant(s), path: { bookingId: historical.bookingId } },
+      }),
+    )
+  ).data;
+  expect(read.report.status).toBe('CONFIRMED');
+  expect(read.report.entitlementEffect).toBeUndefined();
 });
 
 it('refuses a different hotel clerk reviewing the reported no-show', async () => {
