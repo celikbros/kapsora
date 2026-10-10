@@ -4315,6 +4315,24 @@ func (e ServiceUnitType) Valid() bool {
 	}
 }
 
+// Defines values for SetAccommodationTenantSettingsRequestReasonCode.
+const (
+	CORRECTCONFIGURATION SetAccommodationTenantSettingsRequestReasonCode = "CORRECT_CONFIGURATION"
+	OPERATINGREQUIREMENT SetAccommodationTenantSettingsRequestReasonCode = "OPERATING_REQUIREMENT"
+)
+
+// Valid indicates whether the value is a known member of the SetAccommodationTenantSettingsRequestReasonCode enum.
+func (e SetAccommodationTenantSettingsRequestReasonCode) Valid() bool {
+	switch e {
+	case CORRECTCONFIGURATION:
+		return true
+	case OPERATINGREQUIREMENT:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SettlementSettlementMethod.
 const (
 	SettlementSettlementMethodBANKTRANSFER SettlementSettlementMethod = "BANK_TRANSFER"
@@ -4627,6 +4645,57 @@ func (e TenantMembershipStatus) Valid() bool {
 	case TenantMembershipStatusREVOKED:
 		return true
 	case TenantMembershipStatusSUSPENDED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TenantSettingIntegerMaximum.
+const (
+	N1440 TenantSettingIntegerMaximum = 1440
+)
+
+// Valid indicates whether the value is a known member of the TenantSettingIntegerMaximum enum.
+func (e TenantSettingIntegerMaximum) Valid() bool {
+	switch e {
+	case N1440:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TenantSettingIntegerMinimum.
+const (
+	TenantSettingIntegerMinimumN1 TenantSettingIntegerMinimum = 1
+)
+
+// Valid indicates whether the value is a known member of the TenantSettingIntegerMinimum enum.
+func (e TenantSettingIntegerMinimum) Valid() bool {
+	switch e {
+	case TenantSettingIntegerMinimumN1:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TenantSettingIntegerSource.
+const (
+	CONFIGURED      TenantSettingIntegerSource = "CONFIGURED"
+	DEFAULT         TenantSettingIntegerSource = "DEFAULT"
+	INVALIDFALLBACK TenantSettingIntegerSource = "INVALID_FALLBACK"
+)
+
+// Valid indicates whether the value is a known member of the TenantSettingIntegerSource enum.
+func (e TenantSettingIntegerSource) Valid() bool {
+	switch e {
+	case CONFIGURED:
+		return true
+	case DEFAULT:
+		return true
+	case INVALIDFALLBACK:
 		return true
 	default:
 		return false
@@ -6353,6 +6422,13 @@ type AcceptNewInvitationResponse struct {
 
 // AcceptNewInvitationResponseMembershipStatus defines model for AcceptNewInvitationResponse.MembershipStatus.
 type AcceptNewInvitationResponseMembershipStatus string
+
+// AccommodationTenantSettings defines model for AccommodationTenantSettings.
+type AccommodationTenantSettings struct {
+	CanManage       bool                 `json:"canManage"`
+	HoldMinutes     TenantSettingInteger `json:"holdMinutes"`
+	QuoteTtlMinutes TenantSettingInteger `json:"quoteTtlMinutes"`
+}
 
 // AddWorkItemComment defines model for AddWorkItemComment.
 type AddWorkItemComment struct {
@@ -13073,6 +13149,16 @@ type SessionInfo struct {
 	StepUpExpiresAt    *time.Time `json:"stepUpExpiresAt"`
 }
 
+// SetAccommodationTenantSettingsRequest defines model for SetAccommodationTenantSettingsRequest.
+type SetAccommodationTenantSettingsRequest struct {
+	HoldMinutes     int                                             `json:"holdMinutes"`
+	QuoteTtlMinutes int                                             `json:"quoteTtlMinutes"`
+	ReasonCode      SetAccommodationTenantSettingsRequestReasonCode `json:"reasonCode"`
+}
+
+// SetAccommodationTenantSettingsRequestReasonCode defines model for SetAccommodationTenantSettingsRequest.ReasonCode.
+type SetAccommodationTenantSettingsRequestReasonCode string
+
 // Settlement What the payer owes one provider for one decided icmal.
 //
 // The three money figures are the server's own, in exact decimals. `approvedAmount` is the
@@ -13382,9 +13468,15 @@ type TenantContext struct {
 	// CanManageTenantRoles True only when current TENANT grants correlate identity.user.read and identity.role.manage on this active membership in backoffice or unrestricted app context.
 	CanManageTenantRoles *bool `json:"canManageTenantRoles,omitempty"`
 
+	// CanManageTenantSettings True for current TENANT-correlated read and manage settings authority on active human membership; commands additionally require fresh local-session password step-up.
+	CanManageTenantSettings *bool `json:"canManageTenantSettings,omitempty"`
+
 	// CanManageTenantUsers True only when identity.user.manage belongs to an active TENANT-scoped grant
 	// in this tenant and the request uses backoffice or unrestricted app context.
 	CanManageTenantUsers *bool `json:"canManageTenantUsers,omitempty"`
+
+	// CanReadTenantSettings True for current TENANT-correlated platform.tenant_settings.read authority on active human membership in backoffice or unrestricted context.
+	CanReadTenantSettings *bool `json:"canReadTenantSettings,omitempty"`
 
 	// CanReadTenantUsers Server-computed Management Users capability. True only when identity.user.read
 	// belongs to an active TENANT-scoped grant in this tenant and the request uses
@@ -13473,6 +13565,25 @@ type TenantRoleGrantResult struct {
 	MembershipId         openapi_types.UUID `json:"membershipId"`
 	MembershipRowVersion int64              `json:"membershipRowVersion"`
 }
+
+// TenantSettingInteger defines model for TenantSettingInteger.
+type TenantSettingInteger struct {
+	DefaultValue   int                         `json:"defaultValue"`
+	EffectiveValue int                         `json:"effectiveValue"`
+	Maximum        TenantSettingIntegerMaximum `json:"maximum"`
+	Minimum        TenantSettingIntegerMinimum `json:"minimum"`
+	Source         TenantSettingIntegerSource  `json:"source"`
+	UpdatedAt      *time.Time                  `json:"updatedAt"`
+}
+
+// TenantSettingIntegerMaximum defines model for TenantSettingInteger.Maximum.
+type TenantSettingIntegerMaximum int
+
+// TenantSettingIntegerMinimum defines model for TenantSettingInteger.Minimum.
+type TenantSettingIntegerMinimum int
+
+// TenantSettingIntegerSource defines model for TenantSettingInteger.Source.
+type TenantSettingIntegerSource string
 
 // TenantSummary defines model for TenantSummary.
 type TenantSummary struct {
@@ -14553,6 +14664,24 @@ type CancelRoleChangeRequestParams struct {
 
 // RejectRoleChangeRequestParams defines parameters for RejectRoleChangeRequest.
 type RejectRoleChangeRequestParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// GetAccommodationTenantSettingsParams defines parameters for GetAccommodationTenantSettings.
+type GetAccommodationTenantSettingsParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// SetAccommodationTenantSettingsParams defines parameters for SetAccommodationTenantSettings.
+type SetAccommodationTenantSettingsParams struct {
 	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
 	XTenantID TenantHeader `json:"X-Tenant-ID"`
 
@@ -18444,6 +18573,9 @@ type CancelRoleChangeRequestJSONRequestBody = CancelRoleChangeRequest
 // RejectRoleChangeRequestJSONRequestBody defines body for RejectRoleChangeRequest for application/json ContentType.
 type RejectRoleChangeRequestJSONRequestBody = RejectRoleChangeRequest
 
+// SetAccommodationTenantSettingsJSONRequestBody defines body for SetAccommodationTenantSettings for application/json ContentType.
+type SetAccommodationTenantSettingsJSONRequestBody = SetAccommodationTenantSettingsRequest
+
 // CreateTenantUserRoleChangeRequestJSONRequestBody defines body for CreateTenantUserRoleChangeRequest for application/json ContentType.
 type CreateTenantUserRoleChangeRequestJSONRequestBody = CreateRoleChangeRequest
 
@@ -19253,6 +19385,12 @@ type ServerInterface interface {
 
 	// (POST /api/v1/admin/role-change-requests/{requestId}/reject)
 	RejectRoleChangeRequest(w http.ResponseWriter, r *http.Request, requestId RoleChangeRequestId, params RejectRoleChangeRequestParams)
+
+	// (GET /api/v1/admin/tenant-settings/accommodation)
+	GetAccommodationTenantSettings(w http.ResponseWriter, r *http.Request, params GetAccommodationTenantSettingsParams)
+
+	// (PUT /api/v1/admin/tenant-settings/accommodation)
+	SetAccommodationTenantSettings(w http.ResponseWriter, r *http.Request, params SetAccommodationTenantSettingsParams)
 
 	// (GET /api/v1/admin/users)
 	ListTenantUsers(w http.ResponseWriter, r *http.Request, params ListTenantUsersParams)
@@ -20360,6 +20498,16 @@ func (_ Unimplemented) CancelRoleChangeRequest(w http.ResponseWriter, r *http.Re
 
 // (POST /api/v1/admin/role-change-requests/{requestId}/reject)
 func (_ Unimplemented) RejectRoleChangeRequest(w http.ResponseWriter, r *http.Request, requestId RoleChangeRequestId, params RejectRoleChangeRequestParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/admin/tenant-settings/accommodation)
+func (_ Unimplemented) GetAccommodationTenantSettings(w http.ResponseWriter, r *http.Request, params GetAccommodationTenantSettingsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PUT /api/v1/admin/tenant-settings/accommodation)
+func (_ Unimplemented) SetAccommodationTenantSettings(w http.ResponseWriter, r *http.Request, params SetAccommodationTenantSettingsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -24870,6 +25018,142 @@ func (siw *ServerInterfaceWrapper) RejectRoleChangeRequest(w http.ResponseWriter
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RejectRoleChangeRequest(w, r, requestId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAccommodationTenantSettings operation middleware
+func (siw *ServerInterfaceWrapper) GetAccommodationTenantSettings(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetAccommodationTenantSettingsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAccommodationTenantSettings(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetAccommodationTenantSettings operation middleware
+func (siw *ServerInterfaceWrapper) SetAccommodationTenantSettings(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SetAccommodationTenantSettingsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetAccommodationTenantSettings(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -50715,6 +50999,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/tenant-settings/accommodation", wrapper.GetAccommodationTenantSettings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/v1/admin/tenant-settings/accommodation", wrapper.SetAccommodationTenantSettings)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/admin/invitations", wrapper.ListTenantInvitations)
 	})
 	r.Group(func(r chi.Router) {
@@ -55247,6 +55537,266 @@ func (response RejectRoleChangeRequest428ApplicationProblemPlusJSONResponse) Vis
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAccommodationTenantSettingsRequestObject struct {
+	Params GetAccommodationTenantSettingsParams
+}
+
+type GetAccommodationTenantSettingsResponseObject interface {
+	VisitGetAccommodationTenantSettingsResponse(w http.ResponseWriter) error
+}
+
+type GetAccommodationTenantSettings200ResponseHeaders struct {
+	CacheControl *string
+	ETag         *string
+}
+
+type GetAccommodationTenantSettings200JSONResponse struct {
+	Body    AccommodationTenantSettings
+	Headers GetAccommodationTenantSettings200ResponseHeaders
+}
+
+func (response GetAccommodationTenantSettings200JSONResponse) VisitGetAccommodationTenantSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAccommodationTenantSettings401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GetAccommodationTenantSettings401ApplicationProblemPlusJSONResponse) VisitGetAccommodationTenantSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAccommodationTenantSettings403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetAccommodationTenantSettings403ApplicationProblemPlusJSONResponse) VisitGetAccommodationTenantSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAccommodationTenantSettings409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response GetAccommodationTenantSettings409ApplicationProblemPlusJSONResponse) VisitGetAccommodationTenantSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetAccommodationTenantSettingsRequestObject struct {
+	Params SetAccommodationTenantSettingsParams
+	Body   *SetAccommodationTenantSettingsJSONRequestBody
+}
+
+type SetAccommodationTenantSettingsResponseObject interface {
+	VisitSetAccommodationTenantSettingsResponse(w http.ResponseWriter) error
+}
+
+type SetAccommodationTenantSettings200ResponseHeaders struct {
+	CacheControl *string
+	ETag         *string
+}
+
+type SetAccommodationTenantSettings200JSONResponse struct {
+	Body    AccommodationTenantSettings
+	Headers SetAccommodationTenantSettings200ResponseHeaders
+}
+
+func (response SetAccommodationTenantSettings200JSONResponse) VisitSetAccommodationTenantSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetAccommodationTenantSettings400ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response SetAccommodationTenantSettings400ApplicationProblemPlusJSONResponse) VisitSetAccommodationTenantSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetAccommodationTenantSettings401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response SetAccommodationTenantSettings401ApplicationProblemPlusJSONResponse) VisitSetAccommodationTenantSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetAccommodationTenantSettings403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response SetAccommodationTenantSettings403ApplicationProblemPlusJSONResponse) VisitSetAccommodationTenantSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetAccommodationTenantSettings409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response SetAccommodationTenantSettings409ApplicationProblemPlusJSONResponse) VisitSetAccommodationTenantSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetAccommodationTenantSettings412ApplicationProblemPlusJSONResponse Problem
+
+func (response SetAccommodationTenantSettings412ApplicationProblemPlusJSONResponse) VisitSetAccommodationTenantSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetAccommodationTenantSettings415ApplicationProblemPlusJSONResponse Problem
+
+func (response SetAccommodationTenantSettings415ApplicationProblemPlusJSONResponse) VisitSetAccommodationTenantSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(415)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetAccommodationTenantSettings422ApplicationProblemPlusJSONResponse Problem
+
+func (response SetAccommodationTenantSettings422ApplicationProblemPlusJSONResponse) VisitSetAccommodationTenantSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetAccommodationTenantSettings428ApplicationProblemPlusJSONResponse Problem
+
+func (response SetAccommodationTenantSettings428ApplicationProblemPlusJSONResponse) VisitSetAccommodationTenantSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetAccommodationTenantSettings429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response SetAccommodationTenantSettings429ApplicationProblemPlusJSONResponse) VisitSetAccommodationTenantSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -83620,6 +84170,12 @@ type StrictServerInterface interface {
 	// (POST /api/v1/admin/role-change-requests/{requestId}/reject)
 	RejectRoleChangeRequest(ctx context.Context, request RejectRoleChangeRequestRequestObject) (RejectRoleChangeRequestResponseObject, error)
 
+	// (GET /api/v1/admin/tenant-settings/accommodation)
+	GetAccommodationTenantSettings(ctx context.Context, request GetAccommodationTenantSettingsRequestObject) (GetAccommodationTenantSettingsResponseObject, error)
+
+	// (PUT /api/v1/admin/tenant-settings/accommodation)
+	SetAccommodationTenantSettings(ctx context.Context, request SetAccommodationTenantSettingsRequestObject) (SetAccommodationTenantSettingsResponseObject, error)
+
 	// (GET /api/v1/admin/users)
 	ListTenantUsers(ctx context.Context, request ListTenantUsersRequestObject) (ListTenantUsersResponseObject, error)
 
@@ -85730,6 +86286,65 @@ func (sh *strictHandler) RejectRoleChangeRequest(w http.ResponseWriter, r *http.
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RejectRoleChangeRequestResponseObject); ok {
 		if err := validResponse.VisitRejectRoleChangeRequestResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAccommodationTenantSettings operation middleware
+func (sh *strictHandler) GetAccommodationTenantSettings(w http.ResponseWriter, r *http.Request, params GetAccommodationTenantSettingsParams) {
+	var request GetAccommodationTenantSettingsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAccommodationTenantSettings(ctx, request.(GetAccommodationTenantSettingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAccommodationTenantSettings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAccommodationTenantSettingsResponseObject); ok {
+		if err := validResponse.VisitGetAccommodationTenantSettingsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetAccommodationTenantSettings operation middleware
+func (sh *strictHandler) SetAccommodationTenantSettings(w http.ResponseWriter, r *http.Request, params SetAccommodationTenantSettingsParams) {
+	var request SetAccommodationTenantSettingsRequestObject
+
+	request.Params = params
+
+	var body SetAccommodationTenantSettingsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetAccommodationTenantSettings(ctx, request.(SetAccommodationTenantSettingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetAccommodationTenantSettings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetAccommodationTenantSettingsResponseObject); ok {
+		if err := validResponse.VisitSetAccommodationTenantSettingsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

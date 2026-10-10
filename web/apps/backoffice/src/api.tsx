@@ -30,6 +30,8 @@ export function directoryContextKey(state: ReturnType<SessionStore['getState']>)
     state.activeTenant?.canReadTenantUsers === true ? 'allowed' : 'denied',
     state.activeTenant?.canManageTenantUsers === true ? 'manage' : 'read',
     state.activeTenant?.canManageTenantRoles === true ? 'roles' : 'no-roles',
+    state.activeTenant?.canReadTenantSettings === true ? 'settings-read' : 'settings-denied',
+    state.activeTenant?.canManageTenantSettings === true ? 'settings-manage' : 'settings-view',
     state.activeTenant?.permissions.join('|') ?? '',
     JSON.stringify(state.activeTenant?.scopes ?? []),
   ].join(':');
@@ -74,6 +76,8 @@ export function createServices(
     queryClient.removeQueries({ queryKey: ['admin-role-change-options'] });
     void queryClient.cancelQueries({ queryKey: ['admin-role-change-eligibility'] });
     queryClient.removeQueries({ queryKey: ['admin-role-change-eligibility'] });
+    void queryClient.cancelQueries({ queryKey: ['admin-tenant-settings'] });
+    queryClient.removeQueries({ queryKey: ['admin-tenant-settings'] });
   });
   return { ops, store, queryClient };
 }

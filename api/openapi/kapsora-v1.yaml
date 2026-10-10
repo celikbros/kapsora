@@ -73,6 +73,101 @@ tags:
   - name: Reports
     description: Cari ekstre, günlük mutabakat, operasyon panosu ve filigranlı dışa aktarma
 paths:
+  /api/v1/admin/tenant-settings/accommodation:
+    get:
+      tags: [Tenants]
+      operationId: getAccommodationTenantSettings
+      description: |
+        Read only the current tenant's two lodging timing settings, requiring current
+        TENANT-correlated settings read authority in backoffice or unrestricted app
+        context. Missing rows stay absent; invalid legacy values use documented defaults
+        without exposing raw or sensitive data or repairing configuration. The opaque
+        strong ETag includes admitted keys' presence and versions. Responses are no-store.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      responses:
+        '200':
+          description: Typed lodging timing settings
+          headers:
+            ETag:
+              schema: { type: string }
+            Cache-Control:
+              schema: { type: string, const: no-store }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccommodationTenantSettings'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    put:
+      tags: [Tenants]
+      operationId: setAccommodationTenantSettings
+      description: |
+        Atomically replace only the two admitted independent integer durations (1-1440
+        minutes). Requires current TENANT-correlated settings read and manage authority,
+        ACTIVE valid human membership and fresh password step-up on an ordinary local
+        session. Reject unknown/duplicate properties, nulls, booleans, strings, fractions
+        and overflow. Hold duration affects newly prepared holds unless contract terms
+        override it; persisted hold expiry is unchanged. Quote lifetime is read at
+        confirmation and affects already-held bookings awaiting confirmation.
+        Exact same-key retries return the original committed projection and ETag after
+        current authority is rechecked, even after an intervening change. A canonical
+        no-op records its replay result without setting/version/change-audit mutation.
+        Unsupported settings and privileged role snapshots are unchanged. Responses and
+        errors are no-store. Missing If-Match or fresh step-up is refused.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetAccommodationTenantSettingsRequest'
+      responses:
+        '200':
+          description: Typed lodging timing settings
+          headers:
+            ETag:
+              schema: { type: string }
+            Cache-Control:
+              schema: { type: string, const: no-store }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccommodationTenantSettings'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '415':
+          description: Only application/json requests are supported
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '412':
+          description: Settings version is stale; explicit reload is required
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: Strong If-Match precondition is required
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /api/v1/admin/invitations:
     get:
       tags: [Identity]
@@ -15649,6 +15744,12 @@ components:
           type: array
           items:
             type: string
+        canReadTenantSettings:
+          type: boolean
+          description: True for current TENANT-correlated platform.tenant_settings.read authority on active human membership in backoffice or unrestricted context.
+        canManageTenantSettings:
+          type: boolean
+          description: True for current TENANT-correlated read and manage settings authority on active human membership; commands additionally require fresh local-session password step-up.
         canReadTenantUsers:
           type: boolean
           description: |
@@ -15676,6 +15777,33 @@ components:
               id:
                 type: [string, 'null']
                 format: uuid
+    TenantSettingInteger:
+      type: object
+      additionalProperties: false
+      required: [effectiveValue, defaultValue, minimum, maximum, source, updatedAt]
+      properties:
+        effectiveValue: { type: integer, minimum: 1, maximum: 1440 }
+        defaultValue: { type: integer, minimum: 1, maximum: 1440 }
+        minimum: { type: integer, const: 1 }
+        maximum: { type: integer, const: 1440 }
+        source: { type: string, enum: [CONFIGURED, DEFAULT, INVALID_FALLBACK] }
+        updatedAt: { type: [string, 'null'], format: date-time }
+    AccommodationTenantSettings:
+      type: object
+      additionalProperties: false
+      required: [holdMinutes, quoteTtlMinutes, canManage]
+      properties:
+        holdMinutes: { $ref: '#/components/schemas/TenantSettingInteger' }
+        quoteTtlMinutes: { $ref: '#/components/schemas/TenantSettingInteger' }
+        canManage: { type: boolean }
+    SetAccommodationTenantSettingsRequest:
+      type: object
+      additionalProperties: false
+      required: [holdMinutes, quoteTtlMinutes, reasonCode]
+      properties:
+        holdMinutes: { type: integer, minimum: 1, maximum: 1440 }
+        quoteTtlMinutes: { type: integer, minimum: 1, maximum: 1440 }
+        reasonCode: { type: string, enum: [OPERATING_REQUIREMENT, CORRECT_CONFIGURATION] }
     TenantInvitationStatus:
       type: string
       enum: [PENDING, ACCEPTED, CANCELLED, EXPIRED]

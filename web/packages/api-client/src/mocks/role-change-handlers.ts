@@ -32,7 +32,7 @@ const roles: Array<[string, string, string, string, string[]]> = [
     'Kurum Yöneticisi',
     'Kurum kullanıcılarını, rollerini ve ayarlarını yönetir; klinik verilere kendiliğinden erişmez.',
     '1',
-    'identity.user.read identity.user.manage identity.role.manage identity.access_review organization.read organization.manage program.read catalog.read provider.read contract.read rule.read report.read audit.read notification.manage notification.read integration.manage worklist.reassign workflow.queue.manage workflow.policy.manage document.legal_hold.manage'.split(
+    'identity.user.read identity.user.manage identity.role.manage identity.access_review platform.tenant_settings.read platform.tenant_settings.manage organization.read organization.manage program.read catalog.read provider.read contract.read rule.read report.read audit.read notification.manage notification.read integration.manage worklist.reassign workflow.queue.manage workflow.policy.manage document.legal_hold.manage'.split(
       ' ',
     ),
   ],

@@ -73,6 +73,8 @@ function stepUpContext(state: SessionState): string {
     state.activeTenant?.canReadTenantUsers,
     state.activeTenant?.canManageTenantUsers,
     state.activeTenant?.canManageTenantRoles,
+    state.activeTenant?.canReadTenantSettings,
+    state.activeTenant?.canManageTenantSettings,
     state.activeTenant?.permissions,
     state.activeTenant?.scopes,
   ]);

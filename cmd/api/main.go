@@ -90,6 +90,9 @@ import (
 	servicerequestapp "github.com/celikbros/kapsora/internal/servicerequest/application"
 	servicerequestpg "github.com/celikbros/kapsora/internal/servicerequest/infrastructure/postgres"
 	servicerequesthttp "github.com/celikbros/kapsora/internal/servicerequest/transport/http"
+	tenantsettingsapp "github.com/celikbros/kapsora/internal/tenantsettings/application"
+	tenantsettingspg "github.com/celikbros/kapsora/internal/tenantsettings/infrastructure/postgres"
+	tenantsettingshttp "github.com/celikbros/kapsora/internal/tenantsettings/transport/http"
 	workflowapp "github.com/celikbros/kapsora/internal/workflow/application"
 	workflowpg "github.com/celikbros/kapsora/internal/workflow/infrastructure/postgres"
 	workflowhttp "github.com/celikbros/kapsora/internal/workflow/transport/http"
@@ -155,6 +158,8 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	tenantSettingsSvc := tenantsettingsapp.NewService(tenantsettingspg.NewRepository(
+		pool, identitypg.NewTenantSettingsAuthority(cfg.Session.IdleTimeout), auditpg.New()))
 	ident.directory = application.NewDirectoryService(identitypg.NewDirectoryRepository(pool), cursors)
 	ident.roleAssignment = application.NewRoleAssignmentService(identitypg.NewRoleAssignmentRepository(pool).WithIdleTimeout(cfg.Session.IdleTimeout), cursors)
 	ident.privilegedRoleChange = application.NewPrivilegedRoleChangeService(identitypg.NewPrivilegedRoleChangeRepository(pool).WithIdleTimeout(cfg.Session.IdleTimeout), cursors)
@@ -446,6 +451,7 @@ func run() error {
 		billing:        billingSvc,
 		reports:        reportSvc,
 		accommodation:  accommodationSvc,
+		tenantSettings: tenantSettingsSvc,
 		notifications:  notificationSvc,
 		entitlements:   entitlementSvc,
 		eligibility:    eligibilitySvc,
@@ -575,6 +581,7 @@ type routerDeps struct {
 	billing        *billingapp.Service
 	reports        *reportapp.Service
 	accommodation  *accommodationapp.Service
+	tenantSettings *tenantsettingsapp.Service
 	notifications  *notificationapp.Service
 	entitlements   *benefitledger.Service
 	eligibility    *benefiteligibility.Service
@@ -588,6 +595,7 @@ func newRouter(d routerDeps) http.Handler {
 	sessions := identityhttp.NewMiddleware(d.ident.service, cookies, signingKey, d.logger).WithAuthorizer(d.ident.authz)
 	sessionHandler := identityhttp.NewHandler(d.ident.service, cookies, signingKey, d.logger)
 	contextHandler := identityhttp.NewContextHandler(d.ident.service, d.ident.authz, d.logger)
+	tenantSettingsHandler := tenantsettingshttp.NewHandler(d.tenantSettings)
 	directoryHandler := identityhttp.NewDirectoryHandler(d.ident.directory, sessions, d.logger)
 	roleAssignmentHandler := identityhttp.NewRoleAssignmentHandler(d.ident.roleAssignment, sessions, d.logger)
 	privilegedRoleChangeHandler := identityhttp.NewPrivilegedRoleChangeHandler(d.ident.privilegedRoleChange, sessions, d.logger)
@@ -653,6 +661,19 @@ func newRouter(d routerDeps) http.Handler {
 			tenant.Use(sessions.RequireCSRF)
 			tenant.Use(sessions.RequireTenantContext)
 			tenant.Use(ratelimit.Middleware(d.limiter, ratelimit.ScopedKey("api", tenantScope), apiRateLimit, d.logger))
+			tenant.Route("/admin", func(r chi.Router) {
+				r.Use(func(next http.Handler) http.Handler {
+					return http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+						w.Header().Set("Cache-Control", "no-store")
+						next.ServeHTTP(w, request)
+					})
+				})
+				tenantSettingsHandler.Routes(r, idempotency.Middleware(d.pool, idempotency.Options{
+					CommandCode: "tenant_settings.accommodation.update", Scope: idempotencyScope,
+					Logger: d.logger, HashHeaders: []string{"If-Match"},
+					BeforeStoredResult: tenantSettingsHandler.StoredResultGate,
+				}))
+			})
 			tenant.Route("/admin/users", func(r chi.Router) {
 				directoryHandler.Routes(r, idempotency.Middleware(d.pool, idempotency.Options{
 					CommandCode: "tenant_membership.suspend",

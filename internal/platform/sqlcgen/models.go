@@ -1845,6 +1845,20 @@ type PlatformTenantSetting struct {
 	IsSensitive bool
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+	RowVersion  int64
+}
+
+type PlatformTenantSettingCommandReceipt struct {
+	TenantID       uuid.UUID
+	ActorID        uuid.UUID
+	MembershipID   uuid.UUID
+	OperationCode  string
+	KeyHash        []byte
+	RequestHash    []byte
+	ResponseStatus int32
+	ResponseEtag   string
+	ResponseBody   []byte
+	CreatedAt      time.Time
 }
 
 type ProviderCapability struct {

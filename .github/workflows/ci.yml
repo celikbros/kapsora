@@ -226,6 +226,16 @@ jobs:
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
         run: go test -count=1 -v -timeout 30m ./db/tests/...
+      - name: tenant settings new-tenant grants and seed preservation
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: |
+          go test -count=1 -v -timeout 10m ./internal/identity/application -run '^TestProvisionTenantCreatesRolesCatalogsAndRefusesDuplicates$'
+          go test -count=1 -v -timeout 10m ./cmd/seed -run '^TestSeedAccommodationSettingsAreIdempotentAndReadBack$'
+      - name: tenant settings authority, receipt and booking consumer acceptance
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: go test -count=1 -v -timeout 30m ./internal/tenantsettings/...
       - name: tenant user directory authorization and HTTP integration
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable

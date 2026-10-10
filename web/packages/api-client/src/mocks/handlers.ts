@@ -9,6 +9,7 @@ import { accommodationHandlers } from './accommodation-handlers';
 import { adminHandlers, hasTenantUserPermission } from './admin-handlers';
 import { roleAssignmentHandlers } from './role-assignment-handlers';
 import { roleChangeHandlers } from './role-change-handlers';
+import { tenantSettingsHandlers } from './tenant-settings-handlers';
 import { invitationHandlers } from './invitation-handlers';
 import { MockInvitationState } from './invitation-state';
 import { lodgingTermsHandlers } from './lodging-terms-handlers';
@@ -146,6 +147,32 @@ export interface MockTenantMembership {
 /** Everything the handlers share; exported so tests can reset or inspect it. */
 export class MockApi {
   readonly invitations = new MockInvitationState();
+  readonly accommodationSettings = new Map<
+    string,
+    {
+      holdMinutes: {
+        value: number;
+        source: Schemas['TenantSettingInteger']['source'];
+        updatedAt: string | null;
+      };
+      quoteTtlMinutes: {
+        value: number;
+        source: Schemas['TenantSettingInteger']['source'];
+        updatedAt: string | null;
+      };
+      version: number;
+    }
+  >();
+  readonly tenantSettingsReceipts = new Map<
+    string,
+    {
+      fingerprint: string;
+      result: Schemas['AccommodationTenantSettings'];
+      etag: string;
+    }
+  >();
+  readonly tenantSettingsEvents: Array<{ tenantId: string; actorId: string; reasonCode: string }> =
+    [];
   world: MockWorld;
   session: MockSession | null = null;
   private tenantMemberships = new Map<string, MockTenantMembership>();
@@ -199,6 +226,9 @@ export class MockApi {
 
   reset(): void {
     this.invitations.reset();
+    this.accommodationSettings.clear();
+    this.tenantSettingsReceipts.clear();
+    this.tenantSettingsEvents.length = 0;
     this.world = buildWorld(this.options);
     this.session = null;
     this.idempotency.clear();
@@ -313,6 +343,13 @@ export class MockApi {
             (app === null || app === 'backoffice') &&
             hasTenantUserPermission(account, code, 'identity.user.read') &&
             hasTenantUserPermission(account, code, 'identity.role.manage'),
+          canReadTenantSettings:
+            (app === null || app === 'backoffice') &&
+            hasTenantUserPermission(account, code, 'platform.tenant_settings.read'),
+          canManageTenantSettings:
+            (app === null || app === 'backoffice') &&
+            hasTenantUserPermission(account, code, 'platform.tenant_settings.read') &&
+            hasTenantUserPermission(account, code, 'platform.tenant_settings.manage'),
           // The access grants that narrow the permissions above. A provider-side role is an
           // ORGANIZATION grant, and it is what every provider boundary in the API is read
           // from — there is no second, client-side rule that could disagree with it.
@@ -1737,6 +1774,7 @@ export function createHandlers(api: MockApi): HttpHandler[] {
     ...adminHandlers(api),
     ...roleAssignmentHandlers(api),
     ...roleChangeHandlers(api),
+    ...tenantSettingsHandlers(api),
     ...invitationHandlers(api),
     ...organizationHandlers,
     ...peopleHandlers,

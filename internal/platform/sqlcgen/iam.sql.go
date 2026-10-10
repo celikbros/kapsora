@@ -331,8 +331,9 @@ func (q *Queries) FindAccessGrant(ctx context.Context, arg FindAccessGrantParams
 }
 
 const findActiveMembership = `-- name: FindActiveMembership :one
-SELECT m.id, m.tenant_id, t.code, t.display_name, t.status, t.default_locale, t.default_time_zone
+SELECT m.id, m.tenant_id, t.code, t.display_name, t.status, t.default_locale, t.default_time_zone, a.actor_type
   FROM iam.tenant_membership m
+  JOIN iam.actor a ON a.id = m.actor_id
   JOIN platform.tenant t ON t.id = m.tenant_id
  WHERE m.actor_id = $1
    AND m.tenant_id = $2
@@ -354,6 +355,7 @@ type FindActiveMembershipRow struct {
 	Status          string
 	DefaultLocale   string
 	DefaultTimeZone string
+	ActorType       string
 }
 
 func (q *Queries) FindActiveMembership(ctx context.Context, arg FindActiveMembershipParams) (FindActiveMembershipRow, error) {
@@ -367,6 +369,7 @@ func (q *Queries) FindActiveMembership(ctx context.Context, arg FindActiveMember
 		&i.Status,
 		&i.DefaultLocale,
 		&i.DefaultTimeZone,
+		&i.ActorType,
 	)
 	return i, err
 }
@@ -574,8 +577,9 @@ func (q *Queries) ListGrantsForMembership(ctx context.Context, arg ListGrantsFor
 }
 
 const listMembershipsForActor = `-- name: ListMembershipsForActor :many
-SELECT m.id, m.tenant_id, t.code, t.display_name, t.status, t.default_locale, t.default_time_zone
+SELECT m.id, m.tenant_id, t.code, t.display_name, t.status, t.default_locale, t.default_time_zone, a.actor_type
   FROM iam.tenant_membership m
+  JOIN iam.actor a ON a.id = m.actor_id
   JOIN platform.tenant t ON t.id = m.tenant_id
  WHERE m.actor_id = $1
    AND m.membership_status = 'ACTIVE'
@@ -592,6 +596,7 @@ type ListMembershipsForActorRow struct {
 	Status          string
 	DefaultLocale   string
 	DefaultTimeZone string
+	ActorType       string
 }
 
 func (q *Queries) ListMembershipsForActor(ctx context.Context, actorID uuid.UUID) ([]ListMembershipsForActorRow, error) {
@@ -611,6 +616,7 @@ func (q *Queries) ListMembershipsForActor(ctx context.Context, actorID uuid.UUID
 			&i.Status,
 			&i.DefaultLocale,
 			&i.DefaultTimeZone,
+			&i.ActorType,
 		); err != nil {
 			return nil, err
 		}

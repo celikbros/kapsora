@@ -104,8 +104,9 @@ SELECT role.code, role.name, role.is_system_role, g.scope_type,
  ORDER BY role.code, lower(g.valid_period), g.id;
 
 -- name: FindActiveMembership :one
-SELECT m.id, m.tenant_id, t.code, t.display_name, t.status, t.default_locale, t.default_time_zone
+SELECT m.id, m.tenant_id, t.code, t.display_name, t.status, t.default_locale, t.default_time_zone, a.actor_type
   FROM iam.tenant_membership m
+  JOIN iam.actor a ON a.id = m.actor_id
   JOIN platform.tenant t ON t.id = m.tenant_id
  WHERE m.actor_id = $1
    AND m.tenant_id = $2
@@ -114,8 +115,9 @@ SELECT m.id, m.tenant_id, t.code, t.display_name, t.status, t.default_locale, t.
    AND t.status = 'ACTIVE';
 
 -- name: ListMembershipsForActor :many
-SELECT m.id, m.tenant_id, t.code, t.display_name, t.status, t.default_locale, t.default_time_zone
+SELECT m.id, m.tenant_id, t.code, t.display_name, t.status, t.default_locale, t.default_time_zone, a.actor_type
   FROM iam.tenant_membership m
+  JOIN iam.actor a ON a.id = m.actor_id
   JOIN platform.tenant t ON t.id = m.tenant_id
  WHERE m.actor_id = $1
    AND m.membership_status = 'ACTIVE'

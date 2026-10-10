@@ -946,6 +946,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/tenant-settings/accommodation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Read only the current tenant's two lodging timing settings, requiring current
+         *     TENANT-correlated settings read authority in backoffice or unrestricted app
+         *     context. Missing rows stay absent; invalid legacy values use documented defaults
+         *     without exposing raw or sensitive data or repairing configuration. The opaque
+         *     strong ETag includes admitted keys' presence and versions. Responses are no-store.
+         */
+        get: operations["getAccommodationTenantSettings"];
+        /**
+         * @description Atomically replace only the two admitted independent integer durations (1-1440
+         *     minutes). Requires current TENANT-correlated settings read and manage authority,
+         *     ACTIVE valid human membership and fresh password step-up on an ordinary local
+         *     session. Reject unknown/duplicate properties, nulls, booleans, strings, fractions
+         *     and overflow. Hold duration affects newly prepared holds unless contract terms
+         *     override it; persisted hold expiry is unchanged. Quote lifetime is read at
+         *     confirmation and affects already-held bookings awaiting confirmation.
+         *     Exact same-key retries return the original committed projection and ETag after
+         *     current authority is rechecked, even after an intervening change. A canonical
+         *     no-op records its replay result without setting/version/change-audit mutation.
+         *     Unsupported settings and privileged role snapshots are unchanged. Responses and
+         *     errors are no-store. Missing If-Match or fresh step-up is refused.
+         */
+        put: operations["setAccommodationTenantSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/users": {
         parameters: {
             query?: never;
@@ -6944,6 +6981,11 @@ export interface components {
             tenantDisplayName: string;
             /** Format: uuid */
             tenantId: string;
+        };
+        AccommodationTenantSettings: {
+            canManage: boolean;
+            holdMinutes: components["schemas"]["TenantSettingInteger"];
+            quoteTtlMinutes: components["schemas"]["TenantSettingInteger"];
         };
         AddWorkItemComment: {
             body: string;
@@ -13286,6 +13328,12 @@ export interface components {
             /** Format: date-time */
             stepUpExpiresAt: string | null;
         };
+        SetAccommodationTenantSettingsRequest: {
+            holdMinutes: number;
+            quoteTtlMinutes: number;
+            /** @enum {string} */
+            reasonCode: "OPERATING_REQUIREMENT" | "CORRECT_CONFIGURATION";
+        };
         /**
          * @description What the payer owes one provider for one decided icmal.
          *
@@ -13597,11 +13645,15 @@ export interface components {
             apps: ("backoffice" | "provider" | "member")[];
             /** @description True only when current TENANT grants correlate identity.user.read and identity.role.manage on this active membership in backoffice or unrestricted app context. */
             canManageTenantRoles?: boolean;
+            /** @description True for current TENANT-correlated read and manage settings authority on active human membership; commands additionally require fresh local-session password step-up. */
+            canManageTenantSettings?: boolean;
             /**
              * @description True only when identity.user.manage belongs to an active TENANT-scoped grant
              *     in this tenant and the request uses backoffice or unrestricted app context.
              */
             canManageTenantUsers?: boolean;
+            /** @description True for current TENANT-correlated platform.tenant_settings.read authority on active human membership in backoffice or unrestricted context. */
+            canReadTenantSettings?: boolean;
             /**
              * @description Server-computed Management Users capability. True only when identity.user.read
              *     belongs to an active TENANT-scoped grant in this tenant and the request uses
@@ -13691,6 +13743,18 @@ export interface components {
             membershipId: string;
             /** Format: int64 */
             membershipRowVersion: number;
+        };
+        TenantSettingInteger: {
+            defaultValue: number;
+            effectiveValue: number;
+            /** @constant */
+            maximum: 1440;
+            /** @constant */
+            minimum: 1;
+            /** @enum {string} */
+            source: "CONFIGURED" | "DEFAULT" | "INVALID_FALLBACK";
+            /** Format: date-time */
+            updatedAt: string | null;
         };
         TenantSummary: {
             code: string;
@@ -14320,6 +14384,7 @@ export type SchemaAcceptExistingInvitationRequest = components['schemas']['Accep
 export type SchemaAcceptExistingInvitationResponse = components['schemas']['AcceptExistingInvitationResponse'];
 export type SchemaAcceptNewInvitationRequest = components['schemas']['AcceptNewInvitationRequest'];
 export type SchemaAcceptNewInvitationResponse = components['schemas']['AcceptNewInvitationResponse'];
+export type SchemaAccommodationTenantSettings = components['schemas']['AccommodationTenantSettings'];
 export type SchemaAddWorkItemComment = components['schemas']['AddWorkItemComment'];
 export type SchemaApprovalPolicy = components['schemas']['ApprovalPolicy'];
 export type SchemaApprovalPolicyInput = components['schemas']['ApprovalPolicyInput'];
@@ -14792,6 +14857,7 @@ export type SchemaServiceRequestVersionStatus = components['schemas']['ServiceRe
 export type SchemaServiceRequestVersionSummary = components['schemas']['ServiceRequestVersionSummary'];
 export type SchemaServiceUnitType = components['schemas']['ServiceUnitType'];
 export type SchemaSessionInfo = components['schemas']['SessionInfo'];
+export type SchemaSetAccommodationTenantSettingsRequest = components['schemas']['SetAccommodationTenantSettingsRequest'];
 export type SchemaSettlement = components['schemas']['Settlement'];
 export type SchemaSettlementMethod = components['schemas']['SettlementMethod'];
 export type SchemaSettlementPage = components['schemas']['SettlementPage'];
@@ -14820,6 +14886,7 @@ export type SchemaTenantMembershipStatus = components['schemas']['TenantMembersh
 export type SchemaTenantRoleGrant = components['schemas']['TenantRoleGrant'];
 export type SchemaTenantRoleGrantPage = components['schemas']['TenantRoleGrantPage'];
 export type SchemaTenantRoleGrantResult = components['schemas']['TenantRoleGrantResult'];
+export type SchemaTenantSettingInteger = components['schemas']['TenantSettingInteger'];
 export type SchemaTenantSummary = components['schemas']['TenantSummary'];
 export type SchemaTenantUser = components['schemas']['TenantUser'];
 export type SchemaTenantUserDetail = components['schemas']['TenantUserDetail'];
@@ -16665,6 +16732,100 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+        };
+    };
+    getAccommodationTenantSettings: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Typed lodging timing settings */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccommodationTenantSettings"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    setAccommodationTenantSettings: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetAccommodationTenantSettingsRequest"];
+            };
+        };
+        responses: {
+            /** @description Typed lodging timing settings */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccommodationTenantSettings"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            /** @description Settings version is stale; explicit reload is required */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Only application/json requests are supported */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description Strong If-Match precondition is required */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listTenantUsers: {

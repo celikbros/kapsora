@@ -29,6 +29,7 @@ const pageSize = 50;
 export function AdminUsersPage() {
   const { t } = useTranslation();
   const canManageRoles = useSession((s) => s.activeTenant?.canManageTenantRoles === true);
+  const canReadSettings = useSession((s) => s.activeTenant?.canReadTenantSettings === true);
   const wide = useMinWidth(768);
   const [status, setStatus] = useState<TenantMembershipStatus | ''>('');
   const [cursors, setCursors] = useState<(string | null)[]>([null]);
@@ -81,6 +82,14 @@ export function AdminUsersPage() {
           className="text-primary mb-4 ml-4 inline-block text-sm font-medium hover:underline"
         >
           {t('roleChanges.queueTitle')} →
+        </Link>
+      )}
+      {canReadSettings && (
+        <Link
+          to="/admin/tenant-settings"
+          className="text-primary mb-4 ml-4 inline-block text-sm font-medium hover:underline"
+        >
+          {t('tenantSettings.title')} →
         </Link>
       )}
       <label className="mb-4 grid max-w-56 gap-1 text-sm">

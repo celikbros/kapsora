@@ -33,6 +33,7 @@ func RoleTemplates() []RoleTemplate {
 		{Code: "TENANT_ADMIN", Name: "Kurum Yöneticisi", Scope: ScopeTenant,
 			Description: "Kullanıcı, rol ve kurum ayarlarını yönetir; klinik veriye otomatik yetkisi yoktur.",
 			Permissions: []string{"identity.user.read", "identity.user.manage", "identity.role.manage", "identity.access_review",
+				"platform.tenant_settings.read", "platform.tenant_settings.manage",
 				"organization.read", "organization.manage", "program.read", "catalog.read", "provider.read", "contract.read",
 				"rule.read", "report.read", "audit.read", "notification.manage", "notification.read",
 				"integration.manage",

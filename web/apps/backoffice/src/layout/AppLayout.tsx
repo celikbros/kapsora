@@ -77,6 +77,7 @@ export function AppLayout() {
     active?.permissions ?? [],
     active?.canReadTenantUsers === true,
     active?.canManageTenantRoles === true,
+    active?.canReadTenantSettings === true,
   );
   const currentEntry = entries
     .filter((entry) =>

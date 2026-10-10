@@ -8,7 +8,9 @@ import {
 } from '@tanstack/react-router';
 import { AdjustmentQueuePage } from './adjustments/AdjustmentQueuePage';
 import { AdminAccess } from './admin/AdminAccess';
-import { AdminUsersPage } from './admin/AdminUsersPage';
+import { AdminLandingPage } from './admin/AdminLandingPage';
+import { TenantSettingsPage } from './admin/TenantSettingsPage';
+import { TenantSettingsAccess } from './admin/TenantSettingsAccess';
 import { AdminUserDetailPage } from './admin/AdminUserDetailPage';
 import { AdminInvitationsPage } from './admin/AdminInvitationsPage';
 import { AdminInvitationDetailPage } from './admin/AdminInvitationDetailPage';
@@ -657,10 +659,15 @@ const soonRoutes = SOON_PATHS.map((path) =>
 const adminUsersRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/admin',
+  component: AdminLandingPage,
+});
+const tenantSettingsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/admin/tenant-settings',
   component: () => (
-    <AdminAccess>
-      <AdminUsersPage />
-    </AdminAccess>
+    <TenantSettingsAccess>
+      <TenantSettingsPage />
+    </TenantSettingsAccess>
   ),
 });
 const adminUserDetailRoute = createRoute({
@@ -785,6 +792,7 @@ const routeTree = rootRoute.addChildren([
     billingExportsRoute,
     reportsRoute,
     adminUsersRoute,
+    tenantSettingsRoute,
     adminUserDetailRoute,
     adminInvitationsRoute,
     adminInvitationDetailRoute,

@@ -50,9 +50,43 @@ export type RoleChangeQuery = {
   status?: RoleChangeRequest['status'];
   membershipId?: string;
 };
+export type AccommodationTenantSettings = components['schemas']['AccommodationTenantSettings'];
+export type TenantSettingInteger = components['schemas']['TenantSettingInteger'];
+export type SetAccommodationTenantSettingsRequest =
+  components['schemas']['SetAccommodationTenantSettingsRequest'];
 
 export function adminOperations(client: KapsoraClient) {
   return {
+    async getAccommodationTenantSettings(
+      tenantId: string,
+    ): Promise<Versioned<AccommodationTenantSettings>> {
+      const result = await unwrap(
+        client.GET('/api/v1/admin/tenant-settings/accommodation', {
+          params: { header: { 'X-Tenant-ID': tenantId } },
+        }),
+      );
+      return versioned(result.data, result.response);
+    },
+    async setAccommodationTenantSettings(
+      tenantId: string,
+      body: SetAccommodationTenantSettingsRequest,
+      etag: string,
+      idempotencyKey: string,
+    ): Promise<Versioned<AccommodationTenantSettings>> {
+      const result = await unwrap(
+        client.PUT('/api/v1/admin/tenant-settings/accommodation', {
+          params: {
+            header: {
+              'X-Tenant-ID': tenantId,
+              'If-Match': etag,
+              'Idempotency-Key': idempotencyKey,
+            },
+          },
+          body,
+        }),
+      );
+      return versioned(result.data, result.response);
+    },
     async privilegedRoleOptions(tenantId: string): Promise<PrivilegedRoleAssignmentOption[]> {
       return (
         await unwrap(

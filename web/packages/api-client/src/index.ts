@@ -33,6 +33,9 @@ export type {
   RoleChangeRequestPage,
   RoleChangeCommandResult,
   RoleChangeQuery,
+  AccommodationTenantSettings,
+  TenantSettingInteger,
+  SetAccommodationTenantSettingsRequest,
 } from './admin';
 export type {
   CreateOrganizationRequest,

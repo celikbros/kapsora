@@ -40,7 +40,7 @@ func (r *AuthorizationRepository) FindActiveMembership(ctx context.Context, acto
 		if err != nil {
 			return fmt.Errorf("identity: find membership: %w", err)
 		}
-		out = application.Membership{ID: row.ID, Tenant: application.TenantSummary{
+		out = application.Membership{ID: row.ID, ActorType: identity.ActorType(row.ActorType), Tenant: application.TenantSummary{
 			ID: row.TenantID, Code: row.Code, DisplayName: row.DisplayName, Status: row.Status,
 			DefaultLocale: row.DefaultLocale, DefaultTimeZone: row.DefaultTimeZone,
 		}}
@@ -59,7 +59,7 @@ func (r *AuthorizationRepository) ListMemberships(ctx context.Context, actorID u
 		}
 		out = make([]application.Membership, 0, len(rows))
 		for _, row := range rows {
-			out = append(out, application.Membership{ID: row.ID, Tenant: application.TenantSummary{
+			out = append(out, application.Membership{ID: row.ID, ActorType: identity.ActorType(row.ActorType), Tenant: application.TenantSummary{
 				ID: row.TenantID, Code: row.Code, DisplayName: row.DisplayName, Status: row.Status,
 				DefaultLocale: row.DefaultLocale, DefaultTimeZone: row.DefaultTimeZone,
 			}})

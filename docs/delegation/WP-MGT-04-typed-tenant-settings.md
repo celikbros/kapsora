@@ -3,16 +3,16 @@
 | Field | Value |
 | --- | --- |
 | Milestone | Management, after MGT-03 acceptance |
-| Status | PLANNED; permission and setting-impact gate below precedes implementation |
+| Status | ACTIVE; owner approved section 3 scope on 2026-10-11 |
 | Planned | 2026-10-09, gpt-6-astra |
 | Reviewed | 2026-10-09, gpt-6-sol; permission and consumer gates retained |
 | Delivery | Named operational setting view and validated, auditable changes |
-| Migration number | Not allocated; integrator allocates in landing order |
+| Migration number | 000061, allocated by integrator for this package |
 
-This is a specification only. MGT-03B is implemented with isolated acceptance pending at
-planning time; this document does not accept it. No API, schema, permission, grant, local
-setting or running process is changed by preparing this package. Implement only after the
-integrator records the authorization decision in section 3 and assigns the migration.
+The scope and migration assignment are approved. Source implementation now follows the
+accepted decision in section 3. Isolated database acceptance, bounded local rollout and
+operator restart are delivery checkpoints; implementation does not itself establish live
+setting-command acceptance.
 
 ## 1. User outcome and bounded scope
 
@@ -80,6 +80,16 @@ explicit decision to defer the hold field. A settings UI must not quietly redefi
 published contract terms or fix booking semantics as an incidental change.
 
 ## 3. Permission and implementation gate
+
+**Accepted decision (2026-10-11):** the owner approved the concrete scope question:
+existing/new system TENANT_ADMIN receives only `platform.tenant_settings.read` and
+`.manage`; the two integer timing fields use 1-1440 minutes and direct password-step-up
+changes, with the existing pending-confirmation quote-lifetime effect acknowledged.
+The separately fixed contract hold precedence is retained. Migration 000061 is allocated.
+Implementation proceeds within sections 4-7; no other setting, role, clinical/financial
+policy or completed history is admitted. The proposed decision text below is the reviewed
+rationale, superseded by this accepted scope. Live setting mutations and synthetic
+acceptance remain separate from source implementation and the authorized template expansion.
 
 There is no safe permission-free read slice: even a read-only Management screen needs an
 explicit settings authority. Directory access alone cannot unlock it. This is the essential

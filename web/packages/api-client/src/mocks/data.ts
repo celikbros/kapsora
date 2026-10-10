@@ -1465,6 +1465,8 @@ const ADMIN_PERMISSIONS = [
   'identity.user.read',
   'identity.user.manage',
   'identity.role.manage',
+  'platform.tenant_settings.read',
+  'platform.tenant_settings.manage',
   'audit.read',
   'report.read',
   'integration.manage',
