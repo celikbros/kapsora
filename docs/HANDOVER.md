@@ -41,18 +41,35 @@ records the approved sequence and acceptance criteria.
 **Current snapshot (2026-10-10):** PC-01 through PC-04 are VERIFIED locally for their
 specified demo acceptance scopes. PC-05 remains ACTIVE: the financial journeys passed
 local technical acceptance; formal owner acceptance and retained scheduler checks remain
-open. PC-06 has passed live technical acceptance, with the same remaining gates. Schema 57
-is applied cleanly. Management now includes the directory, tenant-only suspension,
+open. PC-06 has passed live technical acceptance, with the same remaining gates. Schema 59
+is applied cleanly after explicit approval of migrations 58 and 59 (dirty=false).
+The API restart remains pending, so no post-restart live API acceptance is claimed.
+Management now includes the directory, tenant-only suspension,
 existing-account invitations and new-account invitation acceptance. B2 isolated database
 proof and all six code CI checks passed; bounded anonymous live checks await the operator
 restart, as recorded below. Bounded role assignment and revocation are implemented;
 isolated database acceptance passed on `e26bcc8`. Privileged role approval is authorized
-and has bounded isolated acceptance on `9893196`; local migration and live reads remain separate. PR #11 remains
-draft and unmerged. All six CI checks passed on
+and has bounded isolated acceptance on `9893196`; local migration is applied and live reads
+remain pending. PR #11 remains draft and unmerged. All six CI checks passed on
 calendar-preparation code head `5bb2349` ([run 37152681278](https://github.com/celikbros/kapsora/actions/runs/37152681278));
 current Management CI is tracked in PR #11's checks.
+The local migration checkpoint below records schema 59 and supersedes earlier pending-approval
+wording. It does not supersede the unresolved operator restart or penalty-cap business decision.
 This snapshot and the latest checkpoint below supersede dated next-step instructions in
 the historical evidence. Split-claim quantities still do not prove chronological coverage.
+
+**Local migration checkpoint (2026-10-10):** the owner explicitly approved migrations 58 and 59.
+The bounded `UpTo(59)` migration from schema 57 completed successfully; schema is 59,
+dirty=false. Migration 59 contains four nullable `numeric(20,6)` cancellation-effect fields
+and a validated all-or-none constraint; both IAM role-change tables are present. Before/after
+SHA-256 record snapshots matched for all 11 existing tables: accommodation.cancellation (4),
+iam.access_grant (17), iam.actor (15), iam.credential (15), iam.permission (105), iam.role (34),
+iam.role_permission (378), iam.session (52), iam.tenant_invitation (0),
+iam.tenant_invitation_create_receipt (0), and iam.tenant_membership (15). All four effect
+columns remain NULL on existing cancellations. No business commands, grants or history rewrites
+were performed. The running operator API process (PID 45580) was started 2026-10-09; its
+requested restart is pending. This is local schema evidence only, not live API acceptance or
+approval of the penalty cap.
 
 The first live health checkpoint passed: provider catalog access, single-enrollment
 eligibility, insufficient-quantity refusal, request submission, medical approval and the
@@ -1492,8 +1509,9 @@ original reservation deltas. Tenant/request/person/item/BOOKING provenance quali
 NIGHT evidence, while unprovable/legacy paths keep safe settlement without an invented
 projection. Frozen fees and penalty policy are unchanged; the three excessive-penalty
 diagnostics remain expected refusals. Migration 59 adds nullable cancellation evidence
-only, with no history backfill, no no-show change and no grants. Local schema remains 57;
-neither migration 58 nor 59 is locally approved/applied.
+only, with no history backfill, no no-show change and no grants. At this checkpoint, local
+schema was still 57 and migrations 58/59 were pending explicit approval; this status is
+historical and is superseded by the local migration checkpoint above.
 
 Local blank-database Go compilation/pure tests, scoped vet, frontend 80/80 focused tests,
 workspace typecheck/lint/build and additive contract checks passed. Local golangci-lint

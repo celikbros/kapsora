@@ -156,10 +156,24 @@ The schema preflight also passes fresh version 59, the bounded 57-to-58 IAM upgr
 append-only rejection of later update/delete. The older IAM test explicitly upgrades only
 to 58, retaining its original state-preservation assertion.
 
-Local schema remains 57. Applying migrations 58 and 59 locally requires the separate
-explicit migration approval; operator-owned processes are untouched. No cap, no-show
-effect, fee redistribution, settings authority or historical compensation is authorized
-by this independent reporting correction.
+**Historical migration status at this checkpoint:** local schema was 57 and migrations 58/59
+were awaiting separate approval. The later local migration checkpoint records their approved
+application; the operator API restart remains pending. No cap, no-show effect, fee redistribution,
+settings authority or historical compensation is authorized by this independent reporting correction.
+
+## Local migration checkpoint (2026-10-10)
+
+The owner explicitly approved local migrations 58 and 59. Bounded `UpTo(59)` from schema 57
+completed successfully; schema 59 is clean (`dirty=false`). Four nullable numeric(20,6)
+cancellation-effect columns and the validated all-or-none constraint are present, along with
+both IAM role-change tables. Before/after SHA-256 snapshots matched for all 11 existing tables:
+accommodation.cancellation (4), iam.access_grant (17), iam.actor (15), iam.credential (15),
+iam.permission (105), iam.role (34), iam.role_permission (378), iam.session (52),
+iam.tenant_invitation (0), iam.tenant_invitation_create_receipt (0), and iam.tenant_membership
+(15). Existing cancellation effects remain NULL. No business commands, grants or history rewrites
+were performed. Operator API process 45580 was started 2026-10-09; its requested restart remains
+pending, so this checkpoint makes no live API acceptance claim. The penalty-cap decision and
+MGT-04 settings approval remain unapproved.
 
 ## Conditional implementation design (Astra, reviewed by Sol, 2026-10-10)
 

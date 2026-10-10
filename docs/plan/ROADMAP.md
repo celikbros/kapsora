@@ -20,11 +20,14 @@ This snapshot supersedes dated next-step instructions in the historical status l
 PC-01 through PC-04 are VERIFIED locally within their defined demo scopes. PC-05 remains
 ACTIVE: its financial journeys passed local technical acceptance; formal owner acceptance
 and retained scheduler checks remain open. PC-06 has passed live technical acceptance,
-with the same remaining gates. Schema 57 is applied cleanly. Management's invitation
+with the same remaining gates. Schema 59 is applied cleanly after explicit local
+approval of migrations 58 and 59; dirty=false. The operator API restart remains pending,
+so no post-restart live API acceptance is claimed. Management's invitation
 onboarding has isolated database proof and all six code CI checks passed; bounded anonymous live checks are
 tracked in the checkpoint below. Bounded role assignment and revocation are implemented;
 isolated database acceptance passed on `e26bcc8`. Privileged role approval is authorized
-and has bounded isolated acceptance on `9893196`; local migration and live reads remain separate. PR #11 remains draft/unmerged;
+and has bounded isolated acceptance on `9893196`; local B migration is applied and live
+reads remain pending. PR #11 remains draft/unmerged;
 the recorded calendar-preparation CI baseline passed all six checks on `5bb2349`
 ([run 37152681278](https://github.com/celikbros/kapsora/actions/runs/37152681278)).
 The original PC demo review has technical acceptance. The follow-up checkout and handoff
@@ -32,6 +35,17 @@ corrections passed isolated acceptance; the reproduced partial-approval penalty 
 remains decision-gated, as recorded below. On 2026-10-04 the owner chose to advance the product rather than investigate an
 unidentified defect; Management starts as the separate sequence below. Integrations,
 production release and fiscal/bank-transfer acceptance remain separate.
+
+**Local migration checkpoint (2026-10-10):** migrations 58 and 59 were explicitly approved and
+applied with bounded `UpTo(59)` from schema 57. Schema is 59, dirty=false. Four nullable
+`numeric(20,6)` cancellation-effect columns and the validated all-or-none constraint are present;
+both IAM role-change tables are present. Before/after SHA-256 snapshots matched across all 11
+existing tables (accommodation.cancellation 4; IAM access_grant 17, actor 15, credential 15,
+permission 105, role 34, role_permission 378, session 52, tenant_invitation 0,
+tenant_invitation_create_receipt 0, tenant_membership 15). All four old cancellation effects
+remain NULL. No business commands, grants or history rewrites occurred. Operator API PID 45580
+was started 2026-10-09 and still awaits the requested restart; no live API acceptance is claimed.
+The penalty-cap decision and MGT-04 settings approval remain pending.
 
 ## Management completion sequence (2026-10-04)
 
@@ -43,8 +57,8 @@ administration commands. Existing organization CRUD remains its own delivered wo
 | Order | Stage | Current status | Result required |
 | --- | --- | --- | --- |
 | MGT-01 | Tenant user membership directory | VERIFIED; bounded live reads passed 2026-10-08 | Real list/filter/paging and membership detail with assigned-role validity; tenant-wide permission and strict data projection |
-| MGT-02 | Account onboarding and membership lifecycle | ACTIVE; B2 code CI passed and local schema 57 clean; bounded anonymous live check awaits restart | Explicit public command contracts, validation, scoped lifecycle effects and retry/audit behavior |
-| MGT-03 | Role assignment and revocation | ACTIVE; bounded A+B isolated acceptance passed; local B migration/live reads pending | Step-up, privileged maker-checker rules, scoped commands and recorded history |
+| MGT-02 | Account onboarding and membership lifecycle | ACTIVE; B2 code CI passed and local schema 59 clean; bounded anonymous live check awaits restart | Explicit public command contracts, validation, scoped lifecycle effects and retry/audit behavior |
+| MGT-03 | Role assignment and revocation | ACTIVE; bounded A+B isolated acceptance passed; local B migration applied; live reads pending | Step-up, privileged maker-checker rules, scoped commands and recorded history |
 | MGT-04 | Typed tenant settings | PLANNED; permission/impact gate retained; contract hold prerequisite fixed | Named supported settings and validated changes; no arbitrary JSON editor |
 
 **MGT-01 first delivery:** `GET /api/v1/admin/users` and membership-ID detail, opened from
@@ -264,12 +278,14 @@ is in the existing penalty decision note; the cap and no-show changes remain uni
 while the owner's business-rule decision is pending. The independent reporting correction
 below supersedes only the earlier cancellation-reporting status.
 
-The independent successful-cancellation reporting correction is implemented on `2504ff5`.
+**Historical at the time of this checkpoint:** the independent successful-cancellation
+reporting correction was implemented on `2504ff5`.
 At approved 0.5 service night/factor 2 it now shows 0.5 service night and one returned unit,
 instead of two original booked nights. Locked provenance and actual ledger deltas support
 the optional exact effect; fees, cap/refusal policy and no-show remain unchanged. Migration
-59 stores nullable cancellation evidence without historical backfill or grants. Local
-58/59 application still awaits explicit approval; local schema remains 57. Focused
+59 stores nullable cancellation evidence without historical backfill or grants. At that checkpoint, local
+58/59 application still awaited explicit approval and schema remained 57; the local
+migration checkpoint above supersedes that status. Focused
 frontend 80/80, blank-database Go compile/pure/vet, workspace typecheck/lint/build and
 additive contract checks passed. Ten fully intercepted synthetic views at 390/1440 had
 no overflow/errors, visible keyboard focus and resolved mobile toast/reload-copy findings;
