@@ -267,3 +267,5 @@ router regression reproduced the duplicate `/admin` mount startup panic. Correct
 no-store/idempotency/result-authorization behavior. Local API/settings transport tests,
 vet and build pass; independent Sol review found no blocker. Reload and live verification
 remain pending; the prior green module/CI tests did not test complete router construction.
+
+Follow-up source `34c31ff` passed all six jobs in [CI run 38102458276](https://github.com/celikbros/kapsora/actions/runs/38102458276), including the new complete-router regression and isolated cap/settings/accommodation checks. Secret-safe startup configuration checks pass. API 8090, MinIO 9000 and ClamAV 3310 remain unavailable; corrected-source reload and live GET/denial/write acceptance are still open. No live business command ran.

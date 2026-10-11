@@ -385,3 +385,7 @@ original response and replay proof; it does not resend expired uncertain hold/ca
 Later terminal reads can validate retained balances/ledger/inventory/claim, but unknown
 response identity remains pending. Neither checker changes template grants, tenant settings,
 frozen fees, accepted paid episodes or historical movements.
+
+### Source acceptance checkpoint
+
+All six jobs passed for `34c31ff` in [CI run 38102458276](https://github.com/celikbros/kapsora/actions/runs/38102458276): Go build/lint/unit, web lint/typecheck/unit/build/smoke, PostgreSQL 18 schema/acceptance, contracts, security and static binaries. Isolated PostgreSQL includes cap preflight/negative control, settings grants/seed/consumer acceptance and accommodation regressions. This is source acceptance; opt-in live cap commands did not run. Secret-safe API configuration checks pass, but API 8090, MinIO 9000 and ClamAV 3310 are unavailable. A read-only consumer query confirms DEMO_A late hours 24 and hotel timezone Europe/Istanbul, with no reusable HOLD/PENDING_APPROVAL/CONFIRMED booking in either demo tenant. The operator must restore the existing services before live testing; no new permission/policy approval is requested for the already-authorized bounded lodging scenario.

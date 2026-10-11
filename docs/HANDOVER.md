@@ -102,9 +102,14 @@ panic from duplicate `/admin` mounts. Commit `018e63d` mounts Management once an
 settings-only no-store middleware, command hashing and stored-result authorization intact.
 The router test checks liveness and settings/user/invitation/role routes without a listener
 or database. All local `cmd/api` and settings transport tests, vet and build pass;
-independent Sol review found no blocker. CI for this correction and the operator's reload
-of the corrected source remain separate checkpoints; the previous green CI did not cover
-complete production-router construction. Server start/stop remains operator-owned.
+independent Sol review found no blocker. All six jobs passed on source `34c31ff` in
+[CI run 38102458276](https://github.com/celikbros/kapsora/actions/runs/38102458276), including
+complete production-router construction, the opt-in checker static/smoke gates and isolated
+PostgreSQL cap/settings/accommodation acceptance. The previous green CI did not cover
+complete router construction. Operator reload and live proof remain open; start/stop
+remains operator-owned. A secret-safe configuration preflight confirms the API keys,
+object-store configuration and target port 8090; it opens no server. Fresh TCP checks
+found API 8090, MinIO 9000 and ClamAV 3310 unavailable.
 
 **Remaining lodging acceptance:** the original lodging journeys have live technical
 acceptance. The later approved partial-approval penalty cap still needs actual cancellation
@@ -114,7 +119,10 @@ published demo terms and existing actors; they retain a private fixture and orig
 command keys rather than recreate a booking after an uncertain response. Cancellation
 uses a 0.5-night approval under a one-night monetary policy; no-show uses 1.5 nights under
 a larger frozen policy and the genuine arrival window. Fees remain frozen. Zero-fee
-no-show cap proof cannot establish a fee-bearing no-show claim. No new booking, approval,
+no-show cap proof cannot establish a fee-bearing no-show claim. Read-only consumer loading
+confirms DEMO_A's effective late window is 24 hours and DEMO_OTEL's timezone is
+Europe/Istanbul; the server remains authoritative when the future command runs.
+No new booking, approval,
 fee claim, document, payment or setting change has run in this checkpoint.
 
 The two opt-in cap checkers are prepared and independently reviewed; TypeScript,
