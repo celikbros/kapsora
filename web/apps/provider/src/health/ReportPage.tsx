@@ -22,7 +22,7 @@ import {
   useToast,
 } from '@kapsora/ui';
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 import { DocumentsPanel } from '../documents';
 import { problemOf } from '../problems';
@@ -38,7 +38,15 @@ import { qty, reportTone, today } from './words';
 
 type ReportCommands = ReturnType<typeof useReportCommands>;
 
-function HeaderForm({ report, commands }: { report: MedicalReport; commands: ReportCommands }) {
+function HeaderForm({
+  report,
+  commands,
+  isCurrent,
+}: {
+  report: MedicalReport;
+  commands: ReportCommands;
+  isCurrent: () => boolean;
+}) {
   const { t } = useTranslation();
   const toast = useToast();
   const [type, setType] = useState(report.reportType ?? '');
@@ -69,7 +77,7 @@ function HeaderForm({ report, commands }: { report: MedicalReport; commands: Rep
           issuingPractitionerId: report.issuingPractitionerId ?? null,
         },
       });
-      toast.notify({ tone: 'success', title: t('health.reports.header.saved') });
+      if (isCurrent()) toast.notify({ tone: 'success', title: t('health.reports.header.saved') });
     } catch {
       // Rendered below.
     }
@@ -175,7 +183,15 @@ interface DraftService {
   notes: string;
 }
 
-function ServicesEditor({ report, commands }: { report: MedicalReport; commands: ReportCommands }) {
+function ServicesEditor({
+  report,
+  commands,
+  isCurrent,
+}: {
+  report: MedicalReport;
+  commands: ReportCommands;
+  isCurrent: () => boolean;
+}) {
   const { t } = useTranslation();
   const toast = useToast();
   const options = useServiceDefinitions();
@@ -201,7 +217,7 @@ function ServicesEditor({ report, commands }: { report: MedicalReport; commands:
     }));
     try {
       await commands.putServices.mutateAsync({ rowVersion: report.rowVersion, body: { items } });
-      toast.notify({ tone: 'success', title: t('health.reports.services.saved') });
+      if (isCurrent()) toast.notify({ tone: 'success', title: t('health.reports.services.saved') });
     } catch {
       // Rendered below.
     }
@@ -316,10 +332,22 @@ function ServicesEditor({ report, commands }: { report: MedicalReport; commands:
  * that stands beside the decided one rather than replacing it.
  */
 export function ReportPage() {
+  const { reportId } = useParams({ from: '/app/reports/$reportId' });
+  return <ReportDetail key={reportId} reportId={reportId} />;
+}
+
+function ReportDetail({ reportId }: { reportId: string }) {
   const { t } = useTranslation();
   const toast = useToast();
   const navigate = useNavigate();
-  const { reportId } = useParams({ from: '/app/reports/$reportId' });
+  const active = useRef(true);
+  useEffect(() => {
+    active.current = true;
+    return () => {
+      active.current = false;
+    };
+  }, []);
+  const isCurrent = () => active.current;
   const query = useReport(reportId);
   const canManage = usePermission('health.medical_report.manage');
   const commands = useReportCommands(reportId);
@@ -368,12 +396,14 @@ export function ReportPage() {
   async function run(action: 'submit' | 'cancel') {
     try {
       await commands[action].mutateAsync({ rowVersion: report.rowVersion });
-      toast.notify({
-        tone: 'success',
-        title: t(action === 'submit' ? 'health.reports.submitted' : 'health.reports.cancelled'),
-      });
+      if (isCurrent())
+        toast.notify({
+          tone: 'success',
+          title: t(action === 'submit' ? 'health.reports.submitted' : 'health.reports.cancelled'),
+        });
     } catch (err) {
-      toast.notify({ tone: 'danger', title: problemOf(err).title || t('problems.UNKNOWN') });
+      if (isCurrent())
+        toast.notify({ tone: 'danger', title: problemOf(err).title || t('problems.UNKNOWN') });
     }
   }
 
@@ -388,10 +418,12 @@ export function ReportPage() {
           ? { issuingProviderOrganizationId: report.issuingProviderOrganizationId }
           : {}),
       });
+      if (!isCurrent()) return;
       toast.notify({ tone: 'success', title: t('health.reports.correctionOpened') });
       await navigate({ to: '/reports/$reportId', params: { reportId: created.data.id } });
     } catch (err) {
-      toast.notify({ tone: 'danger', title: problemOf(err).title || t('problems.UNKNOWN') });
+      if (isCurrent())
+        toast.notify({ tone: 'danger', title: problemOf(err).title || t('problems.UNKNOWN') });
     }
   }
 
@@ -502,7 +534,12 @@ export function ReportPage() {
           <h2 className="text-base font-semibold">{t('health.reports.header.title')}</h2>
           {draft && canManage && clinical ? (
             <fieldset disabled={busy} aria-busy={busy} className="mt-3 min-w-0">
-              <HeaderForm report={report} commands={commands} />
+              <HeaderForm
+                key={`${report.id}:${report.rowVersion}`}
+                report={report}
+                commands={commands}
+                isCurrent={isCurrent}
+              />
             </fieldset>
           ) : (
             <dl className="mt-3 grid gap-x-6 gap-y-1 text-sm md:grid-cols-[minmax(0,12rem)_minmax(0,1fr)]">
@@ -541,7 +578,12 @@ export function ReportPage() {
           <p className="text-fg-muted mb-3 mt-1 text-sm">{t('health.reports.services.intro')}</p>
           {draft && canManage && clinical ? (
             <fieldset disabled={busy} aria-busy={busy} className="min-w-0">
-              <ServicesEditor key={report.rowVersion} report={report} commands={commands} />
+              <ServicesEditor
+                key={`${report.id}:${report.rowVersion}`}
+                report={report}
+                commands={commands}
+                isCurrent={isCurrent}
+              />
             </fieldset>
           ) : report.services.length === 0 ? (
             <p className="text-fg-muted text-sm">{t('health.reports.services.empty')}</p>

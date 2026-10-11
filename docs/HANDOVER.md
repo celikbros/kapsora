@@ -15,7 +15,8 @@ KAPSORA primarily orchestrates health entitlements and services. A payer (a bank
 or corporate sponsor) defines members' health rights; clinics and hospitals deliver care.
 Lodging and other benefits are secondary programs. The system checks eligibility, records
 requests, outpatient/inpatient care and claims, and settles with providers. Fiscal documents
-and accounting integration remain later work. It replaces spreadsheets, e-mail approval
+and accounting integration remain in the approved master plan; external integration acceptance
+remains outstanding. It replaces spreadsheets, e-mail approval
 chains and per-provider portals with one auditable record, with tenant isolation enforced
 in the database (Postgres RLS), not just in application code.
 
@@ -34,8 +35,9 @@ keep them current as you build.
 
 ## 2. Where things stand
 
-**Current owner priority: health is KAPSORA's primary purpose; finish and verify its user
-workflows first.** Lodging and other benefits remain secondary, while finance and
+**Standing product priority, confirmed 2026-10-11: health is KAPSORA's primary purpose; finish
+and verify its user workflows first.** This is the product's established purpose, not a newly
+introduced priority. Lodging and other benefits remain secondary, while finance and
 administration support health delivery. M8/M9 recovery and pilot work remain deferred by the
 owner.
 The [product completion roadmap](plan/ROADMAP.md#current-product-completion-roadmap-2026-09-22)
@@ -144,6 +146,34 @@ choices, zero diagnosis reads for financial projections, version retry and corre
 availability with zero business writes or document overflow. Selected captures were inspected.
 The complete provider suite passed 100/100 in 17 files and its production build passed.
 This is bounded UI safety, not a new clinical policy or calendar acceptance.
+
+All six CI jobs passed on source `8cef06c` in
+[CI run 38145458395](https://github.com/celikbros/kapsora/actions/runs/38145458395): 802 unit
+tests in 101 files and 25 mock browser tests passed; 111 opt-in live/calendar cases skipped.
+Those skips are not live acceptance.
+
+**Inpatient and medical report draft isolation (2026-10-11):** a stay now owns its segment
+drafts and extension/discharge/cancellation forms. Cached navigation between stays with
+equal row versions cannot carry the previous stay's inputs into the new stay's command.
+A refreshed status or version closes an outdated command form; a fresh eligible action
+must be opened explicitly. Late completion from the previous stay does not close the
+current form or announce that earlier stay's result.
+
+Medical report content is also keyed by report identity, including header, service coverage
+and document form state. Cached navigation resets drafts even when row versions match.
+Late report command feedback and correction navigation are suppressed after leaving the
+source report, including leaving the report route entirely. Normal save and correction
+feedback remain available. These changes preserve the existing clinical, authorization,
+entitlement and API contracts; no live clinical write is evidence for this checkpoint.
+
+Astra scoped both defects and Sol implemented and independently reviewed them. The three
+stay and five report safety regressions pass; the two initial stay regressions and both
+cached-report navigation cases fail against the original components. Delayed-result tests
+wait for the mutation to settle before checking the new screen. Provider typecheck and
+scoped lint/format pass. Intercepted browser checks at 390/1440 verified same-document
+cached navigation, isolated drafts and stay-dialog invalidation/reopening, with no business
+writes or document overflow. Selected captures were manually inspected under PRODUCT/DESIGN.
+The complete provider suite passed 108/108 in 19 files, and its production build passed.
 
 **MGT-03B positive distinct-checker acceptance (2026-10-11):** the explicitly authorized
 single DEMO_B positive checker case passed 1/1 in about 1.4 seconds. Separately, the new

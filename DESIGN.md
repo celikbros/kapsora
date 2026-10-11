@@ -453,6 +453,18 @@ editor explicitly. A case change resets local forms and diagnosis choices, and a
 choices are limited to encounters on that case. A financial projection makes no diagnosis
 read or clinical editor available.
 
+**A stay owns its drafts and command forms.** Navigating to another stay resets segment
+edits and extension, discharge and cancellation forms, even when both records have the
+same version number. A refreshed status or version closes an outdated form; becoming
+eligible again does not reopen it. A permitted action starts a fresh form, and a delayed
+completion from an earlier stay does not close the current form or display its success.
+
+**Report drafts belong to one report.** Moving between reports resets the header, service
+coverage and document forms, including cached reports with equal version numbers. Pending
+report commands retain their original target. After leaving a report, a late report command
+result does not display that report's feedback or navigate to its correction over the
+current record.
+
 **Report correction depends on known history.** Version history has loading and retryable
 error states, preserving known versions on a failed refresh. Correction requires a successful,
 idle history read and the existing permission, clinical projection, status and later-version

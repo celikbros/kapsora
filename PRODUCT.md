@@ -68,6 +68,16 @@ A fresh read or a case change closes the old editor, and a successful save leave
 Case navigation clears local forms and diagnosis choices; admission choices belong only to
 the current case. Financial projections do not request or offer clinical diagnoses.
 
+Inpatient segment drafts and extension, discharge and cancellation forms belong to the
+selected stay. Changing stays clears those drafts; refreshed status or version changes
+close an outdated command form. Staff explicitly reopen an eligible action on the current
+record, and a delayed result from a previous stay does not change the new stay's form.
+
+Medical report navigation also clears the previous report's header, service coverage and
+document form drafts. A correction response may open its new version only while staff are
+still viewing the report they corrected; a late response does not move them away from
+another report.
+
 Report version history shows loading and retryable errors while retaining known versions.
 A correction is offered only after a successful, settled history read establishes that no
 later version exists, under the existing clinical/status/permission rules.
