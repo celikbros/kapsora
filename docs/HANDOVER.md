@@ -11,13 +11,13 @@ working on this codebase as if you had built it. Read it once, fully, before tou
 
 ## 1. What this is
 
-KAPSORA is an entitlement/benefit orchestration platform. A payer (a bank, insurer, or
-corporate sponsor) defines what its members are entitled to — health sessions, lodging
-nights, allowances. Providers (hospitals, clinics, hotels) deliver those services. The system
-checks eligibility, records requests and claims, settles with providers, and (eventually)
-issues fiscal documents and posts to an accounting ledger. It replaces spreadsheets, e-mail
-approval chains, and per-provider portals with one auditable record, with tenant isolation
-enforced in the database (Postgres RLS), not just in application code.
+KAPSORA primarily orchestrates health entitlements and services. A payer (a bank, insurer,
+or corporate sponsor) defines members' health rights; clinics and hospitals deliver care.
+Lodging and other benefits are secondary programs. The system checks eligibility, records
+requests, outpatient/inpatient care and claims, and settles with providers. Fiscal documents
+and accounting integration remain later work. It replaces spreadsheets, e-mail approval
+chains and per-provider portals with one auditable record, with tenant isolation enforced
+in the database (Postgres RLS), not just in application code.
 
 Three people use it, each in their own app, behind one API:
 
@@ -102,10 +102,22 @@ checks at 390/1440 passed paging, retry, deduplication, filter reset and documen
 checks with zero business writes. Selected captures were inspected manually. This is
 bounded UI acceptance, not a new clinical business-flow or calendar acceptance.
 
-**Active next health correction:** the provider case page currently renders failed report
-or inpatient-stay reads as empty lists, and may offer admission after a failed stay lookup.
-Correct chapter errors/retry and suppress admission until a successful lookup establishes
-no open stay. This correction is in progress and remains unverified.
+**Provider hospital case read failures (2026-10-11):** report, inpatient-stay and permitted
+claim chapters show their own error and retry instead of treating a failed read as empty.
+Cached rows remain visible after a failed refresh. Admission requires a successful, idle
+stay lookup with no open stay; a form tied to an older read cannot silently reappear after
+recovery or a case change. Restricted claim readers still make no claim read and receive no
+retry control. Existing close and claim-create rules remain unchanged.
+
+Astra scoped the defect and Sol implemented and independently reviewed it. Four focused
+regressions pass, including initial error/recovery, retained rows, restricted claim reads
+and interrupted admission-form recovery. Provider typecheck, scoped lint/format pass.
+Synthetic browser checks at 390/1440 covered all three failed chapters and successful retries
+with no false empty state, admission while stay state was unknown, document overflow or
+business writes. Selected captures were inspected. This is bounded UI evidence, not a new
+clinical episode, policy decision or calendar acceptance. The complete local web suite
+passed 794/794 in 99 files; the separate provider suite passed 92/92 in 15 files, and the
+final read guard passed its focused 4/4 regressions. The provider production build passed.
 
 **MGT-03B positive distinct-checker acceptance (2026-10-11):** the explicitly authorized
 single DEMO_B positive checker case passed 1/1 in about 1.4 seconds. Separately, the new

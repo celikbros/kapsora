@@ -54,8 +54,13 @@ and export requests. Requesting or downloading exports remains a separate permis
 
 Long provider hospital case lists, lodging arrival and departure lists, member booking
 history, and backoffice medical report review lists let people request older records as
-needed. If an older page cannot be loaded,
-the records already shown remain available and the page can be retried.
+needed. If an older page cannot be loaded, the records already shown remain available and
+the page can be retried.
+
+A hospital case shows report, inpatient-stay and permitted claim read failures in their own
+chapters with retry. Loaded records remain visible after a failed refresh. Admission is
+available only after a successful stay read establishes no open stay; an interrupted
+admission form stays closed when the lookup recovers, until staff explicitly reopen it.
 
 The member home names the next stay or says there is no planned stay when its booking results
 are complete. When older bookings remain to be read, it gives neutral guidance and a direct

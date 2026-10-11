@@ -439,7 +439,10 @@ export function CasePage() {
   const [adding, setAdding] = useState(false);
   const [ending, setEnding] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
-  const [admitting, setAdmitting] = useState(false);
+  const [admissionReadAtOpen, setAdmissionReadAtOpen] = useState<{
+    caseId: string;
+    updatedAt: number;
+  } | null>(null);
   const [creatingReport, setCreatingReport] = useState(false);
   const [closing, setClosing] = useState(false);
   const [byEncounter, setByEncounter] = useState<Record<string, Diagnosis[]>>({});
@@ -473,6 +476,11 @@ export function CasePage() {
   const endingEncounter = record.encounters.find((e) => e.id === ending && !e.endedAt);
   const diagnoses = Object.values(byEncounter).flat();
   const openStay = (stays.data?.items ?? []).find((s) => OPEN_STAY.has(s.status));
+  const canStartAdmission = stays.isSuccess && !stays.isFetching && !openStay;
+  const admitting =
+    canStartAdmission &&
+    admissionReadAtOpen?.caseId === caseId &&
+    admissionReadAtOpen.updatedAt === stays.dataUpdatedAt;
   // The chapter headers carry the chapter's state: the newest report's status, the open
   // stay's status, how many claims are still moving. A case with an open stay and a
   // returned claim must not look like an empty one from the first viewport.
@@ -609,7 +617,7 @@ export function CasePage() {
           <DocumentsPanel aggregateType="HEALTH_CASE" aggregateId={record.id} readOnly={!open} />
         </Card>
 
-        <Card>
+        <Card data-testid="case-reports-chapter">
           <div className="flex flex-wrap items-center justify-between gap-2">
             {/* The mark and the badge sit beside the heading, not inside it: neither is its name. */}
             <div className="flex flex-wrap items-baseline gap-2">
@@ -627,9 +635,23 @@ export function CasePage() {
               </Button>
             ) : null}
           </div>
+          {reports.error ? (
+            <div className="mt-2 grid gap-2">
+              <ProblemAlert problem={problemOf(reports.error)} />
+              <Button
+                size="sm"
+                variant="secondary"
+                loading={reports.isFetching}
+                disabled={reports.isFetching}
+                onClick={() => void reports.refetch()}
+              >
+                {t('common.retry')}
+              </Button>
+            </div>
+          ) : null}
           {reports.isPending ? (
             <p className="text-fg-muted mt-2 text-sm">{t('common.loading')}</p>
-          ) : (reports.data?.items.length ?? 0) === 0 ? (
+          ) : !reports.data ? null : reports.data.items.length === 0 ? (
             <p className="text-fg-muted mt-2 text-sm">{t('health.reports.empty')}</p>
           ) : (
             <div className="mt-3">
@@ -680,7 +702,7 @@ export function CasePage() {
           ) : null}
         </Card>
 
-        <Card>
+        <Card data-testid="case-stays-chapter">
           <div className="flex flex-wrap items-center justify-between gap-2">
             {/* The mark and the badge sit beside the heading, not inside it: neither is its name. */}
             <div className="flex flex-wrap items-baseline gap-2">
@@ -698,15 +720,33 @@ export function CasePage() {
                   {t('health.case.sections.stayOpen')}
                 </Button>
               </Link>
-            ) : open && canManage && !admitting && !stays.isPending ? (
-              <Button size="sm" variant="secondary" onClick={() => setAdmitting(true)}>
+            ) : open && canManage && !admitting && canStartAdmission ? (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setAdmissionReadAtOpen({ caseId, updatedAt: stays.dataUpdatedAt })}
+              >
                 {t('health.stays.admit')}
               </Button>
             ) : null}
           </div>
+          {stays.error ? (
+            <div className="mt-2 grid gap-2">
+              <ProblemAlert problem={problemOf(stays.error)} />
+              <Button
+                size="sm"
+                variant="secondary"
+                loading={stays.isFetching}
+                disabled={stays.isFetching}
+                onClick={() => void stays.refetch()}
+              >
+                {t('common.retry')}
+              </Button>
+            </div>
+          ) : null}
           {stays.isPending ? (
             <p className="text-fg-muted mt-2 text-sm">{t('common.loading')}</p>
-          ) : (stays.data?.items.length ?? 0) === 0 ? (
+          ) : !stays.data ? null : stays.data.items.length === 0 ? (
             <p className="text-fg-muted mt-2 text-sm">{t('health.stays.empty')}</p>
           ) : (
             <div className="mt-3">
@@ -746,12 +786,12 @@ export function CasePage() {
               </Table>
             </div>
           )}
-          {admitting ? (
+          {admitting && canStartAdmission ? (
             <AdmitForm
               record={record}
               diagnoses={diagnoses}
               onDone={(stayId) => {
-                setAdmitting(false);
+                setAdmissionReadAtOpen(null);
                 void navigate({ to: '/stays/$stayId', params: { stayId } });
               }}
             />
@@ -774,11 +814,25 @@ export function CasePage() {
               </Link>
             ) : null}
           </div>
+          {canReadClaims && claims.error ? (
+            <div className="mt-2 grid gap-2">
+              <ProblemAlert problem={problemOf(claims.error)} />
+              <Button
+                size="sm"
+                variant="secondary"
+                loading={claims.isFetching}
+                disabled={claims.isFetching}
+                onClick={() => void claims.refetch()}
+              >
+                {t('common.retry')}
+              </Button>
+            </div>
+          ) : null}
           {!canReadClaims ? (
             <p className="text-fg-muted mt-2 text-sm">{t('health.case.claimsRestricted')}</p>
           ) : claims.isPending ? (
             <p className="text-fg-muted mt-2 text-sm">{t('common.loading')}</p>
-          ) : (claims.data?.items.length ?? 0) === 0 ? (
+          ) : !claims.data ? null : claims.data.items.length === 0 ? (
             <p className="text-fg-muted mt-2 text-sm">{t('claims.empty')}</p>
           ) : (
             <div className="mt-3">

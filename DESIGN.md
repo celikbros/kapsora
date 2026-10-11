@@ -436,9 +436,15 @@ rows, and rows are what the work is.
 **Older rows arrive on request, and a failed page leaves the list usable.** Provider lodging
 arrivals and departures load older rows in groups of 100. Provider hospital cases, member
 booking history and backoffice medical report review lists load them in groups of 50;
-changing a status filter starts that list
-again from its first page. If a later page fails, keep the loaded rows and offer that page for
-retry. A partially loaded list is not an empty list.
+changing a status filter starts that list again from its first page. If a later page fails,
+keep the loaded rows and offer that page for retry. A partially loaded list is not an empty
+list.
+
+**A failed chapter read is not an empty chapter.** Hospital case report, inpatient-stay and
+permitted claim chapters show their own error and retry. A failed refresh preserves already
+loaded rows. Admission requires a successful, settled stay lookup with no open stay; failure
+or a fresh lookup closes an open admission form, and recovery does not reopen it silently.
+The restricted claim chapter remains restricted without a read or retry control.
 
 **The member home only names a next stay when its booking result is complete.** If older
 bookings remain, the card uses the neutral booking-list heading, explains that the full booking
