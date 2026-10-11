@@ -49,8 +49,13 @@ export function SearchPage() {
   const [form, setForm] = useState<SearchForm>(EMPTY);
   const [chosen, setChosen] = useState<AvailabilityRoomTypeResult | null>(null);
 
-  const set = (key: keyof SearchForm) => (value: string) =>
+  const set = (key: keyof SearchForm) => (value: string) => {
+    // A quote belongs to the complete search, including occupancy. Reset also
+    // detaches an in-flight result so an older reply cannot restore bookable rooms.
+    search.reset();
+    setChosen(null);
     setForm((f) => ({ ...f, [key]: value }));
+  };
 
   const regions = Array.from(
     new Set(

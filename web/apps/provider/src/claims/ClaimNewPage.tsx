@@ -1,3 +1,4 @@
+import type { components } from '@kapsora/api-client';
 import { formatDate, useTranslation } from '@kapsora/i18n';
 import {
   Breadcrumb,
@@ -8,183 +9,290 @@ import {
   Input,
   PageHeader,
   ProblemAlert,
+  Select,
   Spinner,
-  useToast,
 } from '@kapsora/ui';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 
-import { useCase, usePersonName } from '../health/queries';
-import { today } from '../health/words';
 import { problemOf } from '../problems';
-import { useProviderOrganizationId } from '../queries';
-import { LinesEditor, emptyLine, linesValid, toNewLines, type DraftLine } from './LinesEditor';
-import { useCreateClaim } from './queries';
+import { claimDecimal, validClaimDecimal } from './numbers';
+import { useCaseSource, useCaseSources, useCreateFromCase } from './queries';
 
-/**
- * A new claim, from a case. The case is what tells the claim whose it is and under which
- * plan and program: a provider may not list a member's enrollments or programs, so a claim
- * with no case would have nothing to stand on. Nothing here is priced: the draft carries
- * what the provider asks and the server answers on submit.
- */
+type Detail = components['schemas']['ClaimCaseSourceDetail'];
+type Body = components['schemas']['CreateClaimFromCase'];
+
+/** Financial handoff: service choices come from the scoped episode, not the clinical API. */
 export function ClaimNewPage() {
   const { t } = useTranslation();
-  const toast = useToast();
-  const navigate = useNavigate();
   const search = useSearch({ from: '/app/claims/new' });
-  const providerOrganizationId = useProviderOrganizationId();
-  const fromCase = useCase(search.caseId ?? '');
-  const record = fromCase.data?.data ?? null;
-  const personName = usePersonName(record?.personId);
-  const create = useCreateClaim();
-
-  const [from, setFrom] = useState(today());
-  const [to, setTo] = useState(today());
-  const [lines, setLines] = useState<DraftLine[]>([emptyLine()]);
-
-  const ready =
-    record !== null &&
-    providerOrganizationId !== null &&
-    from !== '' &&
-    to !== '' &&
-    linesValid(lines);
-
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    if (!ready || !record || !providerOrganizationId) return;
-    try {
-      const created = await create.mutateAsync({
-        personId: record.personId,
-        enrollmentId: record.enrollmentId,
-        programId: record.programId,
-        providerOrganizationId,
-        serviceDateFrom: from,
-        serviceDateTo: to,
-        channel: 'PROVIDER_PORTAL',
-        caseId: record.id,
-        lines: toNewLines(lines),
-      });
-      toast.notify({ tone: 'success', title: t('claims.create.created') });
-      await navigate({ to: '/claims/$claimId', params: { claimId: created.data.id } });
-    } catch {
-      // Rendered below.
-    }
-  }
-
-  const header = (
-    <PageHeader
-      title={t('claims.create.title')}
-      description={t('claims.create.intro')}
-      breadcrumb={
-        <Breadcrumb
-          items={[
-            { label: t('claims.title'), render: (label) => <Link to="/claims">{label}</Link> },
-            { label: t('claims.create.title') },
-          ]}
-        />
-      }
-    />
-  );
-
-  if (!search.caseId) {
-    return (
-      <>
-        {header}
-        <EmptyState
-          title={t('claims.create.needsCase')}
-          description={t('claims.create.needsCaseHint')}
-          action={
-            <Link to="/cases">
-              <Button size="sm">{t('claims.create.chooseCase')}</Button>
-            </Link>
-          }
-        />
-      </>
-    );
-  }
-  if (fromCase.isPending) {
-    return (
-      <>
-        {header}
-        <div className="text-fg-muted flex items-center gap-2 p-6 text-sm" aria-busy="true">
-          <Spinner /> {t('common.loading')}
-        </div>
-      </>
-    );
-  }
-  if (fromCase.error || !record) {
-    return (
-      <>
-        {header}
-        <ProblemAlert problem={problemOf(fromCase.error)} />
-      </>
-    );
-  }
-
+  const [selected, setSelected] = useState(search.caseId ?? '');
+  const [locked, setLocked] = useState(false);
+  const sources = useCaseSources();
+  const source = useCaseSource(selected);
+  const rows = sources.data?.pages.flatMap((p) => p.items) ?? [];
+  const selectedSource = source.data?.data.source;
+  const choices =
+    selectedSource && !rows.some((r) => r.caseId === selectedSource.caseId)
+      ? [selectedSource, ...rows]
+      : rows;
   return (
     <>
-      {header}
-      <form onSubmit={(e) => void submit(e)} className="grid gap-4" noValidate>
+      <PageHeader
+        title={t('claims.create.title')}
+        description={t('claims.handoff.intro')}
+        breadcrumb={
+          <Breadcrumb
+            items={[
+              { label: t('claims.title'), render: (label) => <Link to="/claims">{label}</Link> },
+              { label: t('claims.create.title') },
+            ]}
+          />
+        }
+      />
+      <div className="grid max-w-4xl gap-4">
         <Card>
-          <div className="grid gap-4 md:grid-cols-2">
-            <p className="bg-info-soft text-fg rounded-md p-3 text-sm md:col-span-2" role="status">
-              {t('claims.create.fromCase')}:{' '}
-              <Link
-                to="/cases/$caseId"
-                params={{ caseId: record.id }}
-                className="underline underline-offset-2"
-              >
-                {t(`health.caseType.${record.caseType}`)} · {formatDate(record.openedAt)}
-              </Link>
+          <FormField label={t('claims.handoff.case')} hint={t('claims.handoff.caseHint')}>
+            <Select
+              name="caseSource"
+              value={selected}
+              disabled={locked || sources.isPending}
+              onChange={(e) => setSelected(e.target.value)}
+              placeholder={t('claims.handoff.choose')}
+              options={choices.map((r) => ({
+                value: r.caseId,
+                label: `${r.personDisplayName} · ${r.requestReference} · ${formatDate(r.serviceDate)}`,
+              }))}
+            />
+          </FormField>
+          {sources.isPending ? (
+            <p role="status" className="mt-3 flex items-center gap-2 text-sm">
+              <Spinner />
+              {t('common.loading')}
             </p>
-            <FormField label={t('claims.create.member')}>
-              <Input
-                name="member"
-                value={personName === undefined ? '…' : (personName ?? '—')}
-                readOnly
-              />
-            </FormField>
-            <div className="hidden md:block" />
-            <FormField
-              label={t('claims.create.serviceDateFrom')}
-              required
-              requiredLabel={t('common.requiredMark')}
+          ) : null}
+          {sources.error ? (
+            <div className="mt-3">
+              <ProblemAlert problem={problemOf(sources.error)} />
+              <Button variant="secondary" onClick={() => void sources.refetch()}>
+                {t('common.retry')}
+              </Button>
+            </div>
+          ) : null}
+          {sources.hasNextPage ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={locked}
+              loading={sources.isFetchingNextPage}
+              onClick={() => void sources.fetchNextPage()}
             >
-              <Input
-                name="serviceDateFrom"
-                type="date"
-                value={from}
-                onChange={(e) => setFrom(e.target.value)}
-              />
-            </FormField>
-            <FormField
-              label={t('claims.create.serviceDateTo')}
-              required
-              requiredLabel={t('common.requiredMark')}
-            >
-              <Input
-                name="serviceDateTo"
-                type="date"
-                value={to}
-                onChange={(e) => setTo(e.target.value)}
-              />
-            </FormField>
-          </div>
-        </Card>
-        <Card>
-          <h2 className="text-base font-semibold">{t('claims.lines.title')}</h2>
-          <p className="text-fg-muted mb-3 mt-1 text-sm">{t('claims.lines.intro')}</p>
-          <LinesEditor lines={lines} onChange={setLines} />
-        </Card>
-        <ProblemAlert problem={create.error ? problemOf(create.error) : null} />
-        {ready ? (
-          <div>
-            <Button type="submit" loading={create.isPending}>
-              {t('claims.create.submit')}
+              {t('claims.handoff.more')}
             </Button>
-          </div>
+          ) : null}
+        </Card>
+        {!sources.isPending && !sources.error && rows.length === 0 && !selected ? (
+          <EmptyState
+            title={t('claims.handoff.empty')}
+            description={t('claims.handoff.emptyHint')}
+          />
         ) : null}
-      </form>
+        {selected && source.isPending ? (
+          <p role="status" className="flex items-center gap-2 text-sm">
+            <Spinner />
+            {t('common.loading')}
+          </p>
+        ) : null}
+        {selected && source.error ? (
+          <Card>
+            <ProblemAlert problem={problemOf(source.error)} />
+            <Button variant="secondary" onClick={() => void source.refetch()}>
+              {t('common.retry')}
+            </Button>
+          </Card>
+        ) : null}
+        {source.data && !source.error ? (
+          <Charges
+            key={`${selected}:${source.data.etag}`}
+            detail={source.data.data}
+            etag={source.data.etag}
+            onLock={setLocked}
+            onReload={async () => {
+              await source.refetch();
+              setLocked(false);
+            }}
+          />
+        ) : null}
+      </div>
     </>
+  );
+}
+
+function Charges({
+  detail,
+  etag,
+  onLock,
+  onReload,
+}: {
+  detail: Detail;
+  etag: string;
+  onLock: (locked: boolean) => void;
+  onReload: () => Promise<void>;
+}) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const create = useCreateFromCase();
+  const [lines, setLines] = useState<Body['lines']>(() =>
+    detail.lines.map((line) => ({
+      serviceDefinitionId: line.serviceDefinitionId,
+      quantity: line.quantity,
+      lineAmount: '',
+    })),
+  );
+  const attempt = useRef<{ body: Body; etag: string; key: string } | null>(null);
+  const pending = useRef(false);
+  const [frozen, setFrozen] = useState(false);
+  const valid =
+    lines.length > 0 &&
+    lines.every(
+      (line) => validClaimDecimal(line.quantity, true) && validClaimDecimal(line.lineAmount),
+    );
+  const issue = create.error ? problemOf(create.error) : null;
+  const definiteRefusal =
+    issue &&
+    issue.status >= 400 &&
+    issue.status < 500 &&
+    ![408, 429].includes(issue.status) &&
+    issue.code !== 'IDEMPOTENCY_IN_PROGRESS';
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    if (pending.current || (!valid && !attempt.current)) return;
+    attempt.current ??= {
+      body: {
+        lines: lines.map((line) => ({
+          ...line,
+          quantity: claimDecimal(line.quantity),
+          lineAmount: claimDecimal(line.lineAmount),
+        })),
+      },
+      etag,
+      key: crypto.randomUUID(),
+    };
+    pending.current = true;
+    setFrozen(true);
+    onLock(true);
+    try {
+      const created = await create.mutateAsync({
+        caseId: detail.source.caseId,
+        ...attempt.current,
+      });
+      await navigate({ to: '/claims/$claimId', params: { claimId: created.data.id } });
+    } catch {
+      // Uncertain retries retain the exact body, version and key in this form only.
+    } finally {
+      pending.current = false;
+    }
+  }
+  async function reopen() {
+    await onReload();
+    attempt.current = null;
+    setFrozen(false);
+    onLock(false);
+    create.reset();
+  }
+  return (
+    <form onSubmit={(e) => void submit(e)} className="grid gap-4" data-testid="case-claim-form">
+      <Card>
+        <h2 className="text-base font-semibold">{t('claims.handoff.charges')}</h2>
+        <p className="text-fg-muted mb-4 mt-1 text-sm">
+          {t('claims.handoff.date', { date: formatDate(detail.source.serviceDate) })}
+        </p>
+        <div className="grid gap-4">
+          {detail.lines.map((line, index) => (
+            <div
+              key={line.serviceDefinitionId}
+              className="grid gap-3 border-t pt-4 sm:grid-cols-[minmax(0,1fr)_8rem_12rem]"
+            >
+              <div>
+                <p className="font-medium">{line.serviceName}</p>
+                <p className="text-fg-muted mt-1 text-sm">
+                  {t('claims.handoff.reserved', {
+                    quantity: line.quantity,
+                    unit: t(`units.${line.unitType}`),
+                  })}
+                </p>
+              </div>
+              <FormField
+                label={t('claims.lines.quantity')}
+                error={
+                  !validClaimDecimal(lines[index]!.quantity, true)
+                    ? t('claims.handoff.quantityError')
+                    : undefined
+                }
+                required
+                requiredLabel={t('common.requiredMark')}
+              >
+                <Input
+                  name={`lines.${index}.quantity`}
+                  value={lines[index]!.quantity}
+                  disabled={frozen}
+                  inputMode="decimal"
+                  className="text-right font-mono tabular-nums"
+                  onChange={(e) =>
+                    setLines((all) =>
+                      all.map((l, i) => (i === index ? { ...l, quantity: e.target.value } : l)),
+                    )
+                  }
+                />
+              </FormField>
+              <FormField
+                label={t('claims.handoff.amount')}
+                error={
+                  !validClaimDecimal(lines[index]!.lineAmount)
+                    ? t('claims.handoff.amountError')
+                    : undefined
+                }
+                required
+                requiredLabel={t('common.requiredMark')}
+              >
+                <Input
+                  name={`lines.${index}.lineAmount`}
+                  value={lines[index]!.lineAmount}
+                  disabled={frozen}
+                  inputMode="decimal"
+                  className="text-right font-mono tabular-nums"
+                  onChange={(e) =>
+                    setLines((all) =>
+                      all.map((l, i) => (i === index ? { ...l, lineAmount: e.target.value } : l)),
+                    )
+                  }
+                />
+              </FormField>
+            </div>
+          ))}
+        </div>
+        <p className="text-fg-muted mt-4 text-sm">{t('claims.handoff.links')}</p>
+      </Card>
+      <ProblemAlert problem={issue} />
+      {frozen && issue && !definiteRefusal ? (
+        <p role="status" className="text-sm">
+          {t('claims.handoff.uncertain')}
+        </p>
+      ) : null}
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="submit"
+          disabled={(!valid && !frozen) || Boolean(definiteRefusal)}
+          loading={create.isPending}
+        >
+          {frozen && issue ? t('common.retry') : t('claims.create.submit')}
+        </Button>
+        {definiteRefusal ? (
+          <Button variant="secondary" onClick={() => void reopen()}>
+            {t('claims.handoff.edit')}
+          </Button>
+        ) : null}
+      </div>
+    </form>
   );
 }

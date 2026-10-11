@@ -34,7 +34,7 @@ import {
   OwnFileNotice,
 } from '@kapsora/ui';
 import { Link, useParams } from '@tanstack/react-router';
-import { useState, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 
 import { useServiceName } from '../catalog/names';
 import { PurposeDialog } from '../health/PurposeDialog';
@@ -203,14 +203,15 @@ function Lines({
   stage,
   diagnoses,
   access,
+  onSaved,
 }: {
   claim: Claim;
   stage: Stage;
   diagnoses: Diagnosis[];
   access: AccessContext | undefined;
+  onSaved: () => void;
 }) {
   const { t } = useTranslation();
-  const toast = useToast();
   const wide = useMinWidth(768);
   const commands = useClaimCommands(claim.id, access);
   const clinical = claim.projection === 'CLINICAL';
@@ -219,6 +220,7 @@ function Lines({
   );
   const [comment, setComment] = useState('');
   const [attempted, setAttempted] = useState(false);
+  const savePending = useRef(false);
   const update = (lineNo: number, patch: Partial<DraftDecision>) =>
     setDrafts((all) => ({ ...all, [lineNo]: { ...all[lineNo]!, ...patch } }));
 
@@ -235,8 +237,10 @@ function Lines({
   });
 
   async function save() {
+    if (!stage || savePending.current || commands.decide.isPending) return;
     setAttempted(true);
     if (invalidLines.length > 0) return;
+    savePending.current = true;
     // The medical stage answers yes or no per line on clinical grounds and never types a
     // figure: an approved line keeps the figures the pricing gave it, a refused one carries
     // zeros, and the money is the financial stage's to decide.
@@ -259,9 +263,11 @@ function Lines({
         rowVersion: claim.rowVersion,
         body: { decisions, reviewComment: comment.trim() ? comment.trim() : null },
       });
-      toast.notify({ tone: 'success', title: t('claims.review.saved') });
+      onSaved();
     } catch {
       // Rendered below.
+    } finally {
+      savePending.current = false;
     }
   }
 
@@ -517,6 +523,7 @@ function Lines({
           <div className="flex justify-end">
             <Button
               loading={commands.decide.isPending}
+              disabled={commands.decide.isPending}
               onClick={() => void save()}
               data-testid="save-decisions"
             >
@@ -537,9 +544,23 @@ function Lines({
  * financial half, with a sentence saying why the diagnosis is not on the page.
  */
 export function ClaimDetailPage() {
+  const { claimId } = useParams({ from: '/app/claims/$claimId' });
+  return <ClaimDetailContent key={claimId} claimId={claimId} />;
+}
+
+type ClaimDecision = {
+  type: ClaimCommand;
+  claimId: string;
+  rowVersion: number;
+  status: Claim['status'];
+  projection: Claim['projection'];
+  stage: Exclude<Stage, null>;
+  personId: string;
+};
+
+function ClaimDetailContent({ claimId }: { claimId: string }) {
   const { t } = useTranslation();
   const toast = useToast();
-  const { claimId } = useParams({ from: '/app/claims/$claimId' });
   const gate = useAccessState(claimId);
   const access = accessFor(gate.state);
   const query = useClaim(claimId, access);
@@ -563,11 +584,55 @@ export function ClaimDetailPage() {
   const versions = useClaimVersions(claimId);
   const decided = claim?.status === 'APPROVED' || claim?.status === 'PARTIALLY_APPROVED';
   const readiness = useReadiness(claimId, Boolean(decided));
-  const [command, setCommand] = useState<ClaimCommand | null>(null);
+  const [command, setCommand] = useState<ClaimDecision | null>(null);
   const [reasonCode, setReasonCode] = useState('');
   const [reasonText, setReasonText] = useState('');
+  const mounted = useRef(true);
+  const commandPending = useRef(false);
+  const commandAttempt = useRef(0);
+
+  useLayoutEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   const asking = needsPurpose(query.error) && !gate.state.purpose && !gate.state.declined;
+
+  // A returned or refreshed claim may still have cached data. Its old dialog must not
+  // become actionable again when a later read happens to restore the old values.
+  const own = !!claim && self !== null && claim.personId === self;
+  const stage: Stage = own
+    ? null
+    : claim?.status === 'PENDING_MEDICAL' && canMedical
+      ? 'MEDICAL'
+      : claim?.status === 'PENDING_FINANCIAL' && canFinancial
+        ? 'FINANCIAL'
+        : null;
+  const reviewing = claim?.status === 'PENDING_MEDICAL' || claim?.status === 'PENDING_FINANCIAL';
+  const mayFinish = !own && reviewing && stage !== null;
+  const allDecided = claim?.lines.every((line) => Boolean(line.decision)) ?? false;
+  const activeCommand =
+    command &&
+    !asking &&
+    !query.isPending &&
+    !query.error &&
+    mayFinish &&
+    claim?.id === command.claimId &&
+    claim.rowVersion === command.rowVersion &&
+    claim.status === command.status &&
+    claim.projection === command.projection &&
+    claim.personId === command.personId &&
+    stage === command.stage &&
+    (command.type !== 'approve' || allDecided)
+      ? command
+      : null;
+  if (command && !activeCommand) {
+    setCommand(null);
+    setReasonCode('');
+    setReasonText('');
+  }
 
   if (asking) {
     return (
@@ -601,23 +666,8 @@ export function ClaimDetailPage() {
   }
 
   // A reviewer's own claim: readable, never decidable by them.
-  const own = self !== null && claim.personId === self;
-  const stage: Stage = own
-    ? null
-    : claim.status === 'PENDING_MEDICAL' && canMedical
-      ? 'MEDICAL'
-      : claim.status === 'PENDING_FINANCIAL' && canFinancial
-        ? 'FINANCIAL'
-        : null;
-  const reviewing = claim.status === 'PENDING_MEDICAL' || claim.status === 'PENDING_FINANCIAL';
-  const mayFinish =
-    !own &&
-    reviewing &&
-    ((claim.status === 'PENDING_MEDICAL' && canMedical) ||
-      (claim.status === 'PENDING_FINANCIAL' && canFinancial));
-  const allDecided = claim.lines.every((l) => Boolean(l.decision));
-
   function closeDialog() {
+    commandAttempt.current += 1;
     setCommand(null);
     setReasonCode('');
     setReasonText('');
@@ -625,35 +675,76 @@ export function ClaimDetailPage() {
     commands.reject.reset();
     commands.returnForCorrection.reset();
   }
+  function openCommand(type: ClaimCommand) {
+    if (
+      !claim ||
+      !stage ||
+      !mayFinish ||
+      query.error ||
+      query.isPending ||
+      commandPending.current ||
+      commands.approve.isPending ||
+      commands.reject.isPending ||
+      commands.returnForCorrection.isPending ||
+      (type === 'approve' && !allDecided)
+    )
+      return;
+    closeDialog();
+    setCommand({
+      type,
+      claimId: claim.id,
+      rowVersion: claim.rowVersion,
+      status: claim.status,
+      projection: claim.projection,
+      stage,
+      personId: claim.personId,
+    });
+  }
   async function run() {
-    if (!command || !claim) return;
+    if (
+      !activeCommand ||
+      !claim ||
+      !mayFinish ||
+      commandPending.current ||
+      commands.approve.isPending ||
+      commands.reject.isPending ||
+      commands.returnForCorrection.isPending ||
+      !REASON_CODE.test(reasonCode)
+    )
+      return;
+    commandPending.current = true;
+    const attempt = commandAttempt.current;
     const text = reasonText.trim();
     try {
-      if (command === 'approve') {
+      if (activeCommand.type === 'approve') {
         await commands.approve.mutateAsync({
-          rowVersion: claim.rowVersion,
+          rowVersion: activeCommand.rowVersion,
           body: { reasonCode, reasonText: text || null },
         });
-      } else if (command === 'reject') {
+      } else if (activeCommand.type === 'reject') {
         await commands.reject.mutateAsync({
-          rowVersion: claim.rowVersion,
+          rowVersion: activeCommand.rowVersion,
           body: { reasonCode, reasonText: text || null },
         });
       } else {
         await commands.returnForCorrection.mutateAsync({
-          rowVersion: claim.rowVersion,
+          rowVersion: activeCommand.rowVersion,
           body: { reasonCode, reasonText: text || null },
         });
       }
-      toast.notify({
-        tone: 'success',
-        title: t(
-          `claims.toast.${command === 'return' ? 'returned' : command === 'approve' ? 'approved' : 'rejected'}`,
-        ),
-      });
-      closeDialog();
+      if (mounted.current && commandAttempt.current === attempt) {
+        toast.notify({
+          tone: 'success',
+          title: t(
+            `claims.toast.${activeCommand.type === 'return' ? 'returned' : activeCommand.type === 'approve' ? 'approved' : 'rejected'}`,
+          ),
+        });
+        closeDialog();
+      }
     } catch {
       // The dialog shows the problem.
+    } finally {
+      commandPending.current = false;
     }
   }
   const pending =
@@ -697,16 +788,16 @@ export function ClaimDetailPage() {
             </Badge>
             {own && reviewing ? <OwnFileNotice /> : null}
             {mayFinish && allDecided ? (
-              <Button size="sm" onClick={() => setCommand('approve')}>
+              <Button size="sm" onClick={() => openCommand('approve')}>
                 {t('claims.commands.approve')}
               </Button>
             ) : null}
             {mayFinish ? (
               <>
-                <Button size="sm" variant="secondary" onClick={() => setCommand('return')}>
+                <Button size="sm" variant="secondary" onClick={() => openCommand('return')}>
                   {t('claims.commands.return')}
                 </Button>
-                <Button size="sm" variant="danger" onClick={() => setCommand('reject')}>
+                <Button size="sm" variant="danger" onClick={() => openCommand('reject')}>
                   {t('claims.commands.reject')}
                 </Button>
               </>
@@ -755,11 +846,15 @@ export function ClaimDetailPage() {
             </p>
           ) : null}
           <Lines
-            key={`${claim.rowVersion}-${claim.projection}`}
+            key={`${claim.id}-${claim.rowVersion}-${claim.status}-${claim.projection}-${stage}-${claim.personId}`}
             claim={claim}
             stage={stage}
             diagnoses={diagnoses.data ?? []}
             access={access}
+            onSaved={() => {
+              if (mounted.current)
+                toast.notify({ tone: 'success', title: t('claims.review.saved') });
+            }}
           />
         </Card>
 
@@ -889,23 +984,23 @@ export function ClaimDetailPage() {
       </div>
 
       <Dialog
-        open={command !== null}
+        open={activeCommand !== null}
         onOpenChange={(open) => {
           if (!open) closeDialog();
         }}
-        title={command ? t(`claims.reasonDialog.${command}`) : ''}
+        title={activeCommand ? t(`claims.reasonDialog.${activeCommand.type}`) : ''}
         actions={
           <>
             <Button variant="secondary" onClick={closeDialog}>
               {t('common.cancel')}
             </Button>
             <Button
-              variant={command === 'reject' ? 'danger' : 'primary'}
+              variant={activeCommand?.type === 'reject' ? 'danger' : 'primary'}
               loading={pending}
-              disabled={!REASON_CODE.test(reasonCode)}
+              disabled={!activeCommand || !REASON_CODE.test(reasonCode) || pending}
               onClick={() => void run()}
             >
-              {command ? t(`claims.commands.${command}`) : ''}
+              {activeCommand ? t(`claims.commands.${activeCommand.type}`) : ''}
             </Button>
           </>
         }

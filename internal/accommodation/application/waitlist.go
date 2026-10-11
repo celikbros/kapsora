@@ -109,7 +109,7 @@ func (s *Service) JoinWaitlist(ctx context.Context, rc identity.RequestContext,
 			}
 		}
 		plan, err := s.bookings.PersonEnrollmentForStay(ctx, tx, rc.TenantID, in.PersonID,
-			checkIn, in.ProgramID)
+			checkIn, in.ProgramID, nil)
 		if err != nil {
 			return err
 		}
@@ -256,8 +256,29 @@ func (s *Service) AcceptWaitlistOffer(ctx context.Context, rc identity.RequestCo
 	if s.bookings == nil {
 		return WaitlistView{}, ErrWaitlistEntryNotFound
 	}
-	var out WaitlistView
+	var offeredBookingID uuid.UUID
 	err := s.withTx(ctx, rc, func(ctx context.Context, tx pgx.Tx) error {
+		entry, err := s.bookings.GetWaitlistEntry(ctx, tx, rc.TenantID, id, personBoundary(rc),
+			scopeOf(rc))
+		if err != nil {
+			return err
+		}
+		if entry.Status != WaitlistOffered || entry.OfferedBookingID == nil ||
+			entry.OfferExpiresAt == nil || !s.now().UTC().Before(*entry.OfferExpiresAt) {
+			return ErrWaitlistNotOffered
+		}
+		offeredBookingID = *entry.OfferedBookingID
+		return nil
+	})
+	if err != nil {
+		return WaitlistView{}, err
+	}
+	prepared, err := s.prepareConfirmation(ctx, rc, offeredBookingID)
+	if err != nil {
+		return WaitlistView{}, err
+	}
+	var out WaitlistView
+	err = s.withTx(ctx, rc, func(ctx context.Context, tx pgx.Tx) error {
 		if _, err := s.bookings.GetWaitlistEntry(ctx, tx, rc.TenantID, id, personBoundary(rc),
 			scopeOf(rc)); err != nil {
 			return err
@@ -266,10 +287,12 @@ func (s *Service) AcceptWaitlistOffer(ctx context.Context, rc identity.RequestCo
 		if err != nil {
 			return err
 		}
-		if entry.Status != WaitlistOffered || entry.OfferedBookingID == nil {
+		if entry.Status != WaitlistOffered || entry.OfferedBookingID == nil ||
+			*entry.OfferedBookingID != offeredBookingID || entry.OfferExpiresAt == nil ||
+			!s.now().UTC().Before(*entry.OfferExpiresAt) {
 			return ErrWaitlistNotOffered
 		}
-		booking, err := s.confirm(ctx, tx, rc, *entry.OfferedBookingID)
+		booking, err := s.confirm(ctx, tx, rc, offeredBookingID, prepared)
 		if err != nil {
 			return err
 		}
@@ -462,6 +485,18 @@ func (s *Service) expireWaitlistOffers(ctx context.Context, rc identity.RequestC
 // refusal is exactly what "this entry's turn has not come" means -- so it is passed over
 // silently and the next entry is tried.
 func (s *Service) offerOne(ctx context.Context, rc identity.RequestContext, entry WaitlistRecord) (bool, error) {
+	var programID uuid.UUID
+	err := s.withTx(ctx, rc, func(ctx context.Context, tx pgx.Tx) error {
+		var err error
+		programID, err = s.bookings.WaitlistEnrollmentProgram(ctx, tx, rc.TenantID, entry.ID)
+		return err
+	})
+	if errors.Is(err, ErrEnrollmentNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
 	roomTypes, err := s.offerCandidates(ctx, rc, entry)
 	if err != nil {
 		return false, err
@@ -469,6 +504,7 @@ func (s *Service) offerOne(ctx context.Context, rc identity.RequestContext, entr
 	for _, roomTypeID := range roomTypes {
 		view, err := s.CreateHold(ctx, rc, HoldInput{
 			PersonID: entry.PersonID, RoomTypeID: roomTypeID,
+			ProgramID: &programID, ExpectedEnrollmentID: &entry.EnrollmentID,
 			CheckIn: entry.CheckIn, CheckOut: entry.CheckOut,
 			Adults: entry.Adults, Children: entry.Children,
 			Channel: domain.ChannelBackoffice,

@@ -9,6 +9,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
+	benefitdomain "github.com/celikbros/kapsora/internal/benefit/domain"
+	"github.com/celikbros/kapsora/internal/benefit/ledger"
 	"github.com/celikbros/kapsora/internal/identity"
 )
 
@@ -165,40 +167,51 @@ var WaitlistStatuses = []string{
 // reservation question and a queue nobody was told about is a queue nobody watches.
 const NoShowReviewQueueCode = "RESERVATION_REVIEW"
 
+// EntitlementEffect records exact service and ledger-unit quantities. The four fields
+// are present together only when the original authorization and reservation prove them.
+type EntitlementEffect struct {
+	ConsumedServiceNights    string
+	ReleasedServiceNights    string
+	ConsumedEntitlementUnits string
+	ReleasedEntitlementUnits string
+}
+
 // CancellationRecord is one accommodation.cancellation row. Every amount is the exact
 // decimal text the numeric column holds.
 type CancellationRecord struct {
-	ID             uuid.UUID
-	BookingID      uuid.UUID
-	CancelledAt    time.Time
-	CancelledBy    *uuid.UUID
-	ReasonCode     string
-	PolicySnapshot json.RawMessage
-	Free           bool
-	PenaltyNights  int
-	ReleasedNights int
-	FeeAmount      string
-	PayerFee       string
-	MemberFee      string
-	CurrencyCode   string
-	CreatedAt      time.Time
+	ID                uuid.UUID
+	BookingID         uuid.UUID
+	CancelledAt       time.Time
+	CancelledBy       *uuid.UUID
+	ReasonCode        string
+	PolicySnapshot    json.RawMessage
+	Free              bool
+	PenaltyNights     int
+	ReleasedNights    int
+	EntitlementEffect *EntitlementEffect
+	FeeAmount         string
+	PayerFee          string
+	MemberFee         string
+	CurrencyCode      string
+	CreatedAt         time.Time
 }
 
 // NewCancellationRow is a cancellation as it is written. The policy is a copy of the
 // booking's own frozen one, so the row proves what it was judged by.
 type NewCancellationRow struct {
-	BookingID      uuid.UUID
-	CancelledAt    time.Time
-	CancelledBy    uuid.UUID
-	ReasonCode     string
-	PolicySnapshot json.RawMessage
-	Free           bool
-	PenaltyNights  int
-	ReleasedNights int
-	FeeAmount      string
-	PayerFee       string
-	MemberFee      string
-	CurrencyCode   string
+	BookingID         uuid.UUID
+	CancelledAt       time.Time
+	CancelledBy       uuid.UUID
+	ReasonCode        string
+	PolicySnapshot    json.RawMessage
+	Free              bool
+	PenaltyNights     int
+	ReleasedNights    int
+	EntitlementEffect *EntitlementEffect
+	FeeAmount         string
+	PayerFee          string
+	MemberFee         string
+	CurrencyCode      string
 }
 
 // NoShowRecord is one accommodation.no_show row.
@@ -217,6 +230,7 @@ type NoShowRecord struct {
 	ReviewedAt         *time.Time
 	ReviewComment      *string
 	ConsumedNights     int
+	EntitlementEffect  *EntitlementEffect
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
 	RowVersion         int64
@@ -237,12 +251,13 @@ type NewNoShowRow struct {
 
 // NoShowReviewRow is the payer's answer as it is written.
 type NoShowReviewRow struct {
-	ID             uuid.UUID
-	Status         string
-	ReviewedBy     uuid.UUID
-	ReviewedAt     time.Time
-	ReviewComment  *string
-	ConsumedNights int
+	ID                uuid.UUID
+	Status            string
+	ReviewedBy        uuid.UUID
+	ReviewedAt        time.Time
+	ReviewComment     *string
+	ConsumedNights    int
+	EntitlementEffect *EntitlementEffect
 }
 
 // WaitlistRecord is one accommodation.waitlist_entry row.
@@ -359,6 +374,20 @@ type BookingAuthorizationLine struct {
 	ServiceDefinitionID uuid.UUID
 	Approved            string
 	Remaining           string
+}
+
+// BookingCancellationEvidence is the one original authorization item and booking
+// reservation, locked in the caller's transaction for exact movement reporting.
+type BookingCancellationEvidence struct {
+	Approved, Consumed, Remaining, UnitFactor benefitdomain.Quantity
+	Reservation                               ledger.Reservation
+}
+
+type BookingPenaltySettlement struct {
+	TenantID, ActorID, AuthorizationID, RequestID, PersonID uuid.UUID
+	BookingID, ReservationID, ServiceDefinitionID           uuid.UUID
+	EvaluationID, EnrollmentID                              uuid.UUID
+	PolicyPenalty, ConsumeKey, ConsumeReason, ReleaseReason string
 }
 
 // RaiseWorkItem is one piece of work for a person to look at.

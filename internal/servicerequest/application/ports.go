@@ -47,6 +47,7 @@ var (
 	ErrTransitionInvalid  = errors.New("servicerequest: this transition is not allowed")
 	ErrVersionMismatch    = errors.New("servicerequest: row version does not match If-Match")
 	ErrEnrollmentMismatch = errors.New("servicerequest: the enrollment does not belong to this person or program")
+	ErrBookingHoldInvalid = errors.New("servicerequest: booking hold evidence is inconsistent")
 	ErrProviderScope      = errors.New("servicerequest: the caller is not scoped to this provider")
 	ErrReferenceCollision = errors.New("servicerequest: could not allocate a free request reference")
 )
@@ -76,6 +77,13 @@ func scopeOf(rc identity.RequestContext) Scope {
 		}
 	}
 	return Scope{OrganizationIDs: ids}
+}
+
+// DocumentEvidence names a clean, retained attachment used by the submit gate.
+// The frozen version keeps these IDs even if a link is subsequently removed.
+type DocumentEvidence struct {
+	DocumentID       uuid.UUID `json:"documentId"`
+	DocumentTypeCode string    `json:"documentTypeCode"`
 }
 
 // RequestRecord is one service.service_request row.
@@ -327,6 +335,20 @@ type EligibilityInput struct {
 	Mappings map[uuid.UUID]eligibility.Mapping
 }
 
+// BookingHold binds a booking-only gate allowance to the exact reserved account and
+// immutable selected mapping. General service requests carry no such evidence.
+type BookingHold struct {
+	BookingID           uuid.UUID
+	ReservationID       uuid.UUID
+	EnrollmentID        uuid.UUID
+	PlanVersionID       uuid.UUID
+	ServiceDefinitionID uuid.UUID
+	DefinitionID        uuid.UUID
+	AccountID           uuid.UUID
+	UnitFactor          benefitdomain.Quantity
+	Units               benefitdomain.Quantity
+}
+
 // NewEligibilityEvaluationRow is the append-only evaluation the submit gate stores, so the
 // answer the gate was given can be read again long after the balances have moved on.
 type NewEligibilityEvaluationRow struct {
@@ -428,6 +450,8 @@ type Repository interface {
 	// has to be exactly as this package found it.
 	LoadEligibility(ctx context.Context, tx pgx.Tx, tenantID, personID uuid.UUID,
 		programID *uuid.UUID, serviceDate time.Time) (EligibilityInput, error)
+	LoadBookingEligibility(ctx context.Context, tx pgx.Tx, tenantID, personID, programID uuid.UUID,
+		serviceDate time.Time, hold BookingHold) (EligibilityInput, error)
 	CreateEligibilityEvaluation(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 		in NewEligibilityEvaluationRow) error
 
@@ -437,6 +461,10 @@ type Repository interface {
 		purposes []string, serviceDate time.Time) ([]RuleVersion, error)
 	CreateRuleEvaluation(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 		in NewRuleEvaluationRow, results []RuleEvaluationResultRow) (uuid.UUID, error)
+
+	// ListDocumentEvidence reads only clean, retained attachments of this request.
+	ListDocumentEvidence(ctx context.Context, tx pgx.Tx, tenantID, requestID uuid.UUID,
+		providerID *uuid.UUID, requiredTypes []string) ([]DocumentEvidence, error)
 
 	// ReviewRequired answers whether a program's requests still need a person to look at
 	// them once nothing has objected. It is configuration rather than a hard-coded rule,

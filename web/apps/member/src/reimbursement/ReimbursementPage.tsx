@@ -66,7 +66,12 @@ export function ReimbursementPage() {
     },
   ];
   if (record.decisionReasonCode) {
-    lines.push({ label: t('billing.member.reason'), value: record.decisionReasonCode, mono: true });
+    lines.push({
+      label: t('billing.member.reason'),
+      value: t(`billing.member.decisionReasons.${record.decisionReasonCode}`, {
+        defaultValue: record.decisionReasonCode,
+      }),
+    });
   }
   const total = record.approvedAmount
     ? {

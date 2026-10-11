@@ -42,12 +42,19 @@ Per item, in this order, each step producing explanation codes:
 4. **Rules** — evaluate the tenant's published PRICE rule set for the date, if any.
    `SET_LIMIT` caps the covered amount; `ADJUST_PRICE` adjusts it; `REQUIRE_*` marks the
    item `REVIEW_REQUIRED`. Every applied action is recorded with its rule code.
-5. **Entitlement cover** — the balance available on the matching entitlement account caps
-   what the plan can carry. Nothing is reserved here: **a quote never touches the ledger.**
-6. **Split** — `payerAmount = min(coveredAmount, availableBalance)`;
-   `memberAmount = contractAmount − payerAmount + memberShare`, where `memberShare` comes
-   from the price item's `member_share_method`. Both are non-negative by construction; a
-   negative intermediate is a bug and panics in tests rather than silently clamping.
+5. **Entitlement cover** — use the matching account's unit. A MONEY balance caps the
+   monetary cover. A session/night/count or other non-money balance gates the service
+   quantity multiplied by the published mapping's unit factor; it is never treated as a
+   monetary ceiling. Multiple lines share that account's remaining quantity within the
+   quote, and an insufficient line receives NOT_ELIGIBLE/BALANCE_INSUFFICIENT unless the
+   account permits overdraft. Existing contract shares and PRICE rules still apply.
+   Nothing is reserved here: **a quote never touches the ledger.**
+6. **Split** — for MONEY, `payerAmount = min(coveredAmount, availableBalance)`; for an
+   eligible quantity entitlement, `payerAmount = coveredAmount`;
+   `memberAmount = contractAmount − payerAmount`. The contract's `member_share_method`
+   reduces coveredAmount before rules and balance checks; do not add that share again.
+   This records the existing calculation and regression invariant: payer plus member
+   equals the contract amount, with both non-negative.
 
 Rounding happens **once**, at the end, per item, to the currency's minor unit, using
 half-up; every earlier step keeps full `numeric(20,6)` precision (v1.2 11.6). The rounding

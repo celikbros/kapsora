@@ -19,7 +19,8 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         '/api': { target, changeOrigin: false },
-        '/health': { target, changeOrigin: false },
+        // Only API probes: /health-services is a backoffice page, not a health probe.
+        '/health/': { target, changeOrigin: false },
         '/portal': { target: portal, changeOrigin: false, ws: true },
         '/uye': { target: member, changeOrigin: false, ws: true },
       },

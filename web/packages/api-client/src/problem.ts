@@ -48,6 +48,13 @@ function isProblem(value: unknown): value is Problem {
  * a Problem so the UI has one rendering path.
  */
 export function toProblem(error: unknown, response: Response): Problem {
+  if (typeof error === 'string') {
+    try {
+      error = JSON.parse(error) as unknown;
+    } catch {
+      // A proxy may return plain text; the HTTP fallback below still applies.
+    }
+  }
   if (isProblem(error)) {
     return error;
   }

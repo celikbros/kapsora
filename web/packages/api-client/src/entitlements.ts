@@ -1,5 +1,6 @@
 import type { KapsoraClient } from './client';
 import { randomId } from './client';
+import { parseDecimalJson } from './decimal-json';
 import type { components } from './generated/kapsora-v1';
 import { unwrap } from './problem';
 import {
@@ -11,7 +12,7 @@ import {
 } from './decimals';
 import { versioned, type Versioned } from './versioned';
 
-// Balances, deltas and adjustment amounts are decimal strings; see decimals.ts.
+// Balances and ledger deltas become exact decimal strings at the response boundary.
 export type {
   CreateAdjustmentRequest,
   EntitlementAccount,
@@ -43,6 +44,24 @@ export interface AdjustmentPage {
   nextCursor?: string | null;
 }
 
+const accountDecimalFields = new Set([
+  'totalGranted',
+  'available',
+  'reserved',
+  'consumed',
+  'expired',
+  'quantity',
+  'consumedQuantity',
+  'releasedQuantity',
+]);
+const ledgerDecimalFields = new Set([
+  'deltaTotal',
+  'deltaAvailable',
+  'deltaReserved',
+  'deltaConsumed',
+  'deltaExpired',
+]);
+
 /**
  * Entitlement balances, the append-only ledger behind them and the manual adjustments
  * that need a second actor's approval. Quantities are decimal strings: never turn them
@@ -58,26 +77,27 @@ export function entitlementOperations(client: KapsoraClient) {
       personId: string,
       asOf?: string,
     ): Promise<Account[]> {
-      return (
-        await unwrap(
-          client.GET('/api/v1/people/{personId}/entitlements', {
-            params: {
-              header: header(tenantId),
-              path: { personId },
-              query: asOf ? { asOf } : {},
-            },
-          }),
-        )
-      ).data.items.map((a) => asDecimals<Account>(a));
+      const raw = await unwrap(
+        client.GET('/api/v1/people/{personId}/entitlements', {
+          parseAs: 'text',
+          params: {
+            header: header(tenantId),
+            path: { personId },
+            query: asOf ? { asOf } : {},
+          },
+        }),
+      );
+      return parseDecimalJson<{ items: Account[] }>(raw.data, accountDecimalFields).items;
     },
 
     async getAccount(tenantId: string, accountId: string): Promise<Versioned<Account>> {
       const r = await unwrap(
         client.GET('/api/v1/entitlement-accounts/{accountId}', {
+          parseAs: 'text',
           params: { header: header(tenantId), path: { accountId } },
         }),
       );
-      return versioned(asDecimals<Account>(r.data), r.response);
+      return versioned(parseDecimalJson<Account>(r.data, accountDecimalFields), r.response);
     },
 
     async listLedger(
@@ -88,13 +108,13 @@ export function entitlementOperations(client: KapsoraClient) {
       const q: LedgerQuery = {};
       if (query.cursor) q.cursor = query.cursor;
       if (query.limit) q.limit = query.limit;
-      return (
-        await unwrap(
-          client.GET('/api/v1/entitlement-accounts/{accountId}/ledger', {
-            params: { header: header(tenantId), path: { accountId }, query: q },
-          }),
-        )
-      ).data as unknown as Ledger;
+      const raw = await unwrap(
+        client.GET('/api/v1/entitlement-accounts/{accountId}/ledger', {
+          parseAs: 'text',
+          params: { header: header(tenantId), path: { accountId }, query: q },
+        }),
+      );
+      return parseDecimalJson<Ledger>(raw.data, ledgerDecimalFields);
     },
 
     async createAdjustment(

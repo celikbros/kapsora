@@ -16,6 +16,7 @@ import (
 	benefitdomain "github.com/celikbros/kapsora/internal/benefit/domain"
 	"github.com/celikbros/kapsora/internal/identity"
 	"github.com/celikbros/kapsora/internal/platform/db"
+	"github.com/celikbros/kapsora/internal/platform/httpx"
 	rulesapp "github.com/celikbros/kapsora/internal/rules/application"
 )
 
@@ -42,6 +43,7 @@ type Service struct {
 	programs *rulesapp.ProgramCache
 	logger   *slog.Logger
 	now      func() time.Time
+	cursors  *httpx.CursorCodec
 }
 
 // Deps are the collaborators of the service.
@@ -55,13 +57,14 @@ type Deps struct {
 	Programs *rulesapp.ProgramCache
 	Logger   *slog.Logger
 	// Now overrides the clock in tests; nil means time.Now().UTC().
-	Now func() time.Time
+	Now     func() time.Time
+	Cursors *httpx.CursorCodec
 }
 
 // New validates the dependencies.
 func New(d Deps) (*Service, error) {
-	if d.Pool == nil || d.Repo == nil {
-		return nil, errors.New("pricing: pool and repository are required")
+	if d.Pool == nil || d.Repo == nil || d.Cursors == nil {
+		return nil, errors.New("pricing: pool, repository and cursor codec are required")
 	}
 	if d.Audit == nil {
 		d.Audit = audit.NopRecorder{}
@@ -74,7 +77,7 @@ func New(d Deps) (*Service, error) {
 	}
 	return &Service{
 		pool: d.Pool, repo: d.Repo, audit: d.Audit,
-		programs: d.Programs, logger: d.Logger, now: d.Now,
+		programs: d.Programs, logger: d.Logger, now: d.Now, cursors: d.Cursors,
 	}, nil
 }
 
@@ -142,18 +145,14 @@ func (s *Service) recordAccess(ctx context.Context, tx pgx.Tx, rc identity.Reque
 // organizations may only quote for, and read the quotes of, a provider inside that scope.
 // A tenant-wide actor has no ORGANIZATION scope and is unaffected.
 func checkProviderScope(rc identity.RequestContext, providerOrganizationID uuid.UUID) error {
-	scoped := false
-	for _, scope := range rc.Scopes {
-		if scope.Type != ScopeOrganization || !scope.ID.Valid {
-			continue
-		}
-		scoped = true
-		if scope.ID.UUID == providerOrganizationID {
+	ids := organizationScope(rc)
+	if ids == nil {
+		return nil
+	}
+	for _, id := range ids {
+		if id == providerOrganizationID {
 			return nil
 		}
-	}
-	if !scoped {
-		return nil
 	}
 	return ErrProviderScope
 }

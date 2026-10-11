@@ -20,6 +20,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/celikbros/kapsora/internal/health/application"
 	"github.com/celikbros/kapsora/internal/platform/sqlcgen"
@@ -227,6 +228,15 @@ func (Repository) ReplaceDiagnoses(ctx context.Context, tx pgx.Tx, tenantID, enc
 	if err := q.DeleteEncounterDiagnoses(ctx, sqlcgen.DeleteEncounterDiagnosesParams{
 		TenantID: tenantID, EncounterID: encounterID,
 	}); err != nil {
+		var pgErr *pgconn.PgError
+
+		// ON DELETE RESTRICT reports 23001; keep the 23503 FK form equally narrow.
+		if errors.As(err, &pgErr) && (pgErr.Code == "23001" || pgErr.Code == "23503") {
+			switch pgErr.ConstraintName {
+			case "fk_inpatient_stay_diagnosis", "fk_claim_line_diagnosis":
+				return application.ErrDiagnosisInUse
+			}
+		}
 		return fmt.Errorf("health: delete diagnoses: %w", err)
 	}
 	for _, row := range rows {
@@ -354,4 +364,16 @@ func (Repository) ListAccessEvents(ctx context.Context, tx pgx.Tx, tenantID uuid
 		out = append(out, accessEventOf(row))
 	}
 	return out, nil
+}
+
+// EndEncounter updates only the end timestamp and the actor at the expected version.
+func (Repository) EndEncounter(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID, endedAt time.Time, actorID *uuid.UUID, expected int64) error {
+	n, err := sqlcgen.New(tx).EndEncounter(ctx, sqlcgen.EndEncounterParams{TenantID: tenantID, ID: id, EndedAt: &endedAt, ActorID: optUUID(actorID), ExpectedVersion: expected})
+	if err != nil {
+		return fmt.Errorf("health: end encounter: %w", err)
+	}
+	if n != 1 {
+		return application.ErrVersionMismatch
+	}
+	return nil
 }

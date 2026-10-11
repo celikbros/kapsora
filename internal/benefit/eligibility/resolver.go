@@ -194,6 +194,8 @@ type Item struct {
 type Mapping struct {
 	EntitlementCode string
 	UnitFactor      domain.Quantity
+	DefinitionID    uuid.UUID
+	UnitType        string
 }
 
 // Input is everything Resolve reads. The caller loads it in one transaction.
@@ -222,6 +224,14 @@ type Input struct {
 
 // ItemResult is the verdict on one requested line.
 type ItemResult struct {
+	// Matched account metadata stays internal; pricing must distinguish money from
+	// service quantities and pool lines against the exact account the resolver chose.
+	AccountID         uuid.UUID
+	UnitType          string
+	DrawQuantity      domain.Quantity
+	UnitFactor        domain.Quantity
+	DefinitionID      uuid.UUID
+	AllowOverdraft    bool
 	Index             int
 	EntitlementCode   string
 	Outcome           string
@@ -422,6 +432,14 @@ func resolveItem(item Item, accounts map[string]Account, mappings map[uuid.UUID]
 		out.Explanations = append(out.Explanations, explain(CodeServiceMappingPending))
 		return out
 	}
+	out.AccountID = account.ID
+	if mapping, mapped := mappings[item.ServiceDefinitionID]; mapped && mapping.EntitlementCode == code {
+		out.UnitFactor = mapping.UnitFactor
+		out.DefinitionID = mapping.DefinitionID
+	}
+	out.UnitType = account.UnitType
+	out.DrawQuantity = drawn
+	out.AllowOverdraft = account.AllowOverdraft
 	available := account.Available
 	// The balance reported is the one the account really carries; the balance *compared*
 	// adds back whatever this very line already holds.

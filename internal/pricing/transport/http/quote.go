@@ -14,7 +14,7 @@ import (
 
 // CreatePriceQuote implements createPriceQuote.
 func (h *Handler) CreatePriceQuote(w http.ResponseWriter, r *http.Request) {
-	rc, ok := h.require(w, r, PermissionQuote)
+	rc, ok := h.require(w, r)
 	if !ok {
 		return
 	}
@@ -33,12 +33,12 @@ func (h *Handler) CreatePriceQuote(w http.ResponseWriter, r *http.Request) {
 		h.writeError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, quoteView(quote))
+	writeJSON(w, quoteView(quote))
 }
 
 // GetPriceQuote implements getPriceQuote.
 func (h *Handler) GetPriceQuote(w http.ResponseWriter, r *http.Request) {
-	rc, ok := h.require(w, r, PermissionQuote)
+	rc, ok := h.require(w, r)
 	if !ok {
 		return
 	}
@@ -51,7 +51,7 @@ func (h *Handler) GetPriceQuote(w http.ResponseWriter, r *http.Request) {
 		h.writeError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, quoteView(quote))
+	writeJSON(w, quoteView(quote))
 }
 
 // quoteInput turns the decoded body into the application input. Amounts and quantities

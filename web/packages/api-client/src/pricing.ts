@@ -8,6 +8,13 @@ export type PriceQuoteOutcome = components['schemas']['PriceQuoteOutcome'];
 export type PriceQuoteExplanation = components['schemas']['PriceQuoteExplanation'];
 export type PriceQuoteRequestItem = components['schemas']['PriceQuoteRequestItem'];
 export type CreatePriceQuoteRequest = components['schemas']['CreatePriceQuoteRequest'];
+export type PriceProviderOptionPage = components['schemas']['PriceProviderOptionPage'];
+export type PriceServiceOptionPage = components['schemas']['PriceServiceOptionPage'];
+export interface PriceOptionQuery {
+  q?: string;
+  cursor?: string;
+  limit?: number;
+}
 
 /**
  * Price quotes.
@@ -22,6 +29,32 @@ export type CreatePriceQuoteRequest = components['schemas']['CreatePriceQuoteReq
  */
 export function pricingOperations(client: KapsoraClient) {
   return {
+    async listProviderOptions(
+      tenantId: string,
+      query: PriceOptionQuery = {},
+    ): Promise<PriceProviderOptionPage> {
+      return (
+        await unwrap(
+          client.GET('/api/v1/pricing/options/providers', {
+            params: { header: { 'X-Tenant-ID': tenantId }, query },
+          }),
+        )
+      ).data;
+    },
+
+    async listServiceOptions(
+      tenantId: string,
+      query: PriceOptionQuery = {},
+    ): Promise<PriceServiceOptionPage> {
+      return (
+        await unwrap(
+          client.GET('/api/v1/pricing/options/services', {
+            params: { header: { 'X-Tenant-ID': tenantId }, query },
+          }),
+        )
+      ).data;
+    },
+
     async createQuote(
       tenantId: string,
       body: CreatePriceQuoteRequest,

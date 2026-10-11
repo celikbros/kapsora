@@ -275,7 +275,9 @@ type AvailabilityPropertyQuery struct {
 
 // PriceCandidateQuery loads every contracted price that could bear on the search, once.
 type PriceCandidateQuery struct {
-	ProviderProfileIDs   []uuid.UUID
+	ProviderProfileIDs []uuid.UUID
+	// PayerOrganizationIDs are required: an empty set must return no prices.
+	PayerOrganizationIDs []uuid.UUID
 	ServiceDefinitionIDs []uuid.UUID
 	CategoryIDs          []uuid.UUID
 	PackageIDs           []uuid.UUID
@@ -293,6 +295,8 @@ type PriceCandidate struct {
 	VersionValidFrom  time.Time
 	// VersionValidTo is the zero value for an open-ended version.
 	VersionValidTo time.Time
+	// HoldMinutes is the selected version's optional lodging override; nil uses the tenant setting.
+	HoldMinutes *int32
 }
 
 // Repository is the persistence port. Every method runs inside the caller's transaction,

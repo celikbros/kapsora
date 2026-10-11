@@ -355,7 +355,42 @@ function runGate(
     eligibility.eligible,
   );
 
-  if (documents.length > 0) {
+  const satisfied = new Set(
+    world.documentLinks
+      .filter((link) => {
+        if (
+          link.tenantId !== tenantId ||
+          link.aggregateType !== 'SERVICE_REQUEST' ||
+          link.aggregateId !== request.id ||
+          !documents.includes(link.documentTypeCode)
+        )
+          return false;
+        const doc = world.documents.find(
+          (d) => d.tenantId === tenantId && d.id === link.documentId,
+        );
+        if (!doc || doc.scanStatus !== 'CLEAN' || doc.bucket !== 'secure' || doc.purgedAt)
+          return false;
+        if (
+          request.providerOrganizationId &&
+          doc.ownerOrganizationId &&
+          doc.ownerOrganizationId !== request.providerOrganizationId
+        )
+          return false;
+        const stored = doc.duplicateOfDocumentId
+          ? world.documents.find(
+              (d) => d.tenantId === tenantId && d.id === doc.duplicateOfDocumentId,
+            )
+          : doc;
+        return (
+          !!stored &&
+          stored.scanStatus === 'CLEAN' &&
+          stored.bucket === 'secure' &&
+          !stored.purgedAt
+        );
+      })
+      .map((link) => link.documentTypeCode),
+  );
+  if (documents.some((code) => !satisfied.has(code))) {
     return {
       status: 'PENDING_DOCUMENT',
       reasonCode: 'DOCUMENT_REQUIRED',
@@ -368,7 +403,7 @@ function runGate(
     return {
       status: 'PENDING_REVIEW',
       reasonCode: 'RULE_REVIEW_REQUIRED',
-      requiredDocumentTypes: null,
+      requiredDocumentTypes: documents,
       eligibilityEvaluationId: evaluationId,
       ruleEvaluationId,
     };
@@ -379,7 +414,7 @@ function runGate(
     return {
       status: 'PENDING_REVIEW',
       reasonCode: 'ELIGIBILITY_REVIEW_REQUIRED',
-      requiredDocumentTypes: null,
+      requiredDocumentTypes: documents,
       eligibilityEvaluationId: evaluationId,
       ruleEvaluationId,
     };
@@ -393,7 +428,7 @@ function runGate(
   return {
     status: reviewRequired ? 'PENDING_REVIEW' : 'APPROVED',
     reasonCode: reviewRequired ? 'PROGRAM_REVIEW_REQUIRED' : 'AUTO_APPROVED',
-    requiredDocumentTypes: [],
+    requiredDocumentTypes: documents,
     eligibilityEvaluationId: evaluationId,
     ruleEvaluationId,
   };
@@ -596,6 +631,23 @@ export function serviceRequestHandlers(api: MockApi): HttpHandler[] {
         const own = ownFile(api, g.session, g.tenantId, found.personId);
         if (own) return own;
       }
+      const replayKey = `request:${g.tenantId}:${g.session.account.actorId}:${command}:${found.id}:${http_.headers.get('Idempotency-Key')}`;
+      const fingerprint = JSON.stringify(body);
+      const replay = api.replay(replayKey);
+      if (replay) {
+        const saved = replay.body as { fingerprint: string; response: Schemas['ServiceRequest'] };
+        if (saved.fingerprint !== fingerprint)
+          return problem(
+            api,
+            409,
+            'IDEMPOTENCY_KEY_REUSED',
+            'Aynı işlem anahtarı farklı bir istekle kullanıldı',
+          );
+        return HttpResponse.json(saved.response, {
+          status: replay.status,
+          headers: { ETag: replay.etag! },
+        });
+      }
       const to = transitionTarget(command, found.status);
       if (!to) return transitionInvalid(api);
       if (found.rowVersion !== expected) return etagMismatch(api);
@@ -610,6 +662,8 @@ export function serviceRequestHandlers(api: MockApi): HttpHandler[] {
         to,
       );
       found.rowVersion += 1;
+      const response = structuredClone(toServiceRequest(world(), found));
+      api.rememberIdempotent(replayKey, 200, { fingerprint, response }, etagOf(found.rowVersion));
       return answer(found);
     };
 

@@ -43,7 +43,8 @@ RETURNING id;
 -- What the eligibility resolver reads: the entitlement code a service draws from and the
 -- factor it draws it at, for the plan version the check resolved. The service date filter
 -- is here rather than in Go because a mapping outside its own window is not a mapping.
-SELECT m.service_definition_id, ed.code AS entitlement_code,
+SELECT m.service_definition_id, m.entitlement_definition_id, ed.unit_type,
+       ed.code AS entitlement_code,
        m.unit_factor::text AS unit_factor
   FROM benefit.service_entitlement_mapping m
   JOIN benefit.entitlement_definition ed

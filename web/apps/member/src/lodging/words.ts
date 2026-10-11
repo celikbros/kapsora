@@ -3,6 +3,7 @@ import type {
   BookingStatus,
   CancellationQuote,
   LodgingPolicySnapshot,
+  NoShowReport,
 } from '@kapsora/api-client';
 import { formatDate, formatMoney, formatNumber } from '@kapsora/i18n';
 import type { BadgeTone } from '@kapsora/ui';
@@ -110,8 +111,41 @@ export function cancellationSentences(t: TFunction, quote: CancellationQuote): s
       lines.push(t('lodging.booking.cancelPenaltyNights', { count: quote.penaltyNights }));
     }
   }
-  if (quote.releasedNights > 0) {
-    lines.push(t('lodging.booking.cancelReleased', { count: quote.releasedNights }));
-  }
+  lines.push(...cancellationEffectSentences(t, quote.entitlementEffect, 'preview'));
   return lines;
+}
+
+/** Exact movement supplied by the ledger, with no number conversion in the browser. */
+export function cancellationEffectSentences(
+  t: TFunction,
+  effect: CancellationQuote['entitlementEffect'] | null | undefined,
+  phase: 'preview' | 'actual',
+): string[] {
+  if (!effect) return [t(`lodging.booking.cancelEffectUnknown.${phase}`)];
+  return [
+    t(`lodging.booking.cancelEffect.${phase}.service`, {
+      consumed: effect.consumedServiceNights,
+      released: effect.releasedServiceNights,
+    }),
+    t(`lodging.booking.cancelEffect.${phase}.entitlement`, {
+      consumed: effect.consumedEntitlementUnits,
+      released: effect.releasedEntitlementUnits,
+    }),
+  ];
+}
+
+/** A confirmed no-show's recorded movement; no report or null evidence stays neutral. */
+export function noShowEffectSentences(t: TFunction, report: NoShowReport | null): string[] {
+  const effect = report?.status === 'CONFIRMED' ? report.entitlementEffect : undefined;
+  if (!effect) return [t('lodging.booking.noShowEffectUnknown')];
+  return [
+    t('lodging.booking.noShowEffect.service', {
+      consumed: effect.consumedServiceNights,
+      released: effect.releasedServiceNights,
+    }),
+    t('lodging.booking.noShowEffect.entitlement', {
+      consumed: effect.consumedEntitlementUnits,
+      released: effect.releasedEntitlementUnits,
+    }),
+  ];
 }

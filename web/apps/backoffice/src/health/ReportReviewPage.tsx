@@ -23,7 +23,7 @@ import {
   OwnFileNotice,
 } from '@kapsora/ui';
 import { Link, useParams } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 
 import { useOrganizationName, usePersonName } from '../claims/names';
 import { useReport, useReportCommands } from '../claims/queries';
@@ -40,9 +40,20 @@ import { accessFor, needsPurpose, useAccessState } from './access';
  * half, which is not enough to decide on, and the page says so.
  */
 export function ReportReviewPage() {
+  const { reportId } = useParams({ from: '/app/medical-reports/$reportId' });
+  return <ReportReviewContent key={reportId} reportId={reportId} />;
+}
+
+type Decision = {
+  type: 'approve' | 'reject';
+  reportId: string;
+  rowVersion: number;
+  personId: string;
+};
+
+function ReportReviewContent({ reportId }: { reportId: string }) {
   const { t } = useTranslation();
   const toast = useToast();
-  const { reportId } = useParams({ from: '/app/medical-reports/$reportId' });
   const gate = useAccessState(reportId);
   const access = accessFor(gate.state);
   const query = useReport(reportId, access);
@@ -52,11 +63,43 @@ export function ReportReviewPage() {
   const report: MedicalReport | undefined = query.data?.data;
   const personName = usePersonName(report?.personId);
   const providerName = useOrganizationName(report?.issuingProviderOrganizationId);
-  const [command, setCommand] = useState<'approve' | 'reject' | null>(null);
+  const [command, setCommand] = useState<Decision | null>(null);
   const [reasonCode, setReasonCode] = useState('');
   const [comment, setComment] = useState('');
+  const mounted = useRef(true);
+  const startPending = useRef(false);
+  const decisionPending = useRef(false);
+
+  useLayoutEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   const asking = needsPurpose(query.error) && !gate.state.purpose && !gate.state.declined;
+  const clinical = report?.projection === 'CLINICAL';
+  // A reviewer's own report is readable, but not theirs to start or decide.
+  const own = !!report && self !== null && report.personId === self;
+  const canStart = canReview && !own && report?.status === 'SUBMITTED';
+  const canDecide = canReview && !own && clinical && report?.status === 'UNDER_REVIEW';
+  const activeCommand =
+    command &&
+    !asking &&
+    !query.isPending &&
+    !query.error &&
+    canDecide &&
+    report?.id === command.reportId &&
+    report.rowVersion === command.rowVersion &&
+    report.personId === command.personId
+      ? command
+      : null;
+  if (command && !activeCommand) {
+    setCommand(null);
+    setReasonCode('');
+    setComment('');
+  }
+
   if (asking) {
     return (
       <PurposeDialog
@@ -87,11 +130,6 @@ export function ReportReviewPage() {
       />
     );
   }
-  const clinical = report.projection === 'CLINICAL';
-  // A reviewer's own report: they may read it, not start or decide its review.
-  const own = self !== null && report.personId === self;
-  const canStart = canReview && !own && report.status === 'SUBMITTED';
-  const canDecide = canReview && !own && clinical && report.status === 'UNDER_REVIEW';
   const ownPending =
     own && canReview && (report.status === 'SUBMITTED' || report.status === 'UNDER_REVIEW');
 
@@ -102,36 +140,79 @@ export function ReportReviewPage() {
     commands.approve.reset();
     commands.reject.reset();
   }
+  function openDecision(type: Decision['type']) {
+    if (
+      !canDecide ||
+      !report ||
+      query.error ||
+      query.isPending ||
+      decisionPending.current ||
+      commands.approve.isPending ||
+      commands.reject.isPending
+    )
+      return;
+    setReasonCode('');
+    setComment('');
+    commands.approve.reset();
+    commands.reject.reset();
+    setCommand({
+      type,
+      reportId: report.id,
+      rowVersion: report.rowVersion,
+      personId: report.personId,
+    });
+  }
   async function start() {
+    if (!canStart || !report || startPending.current || commands.startReview.isPending) return;
+    startPending.current = true;
     try {
-      await commands.startReview.mutateAsync({ rowVersion: report!.rowVersion });
-      toast.notify({ tone: 'success', title: t('review.report.started') });
+      await commands.startReview.mutateAsync({ rowVersion: report.rowVersion });
+      if (mounted.current) toast.notify({ tone: 'success', title: t('review.report.started') });
     } catch (err) {
-      toast.notify({ tone: 'danger', title: problemOf(err).title || t('problems.UNKNOWN') });
+      if (mounted.current)
+        toast.notify({ tone: 'danger', title: problemOf(err).title || t('problems.UNKNOWN') });
+    } finally {
+      startPending.current = false;
     }
   }
   async function decide() {
-    if (!command || !report) return;
+    if (
+      !activeCommand ||
+      !canDecide ||
+      !report ||
+      decisionPending.current ||
+      commands.approve.isPending ||
+      commands.reject.isPending ||
+      (activeCommand.type === 'reject' && !REASON_CODE.test(reasonCode))
+    )
+      return;
+    decisionPending.current = true;
     const text = comment.trim();
     try {
-      if (command === 'approve') {
+      if (activeCommand.type === 'approve') {
         await commands.approve.mutateAsync({
-          rowVersion: report.rowVersion,
+          rowVersion: activeCommand.rowVersion,
           body: { reviewComment: text || null },
         });
       } else {
         await commands.reject.mutateAsync({
-          rowVersion: report.rowVersion,
+          rowVersion: activeCommand.rowVersion,
           body: { rejectReasonCode: reasonCode, reviewComment: text || null },
         });
       }
-      toast.notify({
-        tone: 'success',
-        title: t(command === 'approve' ? 'review.report.approved' : 'review.report.rejected'),
-      });
-      closeDialog();
+      if (mounted.current) {
+        toast.notify({
+          tone: 'success',
+          title: t(
+            activeCommand.type === 'approve' ? 'review.report.approved' : 'review.report.rejected',
+          ),
+        });
+        closeDialog();
+      }
     } catch {
       // The dialog shows the problem.
+    } finally {
+      decisionPending.current = false;
     }
   }
   const commandError = commands.approve.error ?? commands.reject.error;
@@ -174,10 +255,10 @@ export function ReportReviewPage() {
             ) : null}
             {canDecide ? (
               <>
-                <Button size="sm" onClick={() => setCommand('approve')}>
+                <Button size="sm" onClick={() => openDecision('approve')}>
                   {t('review.report.approve')}
                 </Button>
-                <Button size="sm" variant="danger" onClick={() => setCommand('reject')}>
+                <Button size="sm" variant="danger" onClick={() => openDecision('reject')}>
                   {t('review.report.reject')}
                 </Button>
               </>
@@ -294,29 +375,35 @@ export function ReportReviewPage() {
       </div>
 
       <Dialog
-        open={command !== null}
+        open={activeCommand !== null}
         onOpenChange={(open) => {
           if (!open) closeDialog();
         }}
-        title={command === 'approve' ? t('review.report.approve') : t('review.report.reject')}
+        title={
+          activeCommand?.type === 'approve' ? t('review.report.approve') : t('review.report.reject')
+        }
         actions={
           <>
             <Button variant="secondary" onClick={closeDialog}>
               {t('common.cancel')}
             </Button>
             <Button
-              variant={command === 'reject' ? 'danger' : 'primary'}
+              variant={activeCommand?.type === 'reject' ? 'danger' : 'primary'}
               loading={commands.approve.isPending || commands.reject.isPending}
-              disabled={command === 'reject' && !REASON_CODE.test(reasonCode)}
+              disabled={
+                !activeCommand || (activeCommand.type === 'reject' && !REASON_CODE.test(reasonCode))
+              }
               onClick={() => void decide()}
             >
-              {command === 'approve' ? t('review.report.approve') : t('review.report.reject')}
+              {activeCommand?.type === 'approve'
+                ? t('review.report.approve')
+                : t('review.report.reject')}
             </Button>
           </>
         }
       >
         <div className="grid gap-3">
-          {command === 'reject' ? (
+          {activeCommand?.type === 'reject' ? (
             <FormField
               label={t('review.report.reasonCode')}
               required

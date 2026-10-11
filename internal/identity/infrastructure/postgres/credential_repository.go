@@ -123,6 +123,19 @@ func (r *CredentialRepository) CreateHumanAccount(ctx context.Context, in applic
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
+	actorID, err := createHumanAccountTx(ctx, tx, in)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return uuid.Nil, fmt.Errorf("identity: commit: %w", err)
+	}
+	return actorID, nil
+}
+
+// createHumanAccountTx lets invitation acceptance use the same actor/credential unit
+// inside its tenant transaction. The caller owns commit and rollback.
+func createHumanAccountTx(ctx context.Context, tx pgx.Tx, in application.NewAccount) (uuid.UUID, error) {
 	q := sqlcgen.New(tx)
 	actorID, err := q.CreateLocalActor(ctx, sqlcgen.CreateLocalActorParams{
 		IdentityIssuer:  identity.LocalIssuer,
@@ -133,17 +146,21 @@ func (r *CredentialRepository) CreateHumanAccount(ctx context.Context, in applic
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("identity: create actor: %w", err)
 	}
+	if err := createCredentialTx(ctx, q, actorID, in); err != nil {
+		return uuid.Nil, err
+	}
+	return actorID, nil
+}
+
+func createCredentialTx(ctx context.Context, q *sqlcgen.Queries, actorID uuid.UUID, in application.NewAccount) error {
 	if err := q.CreateCredential(ctx, sqlcgen.CreateCredentialParams{
 		ActorID:            actorID,
 		PasswordHash:       in.PasswordHash,
 		MustChangePassword: in.MustChangePassword,
 	}); err != nil {
-		return uuid.Nil, fmt.Errorf("identity: create credential: %w", err)
+		return fmt.Errorf("identity: create credential: %w", err)
 	}
-	if err := tx.Commit(ctx); err != nil {
-		return uuid.Nil, fmt.Errorf("identity: commit: %w", err)
-	}
-	return actorID, nil
+	return nil
 }
 
 func derefString(s *string) string {

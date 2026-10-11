@@ -1,9 +1,8 @@
 /**
- * Money and quantity fields cross the wire as decimal strings: the API stores them as
- * `numeric(20,6)` and encodes them as text so no value is ever rounded by a binary float.
- * The generated types call them `number`, because that is what `type: number` means in
- * JSON Schema, so this module restates the affected shapes with `string` where the value
- * is a quantity. Screens format these strings; they never parse them.
+ * Money and quantity fields are exact decimal strings in the client. Some API responses
+ * encode them as JSON number tokens; those reads must preserve the original token text
+ * before JSON.parse can round it. Generated types call them `number` because the schema
+ * uses type: number. Screens format the exact strings; they never parse them as floats.
  */
 import type { components } from './generated/kapsora-v1';
 
@@ -133,9 +132,8 @@ export type EligibilityEvaluation = Omit<Schemas['EligibilityEvaluation'], 'requ
 };
 
 /**
- * Reinterprets a decoded response whose quantity fields the generated types call `number`
- * but the API actually sends as decimal strings. One cast, in one place, with the reason
- * written down, instead of a lie repeated at every call site.
+ * Reinterprets responses that already carry decimal strings. For endpoints that send
+ * JSON number tokens, parseDecimalJson must run before this cast or normal JSON.parse.
  */
 export function asDecimals<T>(value: unknown): T {
   return value as T;

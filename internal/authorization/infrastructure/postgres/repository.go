@@ -50,6 +50,32 @@ type Repository struct {
 // owns those and drives the engine itself.
 func New() *Repository { return &Repository{ledger: ledger.NewLedger(nil)} }
 
+// BookingNightProvenance checks the original eligibility mapping and its account in
+// the caller's tenant transaction before a terminal booking penalty can use the NIGHT cap.
+func (Repository) BookingNightProvenance(ctx context.Context, tx pgx.Tx, tenantID,
+	evaluationID, reservationID, serviceDefinitionID, personID, enrollmentID, bookingID,
+	accountID uuid.UUID, factor benefitdomain.Quantity,
+) (bool, error) {
+	row, err := sqlcgen.New(tx).GetBookingConversionEvidence(ctx,
+		sqlcgen.GetBookingConversionEvidenceParams{TenantID: tenantID,
+			EvaluationID: evaluationID, ReservationID: reservationID,
+			ServiceDefinitionID: serviceDefinitionID})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("authorization: booking NIGHT provenance: %w", err)
+	}
+	storedFactor, err := benefitdomain.ParseQuantity(row.UnitFactor)
+	if err != nil {
+		return false, nil
+	}
+	return row.PersonID == personID && row.EnrollmentID.Valid &&
+		row.EnrollmentID.UUID == enrollmentID && row.UnitType == "NIGHT" &&
+		row.EntitlementAccountID == accountID && row.ReferenceType == ledger.ReferenceBooking &&
+		row.ReferenceID == bookingID && storedFactor.Cmp(factor) == 0, nil
+}
+
 var _ application.Repository = (*Repository)(nil)
 
 // CreateAuthorization implements application.Repository.
@@ -130,6 +156,26 @@ func (Repository) GetAuthorizationByKey(ctx context.Context, tx pgx.Tx, tenantID
 		return application.AuthorizationRecord{}, fmt.Errorf("authorization: get authorization by key: %w", err)
 	}
 	return authorizationOf(keyedAuthorizationRow(row)), nil
+}
+
+// BookingOrphanEvidence implements application.Repository.
+func (Repository) BookingOrphanEvidence(ctx context.Context, tx pgx.Tx,
+	tenantID, authorizationID, reservationID uuid.UUID,
+) (application.BookingOrphanEvidence, error) {
+	row, err := sqlcgen.New(tx).BookingOrphanEvidence(ctx, sqlcgen.BookingOrphanEvidenceParams{
+		TenantID: tenantID, AuthorizationID: uuid.NullUUID{UUID: authorizationID, Valid: true},
+		ReservationID: reservationID,
+	})
+	if err != nil {
+		return application.BookingOrphanEvidence{}, fmt.Errorf("authorization: booking orphan evidence: %w", err)
+	}
+	return application.BookingOrphanEvidence{
+		AccountID: row.EntitlementAccountID, ReferenceType: row.ReferenceType,
+		ReferenceID: row.ReferenceID, Quantity: row.Quantity,
+		ConsumedQuantity: row.ConsumedQuantity, ReleasedQuantity: row.ReleasedQuantity,
+		Status: row.Status, BookingLinks: row.BookingLinks, Fulfilments: row.Fulfilments,
+		RedeemedVouchers: row.RedeemedVouchers, ConsumptionMovements: row.ConsumptionMovements,
+	}, nil
 }
 
 // ListAuthorizations implements application.Repository.
@@ -242,10 +288,11 @@ func (Repository) CreateAuthorizationItem(ctx context.Context, tx pgx.Tx, tenant
 ) (uuid.UUID, error) {
 	row, err := sqlcgen.New(tx).CreateAuthorizationItem(ctx, sqlcgen.CreateAuthorizationItemParams{
 		TenantID: tenantID, AuthorizationID: in.AuthorizationID, RequestItemID: in.RequestItemID,
-		ServiceDefinitionID: in.ServiceDefinitionID,
-		ApprovedQuantity:    in.ApprovedQuantity.String(),
-		ApprovedAmount:      quantityPtr(in.ApprovedAmount),
-		MemberAmount:        in.MemberAmount.String(),
+		ServiceDefinitionID:   in.ServiceDefinitionID,
+		ApprovedQuantity:      in.ApprovedQuantity.String(),
+		EntitlementUnitFactor: in.EntitlementUnitFactor.String(),
+		ApprovedAmount:        quantityPtr(in.ApprovedAmount),
+		MemberAmount:          in.MemberAmount.String(),
 	})
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -747,4 +794,25 @@ func (Repository) ListExpiringAuthorizations(ctx context.Context, tx pgx.Tx, ten
 		})
 	}
 	return out, nil
+}
+
+// ReservationRemaining reads the ledger's remainder; only the ledger may change it.
+func (Repository) ReservationRemaining(ctx context.Context, tx pgx.Tx, tenantID, reservationID uuid.UUID) (benefitdomain.Quantity, error) {
+	r, err := sqlcgen.New(tx).GetEntitlementReservation(ctx, sqlcgen.GetEntitlementReservationParams{TenantID: tenantID, ID: reservationID})
+	if err != nil {
+		return benefitdomain.Quantity{}, err
+	}
+	quantity, err := benefitdomain.ParseQuantity(r.Quantity)
+	if err != nil {
+		return benefitdomain.Quantity{}, err
+	}
+	consumed, err := benefitdomain.ParseQuantity(r.ConsumedQuantity)
+	if err != nil {
+		return benefitdomain.Quantity{}, err
+	}
+	released, err := benefitdomain.ParseQuantity(r.ReleasedQuantity)
+	if err != nil {
+		return benefitdomain.Quantity{}, err
+	}
+	return quantity.Sub(consumed).Sub(released), nil
 }

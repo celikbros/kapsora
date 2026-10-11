@@ -1,8 +1,7 @@
 import { usePermission } from '@kapsora/auth';
 import { useTranslation } from '@kapsora/i18n';
 import { Badge, Breadcrumb, Button, PageHeader, ProblemAlert, Spinner, Tabs } from '@kapsora/ui';
-import { Link, useParams } from '@tanstack/react-router';
-import { useState } from 'react';
+import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router';
 
 import { problemOf } from '../problems';
 import { EligibilityTab } from './EligibilityTab';
@@ -21,8 +20,9 @@ import { usePerson } from './queries';
 export function PersonDetailPage() {
   const { t } = useTranslation();
   const { personId } = useParams({ from: '/app/people/$personId' });
+  const search = useSearch({ from: '/app/people/$personId' });
+  const navigate = useNavigate();
   const query = usePerson(personId);
-  const [tab, setTab] = useState('identity');
   const canReadEntitlements = usePermission('entitlement.read');
   const canCheckEligibility = usePermission('eligibility.check');
   const canReadPrograms = usePermission('program.read');
@@ -30,6 +30,19 @@ export function PersonDetailPage() {
   const canReadClaims = usePermission('claim.read');
   const canReadAudit = usePermission('audit.read');
   const canReadLodging = usePermission('accommodation.property.read');
+  const allowedTabs = [
+    'identity',
+    'family',
+    'memberships',
+    ...(canReadPrograms ? ['enrollments'] : []),
+    ...(canReadEntitlements ? ['entitlements'] : []),
+    ...(canCheckEligibility ? ['eligibility'] : []),
+    ...(canReadCases || canReadClaims ? ['health'] : []),
+    ...(canReadLodging ? ['lodging'] : []),
+    'reimbursements',
+    ...(canReadAudit ? ['accessLog'] : []),
+  ];
+  const tab = search.tab && allowedTabs.includes(search.tab) ? search.tab : 'identity';
 
   if (query.isPending) {
     return (
@@ -101,7 +114,13 @@ export function PersonDetailPage() {
       <Tabs
         ariaLabel={t('people.detailTitle')}
         value={tab}
-        onValueChange={setTab}
+        onValueChange={(nextTab) => {
+          void navigate({
+            to: '/people/$personId',
+            params: { personId },
+            search: nextTab === 'identity' ? {} : { tab: nextTab },
+          });
+        }}
         tabs={[
           {
             value: 'identity',

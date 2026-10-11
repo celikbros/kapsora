@@ -1,4 +1,5 @@
 import type { BatchDecision, BatchStatus, Export } from '@kapsora/api-client';
+import { usePermission } from '@kapsora/auth';
 import { formatDate, formatDateTime, formatMoney, useTranslation } from '@kapsora/i18n';
 import {
   Badge,
@@ -49,6 +50,9 @@ function today(): string {
 export function StatementPage() {
   const { t } = useTranslation();
   const wide = useMinWidth(768);
+  const canReadEarnings = usePermission('claim.read');
+  const canReadInvoices = usePermission('invoice.read');
+  const canExport = usePermission('report.export');
   const providerId = useProviderOrganizationId();
   const [periodFrom, setFrom] = useState(monthStart);
   const [periodTo, setTo] = useState(today);
@@ -60,12 +64,14 @@ export function StatementPage() {
       <PageHeader
         title={t('billing.report.statementTitle')}
         actions={
-          <Link
-            to="/billing"
-            className="text-primary self-center text-sm underline-offset-4 hover:underline"
-          >
-            {t('billing.provider.earningsTitle')}
-          </Link>
+          canReadEarnings ? (
+            <Link
+              to="/billing"
+              className="text-primary self-center text-sm underline-offset-4 hover:underline"
+            >
+              {t('billing.provider.earningsTitle')}
+            </Link>
+          ) : null
         }
       />
       <p className="text-fg-muted text-sm">{t('billing.report.statementIntro')}</p>
@@ -89,7 +95,7 @@ export function StatementPage() {
             />
           </FormField>
         </div>
-        {providerId ? (
+        {providerId && canExport ? (
           <StatementExport providerId={providerId} periodFrom={periodFrom} periodTo={periodTo} />
         ) : null}
       </Card>
@@ -169,14 +175,18 @@ export function StatementPage() {
                     data-testid="statement-invoice"
                   >
                     <div className="flex items-baseline justify-between gap-3">
-                      <Link
-                        to="/billing/invoices/$invoiceId"
-                        params={{ invoiceId: inv.id }}
-                        search={{ claims: '' }}
-                        className="text-primary font-mono text-xs underline-offset-4 hover:underline"
-                      >
-                        {inv.invoiceNumber}
-                      </Link>
+                      {canReadInvoices ? (
+                        <Link
+                          to="/billing/invoices/$invoiceId"
+                          params={{ invoiceId: inv.id }}
+                          search={{ claims: '' }}
+                          className="text-primary font-mono text-xs underline-offset-4 hover:underline"
+                        >
+                          {inv.invoiceNumber}
+                        </Link>
+                      ) : (
+                        <span className="font-mono text-xs">{inv.invoiceNumber}</span>
+                      )}
                       <Badge tone={invoiceTone(inv.status)}>
                         {t(`billing.invoiceStatus.${inv.status}`)}
                       </Badge>
@@ -226,14 +236,18 @@ export function StatementPage() {
                     {data.invoices.map((inv) => (
                       <TR key={inv.id} data-testid="statement-invoice">
                         <TD className="whitespace-nowrap">
-                          <Link
-                            to="/billing/invoices/$invoiceId"
-                            params={{ invoiceId: inv.id }}
-                            search={{ claims: '' }}
-                            className="text-primary font-mono text-xs underline-offset-4 hover:underline"
-                          >
-                            {inv.invoiceNumber}
-                          </Link>
+                          {canReadInvoices ? (
+                            <Link
+                              to="/billing/invoices/$invoiceId"
+                              params={{ invoiceId: inv.id }}
+                              search={{ claims: '' }}
+                              className="text-primary font-mono text-xs underline-offset-4 hover:underline"
+                            >
+                              {inv.invoiceNumber}
+                            </Link>
+                          ) : (
+                            <span className="font-mono text-xs">{inv.invoiceNumber}</span>
+                          )}
                           <span className="text-fg-muted block text-xs">
                             {formatDate(inv.invoiceDate)}
                           </span>
@@ -247,7 +261,7 @@ export function StatementPage() {
                           {formatMoney(inv.payableAmount, inv.currencyCode)}
                         </TD>
                         <TD className="whitespace-nowrap">
-                          {inv.batchId ? (
+                          {inv.batchId && canReadInvoices ? (
                             <Link
                               to="/billing/batches/$batchId"
                               params={{ batchId: inv.batchId }}
@@ -256,7 +270,7 @@ export function StatementPage() {
                               {inv.batchReference}
                             </Link>
                           ) : (
-                            '—'
+                            (inv.batchReference ?? '—')
                           )}
                           {inv.batchStatus ? (
                             <span className="block">
@@ -361,13 +375,17 @@ export function StatementPage() {
                           </Badge>
                         </TD>
                         <TD className="whitespace-nowrap">
-                          <Link
-                            to="/billing/batches/$batchId"
-                            params={{ batchId: s.batchId }}
-                            className="text-primary font-mono text-xs underline-offset-4 hover:underline"
-                          >
-                            {s.batchReference}
-                          </Link>
+                          {canReadInvoices ? (
+                            <Link
+                              to="/billing/batches/$batchId"
+                              params={{ batchId: s.batchId }}
+                              className="text-primary font-mono text-xs underline-offset-4 hover:underline"
+                            >
+                              {s.batchReference}
+                            </Link>
+                          ) : (
+                            <span className="font-mono text-xs">{s.batchReference}</span>
+                          )}
                         </TD>
                         <TD className="whitespace-nowrap">{formatDate(s.dueDate)}</TD>
                         <TD className="text-right font-mono whitespace-nowrap tabular-nums">

@@ -1,4 +1,4 @@
-import { useStepUp } from '@kapsora/auth';
+import { usePermission, useStepUp } from '@kapsora/auth';
 import { formatDate, formatDateTime, formatMoney, useTranslation } from '@kapsora/i18n';
 import {
   Badge,
@@ -39,6 +39,9 @@ export function SettlementPage() {
   const { t } = useTranslation();
   const toast = useToast();
   const stepUp = useStepUp();
+  const mayApprove = usePermission('settlement.approve');
+  const mayRecordPayment = usePermission('settlement.record_payment');
+  const canReadClaims = usePermission('claim.read');
   const settlement = useSettlement(settlementId);
   const approve = useApproveSettlement(settlementId);
   const cancel = useCancelSettlement(settlementId);
@@ -53,13 +56,15 @@ export function SettlementPage() {
   if (settlement.isPending) return <Spinner />;
   if (settlement.isError) return <ProblemAlert problem={problemOf(settlement.error)} />;
   if (!record) return null;
-  const canApprove = record.status === 'PENDING_APPROVAL';
+  const canApprove = mayApprove && record.status === 'PENDING_APPROVAL';
   const canPay =
-    record.status === 'APPROVED' ||
-    record.status === 'POSTED' ||
-    record.status === 'PARTIALLY_PAID';
+    (mayRecordPayment || mayApprove) &&
+    (record.status === 'APPROVED' ||
+      record.status === 'POSTED' ||
+      record.status === 'PARTIALLY_PAID');
 
   async function onApprove() {
+    if (!canApprove) return;
     try {
       const result = await stepUp.run(() => approve.mutateAsync(etag));
       if (result) {
@@ -72,6 +77,7 @@ export function SettlementPage() {
 
   function onCancel(e: FormEvent) {
     e.preventDefault();
+    if (!canApprove) return;
     cancel.mutate(
       {
         etag,
@@ -91,6 +97,7 @@ export function SettlementPage() {
 
   function onPay(e: FormEvent) {
     e.preventDefault();
+    if (!canPay) return;
     pay.mutate(
       {
         externalReference: payment.externalReference.trim(),
@@ -169,13 +176,19 @@ export function SettlementPage() {
           <ul className="mt-2 grid gap-1 text-sm" data-testid="recovery-list">
             {record.recoveries.map((r) => (
               <li key={r.id} className="flex justify-between gap-3">
-                <Link
-                  to="/claims/$claimId"
-                  params={{ claimId: r.claimId }}
-                  className="text-primary font-mono text-xs underline-offset-4 hover:underline"
-                >
-                  {t('claims.title')} · {r.claimId.slice(0, 8)}
-                </Link>
+                {canReadClaims ? (
+                  <Link
+                    to="/claims/$claimId"
+                    params={{ claimId: r.claimId }}
+                    className="text-primary font-mono text-xs underline-offset-4 hover:underline"
+                  >
+                    {t('claims.title')} · {r.claimId.slice(0, 8)}
+                  </Link>
+                ) : (
+                  <span className="font-mono text-xs">
+                    {t('claims.title')} · {r.claimId.slice(0, 8)}
+                  </span>
+                )}
                 <span className="font-mono tabular-nums">
                   {formatMoney(r.amount, record.currencyCode)}
                 </span>

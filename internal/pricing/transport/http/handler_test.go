@@ -16,6 +16,7 @@ import (
 	"github.com/celikbros/kapsora/internal/identity"
 	identityhttp "github.com/celikbros/kapsora/internal/identity/transport/http"
 	"github.com/celikbros/kapsora/internal/platform/dbtest"
+	"github.com/celikbros/kapsora/internal/platform/httpx"
 	"github.com/celikbros/kapsora/internal/pricing/application"
 	pricingpg "github.com/celikbros/kapsora/internal/pricing/infrastructure/postgres"
 	pricinghttp "github.com/celikbros/kapsora/internal/pricing/transport/http"
@@ -47,8 +48,10 @@ type server struct {
 func newServer(t *testing.T) *server {
 	t.Helper()
 	h := dbtest.New(t)
+	cursors, _ := httpx.NewCursorCodec([]byte("pricing-http-test-cursor-key-012345"))
 	svc, err := application.New(application.Deps{
 		Pool: h.App, Repo: pricingpg.New(), Audit: auditpg.New(),
+		Cursors: cursors,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -175,6 +178,52 @@ func (s *server) quoteBody() string {
 		`"providerProfileId":"` + s.provider.String() + `",` +
 		`"serviceDate":"2026-06-15",` +
 		`"items":[{"serviceDefinitionId":"` + s.definition.String() + `","quantity":"1"}]}`
+}
+
+func TestPricingOptionsQuotePermissionAndMinimalResponse(t *testing.T) {
+	s := newServer(t)
+	for _, route := range []struct{ path, idKey, labelKey, id string }{
+		{"/api/v1/pricing/options/providers", "providerProfileId", "organizationName", s.provider.String()},
+		{"/api/v1/pricing/options/services", "serviceDefinitionId", "code", s.definition.String()},
+	} {
+		denied := s.do(t, http.MethodGet, route.path, "member.read", "", nil)
+		if denied.code != http.StatusForbidden {
+			t.Fatalf("%s denied status=%d", route.path, denied.code)
+		}
+		res := s.do(t, http.MethodGet, route.path, application.PermissionQuote, "", nil)
+		if res.code != http.StatusOK {
+			t.Fatalf("%s status=%d body=%v", route.path, res.code, res.body)
+		}
+		if len(res.body) != 2 || res.body["nextCursor"] != nil {
+			t.Fatalf("%s page keys=%v", route.path, res.body)
+		}
+		items, ok := res.body["items"].([]any)
+		if !ok || len(items) != 1 {
+			t.Fatalf("%s items=%v", route.path, res.body["items"])
+		}
+		item := items[0].(map[string]any)
+		if item[route.idKey] != route.id || item[route.labelKey] == "" {
+			t.Fatalf("%s item=%v", route.path, item)
+		}
+		wantKeys := 2
+		if route.idKey == "serviceDefinitionId" {
+			wantKeys = 3
+			if item["name"] == "" {
+				t.Fatalf("missing service name: %v", item)
+			}
+		}
+		if len(item) != wantKeys {
+			t.Fatalf("%s disclosed extra fields: %v", route.path, item)
+		}
+		badCursor := s.do(t, http.MethodGet, route.path+"?cursor=bad", application.PermissionQuote, "", nil)
+		if badCursor.code != http.StatusBadRequest || badCursor.body["code"] != "CURSOR_INVALID" {
+			t.Fatalf("%s bad cursor: %+v", route.path, badCursor)
+		}
+		badLimit := s.do(t, http.MethodGet, route.path+"?limit=101", application.PermissionQuote, "", nil)
+		if badLimit.code != http.StatusUnprocessableEntity {
+			t.Fatalf("%s bad limit: %+v", route.path, badLimit)
+		}
+	}
 }
 
 // TestCreatePriceQuoteAnswersWithTheWholeArithmetic.

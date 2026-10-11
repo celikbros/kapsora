@@ -1,4 +1,5 @@
 import type { BatchDecision, BatchInvoice } from '@kapsora/api-client';
+import { usePermission } from '@kapsora/auth';
 import { formatDate, formatDateTime, formatMoney, useTranslation } from '@kapsora/i18n';
 import {
   Badge,
@@ -54,6 +55,7 @@ export function BatchReviewPage() {
   const { t } = useTranslation();
   const toast = useToast();
   const wide = useMinWidth(768);
+  const canReview = usePermission('batch.review');
   const batch = useBatch(batchId);
   const summary = useBatchSummary(batchId);
   const decide = useDecideBatch(batchId);
@@ -64,7 +66,8 @@ export function BatchReviewPage() {
   if (batch.isPending) return <Spinner />;
   if (batch.isError) return <ProblemAlert problem={problemOf(batch.error)} />;
   if (!record) return null;
-  const reviewable = record.status === 'SUBMITTED' || record.status === 'UNDER_REVIEW';
+  const reviewable =
+    canReview && (record.status === 'SUBMITTED' || record.status === 'UNDER_REVIEW');
   const pending = record.invoices.filter((i) => !i.decision).length;
   const opened = open ? record.invoices.find((i) => i.invoiceId === open) : undefined;
 
@@ -99,7 +102,9 @@ export function BatchReviewPage() {
             </span>
           ) : null}
         </div>
-        <p className="text-fg-muted mt-1 text-sm">{t('billing.office.decideHint')}</p>
+        {canReview ? (
+          <p className="text-fg-muted mt-1 text-sm">{t('billing.office.decideHint')}</p>
+        ) : null}
         {!wide ? (
           <ul className="mt-3 grid gap-2" data-testid="review-table">
             {record.invoices.map((inv) => (
@@ -228,6 +233,7 @@ export function BatchReviewPage() {
             batchId={batchId}
             etag={etag}
             invoice={opened}
+            canReview={canReview}
             onDone={() => setOpen(null)}
           />
         ) : null}
@@ -359,12 +365,13 @@ export function BatchReviewPage() {
           {pending === 0 ? (
             <div className="mt-3">
               <Button
-                onClick={() =>
+                onClick={() => {
+                  if (!canReview || !reviewable || pending !== 0) return;
                   decide.mutate(etag, {
                     onSuccess: () =>
                       toast.notify({ tone: 'success', title: t('billing.office.batchDecided') }),
-                  })
-                }
+                  });
+                }}
                 loading={decide.isPending}
                 data-testid="decide-batch"
               >
@@ -409,11 +416,13 @@ function DecisionForm({
   batchId,
   etag,
   invoice,
+  canReview,
   onDone,
 }: {
   batchId: string;
   etag: string;
   invoice: BatchInvoice;
+  canReview: boolean;
   onDone: () => void;
 }) {
   const { t } = useTranslation();
@@ -428,6 +437,7 @@ function DecisionForm({
 
   function submit(e: FormEvent) {
     e.preventDefault();
+    if (!canReview) return;
     review.mutate(
       {
         invoiceId: invoice.invoiceId,

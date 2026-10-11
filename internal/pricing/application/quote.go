@@ -242,7 +242,7 @@ func (s *Service) price(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 ) (computation, error) {
 	day := benefitdomain.DateOnly(in.ServiceDate)
 
-	eligible, available, accounts, planVersionID, err := s.resolveEligibility(ctx, tx, tenantID, in, hints, day)
+	coverage, planVersionID, err := s.resolveEligibility(ctx, tx, tenantID, in, hints, day)
 	if err != nil {
 		return computation{}, err
 	}
@@ -259,7 +259,8 @@ func (s *Service) price(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 		}
 		item := pricing.Item{
 			LineNo: i + 1, Quantity: requested.Quantity,
-			Available: available[i], AccountKey: accounts[i], Eligible: eligible[i],
+			Available: coverage[i].available, AccountKey: coverage[i].accountKey,
+			Eligible: coverage[i].eligible, QuantityCover: coverage[i].quantityCover,
 		}
 		if requested.RequestedAmount != nil {
 			item.Requested = *requested.RequestedAmount
@@ -272,8 +273,8 @@ func (s *Service) price(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 		fact := lineFacts{
 			LineNo: i + 1, ServiceDefinitionID: requested.ServiceDefinitionID,
 			PackageDefinitionID: requested.PackageDefinitionID,
-			EntitlementCode:     hints.codeFor(i), Quantity: requested.Quantity,
-			Requested: item.Requested, Eligible: eligible[i],
+			EntitlementCode:     coverage[i].code, Quantity: requested.Quantity,
+			Requested: item.Requested, Eligible: coverage[i].eligible,
 		}
 		if winner == nil {
 			item.NoPriceReason = string(reason)
@@ -331,6 +332,14 @@ func (s *Service) price(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 	return out, nil
 }
 
+type quoteCoverage struct {
+	eligible      bool
+	available     benefitdomain.Quantity
+	accountKey    string
+	code          string
+	quantityCover *pricing.QuantityCover
+}
+
 // resolveEligibility runs the pure resolver of WP-I2-04 over data this transaction
 // loaded. It opens nothing: an entitlement account that was never opened simply has no
 // balance here, and the line is priced with nothing available rather than with an account
@@ -338,31 +347,31 @@ func (s *Service) price(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 // its own check opens accounts lazily, and opening one posts a GRANT ledger entry.
 func (s *Service) resolveEligibility(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 	in QuoteInput, hints contextHints, day time.Time,
-) (eligible []bool, available []benefitdomain.Quantity, accounts []string, planVersionID *uuid.UUID, err error) {
+) (coverage []quoteCoverage, planVersionID *uuid.UUID, err error) {
 	loaded, err := s.repo.LoadEligibility(ctx, tx, tenantID, in.PersonID, in.ProgramID, day)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, err
 	}
 	resolverInput := eligibility.Input{
 		ServiceDate: day, Person: loaded.Person, Memberships: loaded.Memberships,
 		Enrollments: loaded.Enrollments, PlanVersion: loaded.PlanVersion,
-		Accounts: loaded.Accounts, Items: make([]eligibility.Item, 0, len(in.Items)),
+		Accounts: loaded.Accounts, Mappings: loaded.Mappings, Items: make([]eligibility.Item, 0, len(in.Items)),
 	}
 	if in.ProgramID != nil {
 		resolverInput.ProgramID = *in.ProgramID
 	}
 	for i, item := range in.Items {
+		serviceID := uuid.Nil
+		if item.ServiceDefinitionID != nil {
+			serviceID = *item.ServiceDefinitionID
+		}
 		resolverInput.Items = append(resolverInput.Items, eligibility.Item{
-			Index: i, EntitlementCode: hints.codeFor(i), Quantity: item.Quantity,
+			Index: i, ServiceDefinitionID: serviceID, EntitlementCode: hints.codeFor(i), Quantity: item.Quantity,
 		})
 	}
 	result := eligibility.Resolve(resolverInput)
 
-	eligible = make([]bool, len(in.Items))
-	available = make([]benefitdomain.Quantity, len(in.Items))
-	// The entitlement code names the account behind the balance. Two lines carrying the
-	// same code draw on one account, and the calculation shares the balance between them.
-	accounts = make([]string, len(in.Items))
+	coverage = make([]quoteCoverage, len(in.Items))
 	for _, item := range result.Items {
 		if item.Index < 0 || item.Index >= len(in.Items) {
 			continue
@@ -370,16 +379,23 @@ func (s *Service) resolveEligibility(ctx context.Context, tx pgx.Tx, tenantID uu
 		// Only an outright ELIGIBLE line lets the plan carry anything. A line nobody could
 		// map to an entitlement is not "probably covered": nothing is known to be covered,
 		// and the quote says so instead of implying a number.
-		eligible[item.Index] = item.Outcome == eligibility.ItemEligible
+		c := &coverage[item.Index]
+		c.eligible = item.Outcome == eligibility.ItemEligible
+		c.code = item.EntitlementCode
 		if item.AvailableQuantity != nil {
-			available[item.Index] = *item.AvailableQuantity
-			accounts[item.Index] = item.EntitlementCode
+			c.available = *item.AvailableQuantity
+			c.accountKey = item.AccountID.String()
+			if item.UnitType != "MONEY" {
+				c.quantityCover = &pricing.QuantityCover{
+					Required: item.DrawQuantity, AllowOverdraft: item.AllowOverdraft,
+				}
+			}
 		}
 	}
 	if result.PlanVersionID != uuid.Nil {
 		planVersionID = uuidPtr(result.PlanVersionID)
 	}
-	return eligible, available, accounts, planVersionID, nil
+	return coverage, planVersionID, nil
 }
 
 // selectPrice asks the deterministic selection of WP-I3-03 which contracted price applies

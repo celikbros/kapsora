@@ -65,7 +65,17 @@ export function useCreateRequest() {
   const ops = useOps();
   const tenantId = useTenantId();
   return useMutation({
-    mutationFn: (body: CreateServiceRequest) => ops.requests.create(tenantId, body),
+    mutationFn: ({ body, key }: { body: CreateServiceRequest; key: string }) =>
+      ops.requests.create(tenantId, body, key),
+  });
+}
+
+export function useSubmitRequest() {
+  const ops = useOps();
+  const tenantId = useTenantId();
+  return useMutation({
+    mutationFn: ({ requestId, etag, key }: { requestId: string; etag: string; key: string }) =>
+      ops.requests.submit(tenantId, requestId, etag, key),
   });
 }
 

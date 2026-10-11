@@ -158,3 +158,52 @@ func utcPtr(t *time.Time) *time.Time {
 	utc := t.UTC()
 	return &utc
 }
+
+// EndEncounter shares the parent lock with case closure and diagnosis writes. The
+// second scoped read observes the version after acquiring that lock, so concurrent
+// endings cannot overwrite each other or race case closure.
+func (s *Service) EndEncounter(ctx context.Context, rc identity.RequestContext, id uuid.UUID, endedAt time.Time, expected int64) (EncounterView, error) {
+	var out EncounterView
+	err := s.withTx(ctx, rc, func(ctx context.Context, tx pgx.Tx) error {
+		encounter, err := s.repo.GetEncounter(ctx, tx, rc.TenantID, id, scopeOf(rc))
+		if err != nil {
+			return err
+		}
+		record, err := s.repo.LockCase(ctx, tx, rc.TenantID, encounter.CaseID, scopeOf(rc))
+		if err != nil {
+			return err
+		}
+		if record.Status == domain.StatusClosed {
+			return ErrCaseClosed
+		}
+		encounter, err = s.repo.GetEncounter(ctx, tx, rc.TenantID, id, scopeOf(rc))
+		if err != nil {
+			return err
+		}
+		if encounter.EndedAt != nil {
+			return ErrEncounterEnded
+		}
+		if encounter.RowVersion != expected {
+			return ErrVersionMismatch
+		}
+		if endedAt.IsZero() {
+			return fieldError("endedAt", "REQUIRED", "bitiş zamanı zorunlu")
+		}
+		if err := domain.ValidateNewEncounter(domain.NewEncounter{EncounterType: encounter.EncounterType, StartedAt: encounter.StartedAt, EndedAt: &endedAt}); err != nil {
+			return err
+		}
+		if err := s.repo.EndEncounter(ctx, tx, rc.TenantID, id, endedAt.UTC(), actorPtr(rc.Principal.ActorID), expected); err != nil {
+			return err
+		}
+		if err := s.record(ctx, tx, rc, "health_encounter.end", domain.AggregateEncounter, id, map[string]any{"case": record.ID, "person": record.PersonID}); err != nil {
+			return err
+		}
+		encounter, err = s.repo.GetEncounter(ctx, tx, rc.TenantID, id, scopeOf(rc))
+		if err != nil {
+			return err
+		}
+		out, err = s.viewEncounter(ctx, tx, rc, record, encounter, AccessRequest{}, audit.AccessView, commandRead)
+		return err
+	})
+	return out, err
+}

@@ -1,4 +1,5 @@
 import type { HealthCase } from '@kapsora/api-client';
+import { useSession } from '@kapsora/auth';
 import { formatDate, useTranslation } from '@kapsora/i18n';
 import {
   Badge,
@@ -19,6 +20,7 @@ import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 
 import { problemOf } from '../problems';
+import { canOpen } from '../access';
 import { usePersonName, useCases } from './queries';
 import { caseTone } from './words';
 
@@ -34,9 +36,18 @@ function NameCell({ personId }: { personId: string }) {
  */
 export function CaseListPage() {
   const { t } = useTranslation();
+  const canOpenCase = useSession((s) => canOpen('caseOpen', s.activeTenant?.permissions ?? []));
   const [status, setStatus] = useState('OPEN');
   const query = useCases(status);
-  const rows: HealthCase[] = query.data?.items ?? [];
+  const seen = new Set<string>();
+  const rows: HealthCase[] =
+    query.data?.pages.flatMap((page) =>
+      page.items.filter((row) => {
+        if (seen.has(row.id)) return false;
+        seen.add(row.id);
+        return true;
+      }),
+    ) ?? [];
 
   return (
     <>
@@ -44,9 +55,11 @@ export function CaseListPage() {
         title={t('health.cases.title')}
         description={t('health.cases.intro')}
         actions={
-          <Link to="/cases/new">
-            <Button size="sm">{t('health.cases.open')}</Button>
-          </Link>
+          canOpenCase ? (
+            <Link to="/cases/new">
+              <Button size="sm">{t('health.cases.open')}</Button>
+            </Link>
+          ) : null
         }
       />
       <div className="mb-3 flex flex-wrap items-end gap-3">
@@ -68,8 +81,19 @@ export function CaseListPage() {
         <div className="text-fg-muted flex items-center gap-2 p-6 text-sm" aria-busy="true">
           <Spinner /> {t('common.loading')}
         </div>
-      ) : query.error ? (
-        <ProblemAlert problem={problemOf(query.error)} />
+      ) : query.isError && !query.data ? (
+        <div className="grid gap-2">
+          <ProblemAlert problem={problemOf(query.error)} />
+          <Button
+            variant="secondary"
+            size="sm"
+            loading={query.isFetching}
+            disabled={query.isFetching}
+            onClick={() => void query.refetch()}
+          >
+            {t('common.retry')}
+          </Button>
+        </div>
       ) : rows.length === 0 ? (
         <EmptyState title={t('health.cases.empty')} />
       ) : (
@@ -106,6 +130,31 @@ export function CaseListPage() {
           </TBody>
         </Table>
       )}
+      {query.data && query.isFetchNextPageError ? (
+        <div className="mt-3 grid gap-2">
+          <ProblemAlert problem={problemOf(query.error)} />
+          <Button
+            variant="secondary"
+            size="sm"
+            loading={query.isFetchingNextPage}
+            disabled={query.isFetchingNextPage}
+            onClick={() => void query.fetchNextPage()}
+          >
+            {t('common.retry')}
+          </Button>
+        </div>
+      ) : query.hasNextPage ? (
+        <Button
+          variant="secondary"
+          size="sm"
+          className="mt-3"
+          loading={query.isFetchingNextPage}
+          disabled={query.isFetchingNextPage}
+          onClick={() => void query.fetchNextPage()}
+        >
+          {t('common.loadMore')}
+        </Button>
+      ) : null}
     </>
   );
 }

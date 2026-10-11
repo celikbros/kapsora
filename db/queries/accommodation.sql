@@ -274,9 +274,8 @@ SELECT i.room_type_id,
 
 -- name: ListAccommodationPriceCandidates :many
 -- Every contracted price that could apply to any of these room types on any night of the
--- stay, loaded once for the whole search. It is db/queries/contract.sql's
--- ListPriceCandidates widened in two ways and narrowed in none: the service date becomes a
--- half-open range, and the provider becomes a set, because a search over a region asks
+-- stay for the person's active program payers, loaded once for the whole search. It is
+-- db/queries/contract.sql's ListPriceCandidates over a date and provider range: a search asks
 -- about several hotels and thirty nights and one round trip per pair would be a thousand.
 --
 -- The version's own period comes back with the row, so the caller can decide per night
@@ -298,15 +297,18 @@ SELECT i.id AS price_item_id, i.price_list_id, l.contract_version_id,
        l.code AS price_list_code, l.priority AS list_priority,
        l.season_from, l.season_to, l.weekday_mask,
        v.version_no, v.currency_code, v.valid_from AS version_valid_from, v.valid_to AS version_valid_to,
-       c.id AS contract_id, c.code AS contract_code, c.provider_profile_id
+       c.id AS contract_id, c.code AS contract_code, c.provider_profile_id,
+       lt.hold_minutes
   FROM contract.price_item i
   JOIN contract.price_list l ON l.tenant_id = i.tenant_id AND l.id = i.price_list_id
   JOIN contract.contract_version v ON v.tenant_id = l.tenant_id AND v.id = l.contract_version_id
   JOIN contract.contract c ON c.tenant_id = v.tenant_id AND c.id = v.contract_id
+  LEFT JOIN contract.lodging_terms lt ON lt.tenant_id = v.tenant_id AND lt.contract_version_id = v.id
  WHERE i.tenant_id = sqlc.arg('tenant_id')
    AND v.status = 'PUBLISHED'
    AND c.status = 'ACTIVE'
    AND c.provider_profile_id = ANY(sqlc.arg('provider_profile_ids')::uuid[])
+   AND c.payer_organization_id = ANY(sqlc.arg('payer_organization_ids')::uuid[])
    AND v.valid_from <= sqlc.arg('last_night')::date
    AND (v.valid_to IS NULL OR v.valid_to > sqlc.arg('check_in')::date)
    AND (i.service_definition_id = ANY(sqlc.arg('service_definition_ids')::uuid[])

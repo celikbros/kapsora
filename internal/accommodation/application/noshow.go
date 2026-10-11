@@ -12,6 +12,7 @@ import (
 
 	"github.com/celikbros/kapsora/internal/accommodation/domain"
 	"github.com/celikbros/kapsora/internal/accommodation/settings"
+	benefitdomain "github.com/celikbros/kapsora/internal/benefit/domain"
 	"github.com/celikbros/kapsora/internal/identity"
 )
 
@@ -272,19 +273,30 @@ func (s *Service) reviewNoShow(ctx context.Context, tx pgx.Tx, rc identity.Reque
 		*report.ReportedByActorID == rc.Principal.ActorID {
 		return NoShowView{}, ErrNoShowSameActor
 	}
+	// Only the payer can decide a provider's report, even if another hotel clerk
+	// holds the legacy booking-management permission.
+	if rc.App == identity.AppProvider || rc.App == identity.AppMember || rc.PersonID.Valid {
+		return NoShowView{}, identity.ErrPermissionDenied
+	}
+	for _, scope := range rc.Scopes {
+		if scope.Type != "TENANT" {
+			return NoShowView{}, identity.ErrPermissionDenied
+		}
+	}
 	// Nor may a reviewer decide what their own no-show costs them.
 	if err := identity.RefuseOwnFile(rc, record.PersonID); err != nil {
 		return NoShowView{}, err
 	}
 
 	consumed := 0
+	var effect *EntitlementEffect
 	if in.Status == NoShowConfirmed {
 		if record.Status != domain.BookingConfirmed {
 			// Somebody cancelled or checked in while the report sat in a queue. The claim
 			// cannot be confirmed against a stay that is no longer waiting for a guest.
 			return NoShowView{}, ErrBookingTransitionInvalid
 		}
-		consumed, err = s.settleNoShow(ctx, tx, rc, record)
+		consumed, effect, err = s.settleNoShow(ctx, tx, rc, record)
 		if err != nil {
 			return NoShowView{}, err
 		}
@@ -294,6 +306,7 @@ func (s *Service) reviewNoShow(ctx context.Context, tx pgx.Tx, rc identity.Reque
 	moved, err := s.bookings.ReviewNoShowRow(ctx, tx, rc.TenantID, NoShowReviewRow{
 		ID: report.ID, Status: in.Status, ReviewedBy: rc.Principal.ActorID,
 		ReviewedAt: reviewedAt, ReviewComment: in.Comment, ConsumedNights: consumed,
+		EntitlementEffect: effect,
 	})
 	if err != nil {
 		return NoShowView{}, err
@@ -338,6 +351,7 @@ func (s *Service) reviewNoShow(ctx context.Context, tx pgx.Tx, rc identity.Reque
 	updated.ReviewedBy = &reviewer
 	updated.ReviewComment = in.Comment
 	updated.ConsumedNights = consumed
+	updated.EntitlementEffect = effect
 
 	if in.Status == NoShowConfirmed {
 		record.Status = domain.BookingNoShow
@@ -360,35 +374,35 @@ func (s *Service) reviewNoShow(ctx context.Context, tx pgx.Tx, rc identity.Reque
 // frees a room that a stay would have occupied.
 func (s *Service) settleNoShow(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
 	record BookingRecord,
-) (int, error) {
+) (int, *EntitlementEffect, error) {
 	snapshot, err := decodeQuoteSnapshot(record.QuoteSnapshot)
 	if err != nil {
-		return 0, err
+		return 0, nil, err
 	}
 	policy, err := DecodeLodgingPolicy(record.PolicySnapshot)
 	if err != nil {
-		return 0, err
+		return 0, nil, err
 	}
 	quote, err := QuoteNoShow(policy, snapshot)
 	if err != nil {
-		return 0, err
+		return 0, nil, err
 	}
 
 	if _, err := s.bookings.LockInventoryNights(ctx, tx, rc.TenantID, record.RoomTypeID,
 		record.CheckIn, record.LastNight()); err != nil {
-		return 0, err
+		return 0, nil, err
 	}
 	if err := s.bookings.AddConfirmed(ctx, tx, rc.TenantID, record.RoomTypeID,
 		record.CheckIn, record.LastNight(), -1); err != nil {
-		return 0, err
+		return 0, nil, err
 	}
 	moved, err := s.bookings.MarkBookingNoShowRow(ctx, tx, rc.TenantID, record.ID,
 		rc.Principal.ActorID)
 	if err != nil {
-		return 0, err
+		return 0, nil, err
 	}
 	if !moved {
-		return 0, ErrBookingTransitionInvalid
+		return 0, nil, ErrBookingTransitionInvalid
 	}
 
 	consumed := quote.Nights
@@ -396,7 +410,35 @@ func (s *Service) settleNoShow(ctx context.Context, tx pgx.Tx, rc identity.Reque
 		consumed = snapshot.CoveredNights
 	}
 	if record.AuthorizationID == nil {
-		return consumed, nil
+		return consumed, nil, nil
+	}
+	evidence, err := s.cancellationEvidence(ctx, tx, rc, record, snapshot)
+	if err != nil {
+		return 0, nil, err
+	}
+	if evidence != nil {
+		settled, settleErr := s.auths.SettleBookingPenalty(ctx, tx, BookingPenaltySettlement{
+			TenantID: rc.TenantID, ActorID: rc.Principal.ActorID,
+			AuthorizationID: *record.AuthorizationID, RequestID: *record.ServiceRequestID,
+			PersonID: record.PersonID, BookingID: record.ID,
+			EvaluationID: *snapshot.EvaluationID, EnrollmentID: record.EnrollmentID,
+			ReservationID:       *record.EntitlementReservationID,
+			ServiceDefinitionID: snapshot.ServiceDefinitionID,
+			PolicyPenalty:       fmt.Sprintf("%d", consumed),
+			ConsumeKey:          noShowPenaltyKey(record.ID), ConsumeReason: ReasonNoShowPenalty,
+			ReleaseReason: ReasonNoShowRelease,
+		})
+		if settleErr != nil {
+			return 0, nil, settleErr
+		}
+		if err := s.auths.RevokeVouchers(ctx, tx, rc, *record.AuthorizationID, CancelReasonNoShow); err != nil {
+			return 0, nil, err
+		}
+		actual, err := benefitdomain.ParseQuantity(settled.ConsumedServiceNights)
+		if err != nil {
+			return 0, nil, err
+		}
+		return wholeNights(actual), &settled, nil
 	}
 	if consumed > 0 {
 		if _, err := s.auths.Consume(ctx, tx, BookingConsumeInput{
@@ -406,7 +448,7 @@ func (s *Service) settleNoShow(ctx context.Context, tx pgx.Tx, rc identity.Reque
 			Nights:              fmt.Sprintf("%d", consumed),
 			Key:                 noShowPenaltyKey(record.ID), ReasonCode: ReasonNoShowPenalty,
 		}); err != nil {
-			return 0, err
+			return 0, nil, err
 		}
 	}
 	if rest := snapshot.CoveredNights - consumed; rest > 0 {
@@ -415,10 +457,10 @@ func (s *Service) settleNoShow(ctx context.Context, tx pgx.Tx, rc identity.Reque
 			AuthorizationID: *record.AuthorizationID,
 			Nights:          fmt.Sprintf("%d", rest), ReasonCode: ReasonNoShowRelease,
 		}); err != nil {
-			return 0, err
+			return 0, nil, err
 		}
 	}
-	return consumed, s.auths.RevokeVouchers(ctx, tx, rc, *record.AuthorizationID, CancelReasonNoShow)
+	return consumed, nil, s.auths.RevokeVouchers(ctx, tx, rc, *record.AuthorizationID, CancelReasonNoShow)
 }
 
 // workItemAggregateBooking is what a work item raised from here points at.

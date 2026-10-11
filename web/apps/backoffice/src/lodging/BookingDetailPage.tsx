@@ -1,5 +1,5 @@
 import type { Booking, LodgingPolicySnapshot, NoShowResult } from '@kapsora/api-client';
-import { usePermission } from '@kapsora/auth';
+import { usePermission, useSelfPersonId } from '@kapsora/auth';
 import {
   formatDate,
   formatDateTime,
@@ -15,6 +15,7 @@ import {
   FormField,
   HelpHint,
   PageHeader,
+  OwnFileNotice,
   ProblemAlert,
   Spinner,
   Textarea,
@@ -183,8 +184,12 @@ export function BookingDetailPage() {
           />
           <Row
             label={t('lodging.office.bookings.labels.reason')}
-            value={record.cancelReasonCode ?? '—'}
-            mono
+            value={
+              record.cancelReasonCode === 'NO_SHOW'
+                ? t('lodging.booking.status.NO_SHOW')
+                : (record.cancelReasonCode ?? '—')
+            }
+            mono={record.cancelReasonCode !== 'NO_SHOW'}
           />
           <NoShowSection booking={record} />
         </Step>
@@ -206,11 +211,23 @@ function Step({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function Row({ label, value, mono }: { label: string; value: ReactNode; mono?: boolean }) {
+function Row({
+  label,
+  value,
+  mono,
+  testId,
+}: {
+  label: string;
+  value: ReactNode;
+  mono?: boolean;
+  testId?: string;
+}) {
   return (
     <>
       <dt className="text-fg-muted">{label}</dt>
-      <dd className={mono ? 'font-mono text-xs tabular-nums' : ''}>{value}</dd>
+      <dd data-testid={testId} className={mono ? 'font-mono text-xs tabular-nums' : ''}>
+        {value}
+      </dd>
     </>
   );
 }
@@ -234,7 +251,10 @@ function NoShowSection({ booking }: { booking: Booking }) {
 function NoShowReview({ booking, result }: { booking: Booking; result: NoShowResult }) {
   const { t } = useTranslation();
   const toast = useToast();
-  const canReview = usePermission('accommodation.booking.manage');
+  const canManage = usePermission('accommodation.booking.manage');
+  const canReviewNoShow = usePermission('accommodation.no_show.review');
+  const own = useSelfPersonId() === booking.personId;
+  const canReview = (canManage || canReviewNoShow) && !own;
   const review = useReviewNoShow(booking.id);
   const [comment, setComment] = useState('');
   const report = result.report;
@@ -274,12 +294,52 @@ function NoShowReview({ booking, result }: { booking: Booking; result: NoShowRes
       <dd className="font-mono tabular-nums">
         {formatMoney(report.memberAmount, report.currencyCode)}
       </dd>
-      <dt className="text-fg-muted">{t('lodging.office.noShow.consumedNights')}</dt>
-      <dd>{report.consumedNights}</dd>
+      {report.status === 'CONFIRMED' && report.entitlementEffect ? (
+        <>
+          <Row
+            label={t('lodging.office.noShow.consumedServiceNights')}
+            value={report.entitlementEffect.consumedServiceNights}
+            mono
+            testId="no-show-consumed-service"
+          />
+          <Row
+            label={t('lodging.office.noShow.releasedServiceNights')}
+            value={report.entitlementEffect.releasedServiceNights}
+            mono
+            testId="no-show-released-service"
+          />
+          <Row
+            label={t('lodging.office.noShow.consumedEntitlementUnits')}
+            value={report.entitlementEffect.consumedEntitlementUnits}
+            mono
+            testId="no-show-consumed-units"
+          />
+          <Row
+            label={t('lodging.office.noShow.releasedEntitlementUnits')}
+            value={report.entitlementEffect.releasedEntitlementUnits}
+            mono
+            testId="no-show-released-units"
+          />
+        </>
+      ) : report.status === 'CONFIRMED' ? (
+        <Row
+          label={t('lodging.office.noShow.effect')}
+          value={t('lodging.office.noShow.effectUnknown')}
+          testId="no-show-effect-unknown"
+        />
+      ) : null}
       {report.reviewedAt ? (
         <>
           <dt className="text-fg-muted">{t('lodging.office.noShow.reviewedAt')}</dt>
           <dd>{formatDateTime(report.reviewedAt)}</dd>
+        </>
+      ) : null}
+      {report.status === 'REPORTED' && own ? (
+        <>
+          <dt className="text-fg-muted">{t('lodging.office.noShow.review')}</dt>
+          <dd>
+            <OwnFileNotice />
+          </dd>
         </>
       ) : null}
       {report.status === 'REPORTED' && canReview ? (

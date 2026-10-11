@@ -1,6 +1,7 @@
 package identityhttp_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"io"
@@ -13,26 +14,39 @@ import (
 	"github.com/google/uuid"
 
 	kapsorav1 "github.com/celikbros/kapsora/api/generated/kapsorav1"
+	"github.com/celikbros/kapsora/internal/audit"
 	auditpg "github.com/celikbros/kapsora/internal/audit/postgres"
 	"github.com/celikbros/kapsora/internal/identity"
 	"github.com/celikbros/kapsora/internal/identity/application"
 	"github.com/celikbros/kapsora/internal/identity/domain"
 	identitypg "github.com/celikbros/kapsora/internal/identity/infrastructure/postgres"
 	identityhttp "github.com/celikbros/kapsora/internal/identity/transport/http"
+	"github.com/celikbros/kapsora/internal/platform/crypto/localkey"
 	"github.com/celikbros/kapsora/internal/platform/dbtest"
+	"github.com/celikbros/kapsora/internal/platform/httpx"
+	"github.com/celikbros/kapsora/internal/platform/idempotency"
+	providerapp "github.com/celikbros/kapsora/internal/provider/application"
+	providerpg "github.com/celikbros/kapsora/internal/provider/infrastructure/postgres"
+	providerhttp "github.com/celikbros/kapsora/internal/provider/transport/http"
+	rulesapp "github.com/celikbros/kapsora/internal/rules/application"
+	rulespg "github.com/celikbros/kapsora/internal/rules/infrastructure/postgres"
+	ruleshttp "github.com/celikbros/kapsora/internal/rules/transport/http"
 )
 
 type authzServer struct {
 	*server
-	prov    *application.Provisioner
-	actor   uuid.UUID
-	tenantA uuid.UUID
-	tenantB uuid.UUID
+	svc            *application.Service
+	prov           *application.Provisioner
+	actor          uuid.UUID
+	tenantA        uuid.UUID
+	tenantB        uuid.UUID
+	invitationRepo *identitypg.InvitationRepository
+	invitationKeys *localkey.Provider
 }
 
 // newAuthzServer mirrors the production router: session loading, CSRF, the pre-tenant
 // routes and a tenant-scoped group with two probe routes.
-func newAuthzServer(t *testing.T) *authzServer {
+func newAuthzServer(t *testing.T, recorder ...audit.Recorder) *authzServer {
 	t.Helper()
 	h := dbtest.New(t)
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
@@ -72,8 +86,38 @@ func newAuthzServer(t *testing.T) *authzServer {
 	mw := identityhttp.NewMiddleware(svc, cookies, signingKey, logger).WithAuthorizer(authz)
 	sessionHandler := identityhttp.NewHandler(svc, cookies, signingKey, logger)
 	contextHandler := identityhttp.NewContextHandler(svc, authz, logger)
+	cursors, err := httpx.NewCursorCodec(signingKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	directoryHandler := identityhttp.NewDirectoryHandler(
+		application.NewDirectoryService(identitypg.NewDirectoryRepository(h.App, recorder...), cursors), mw, logger)
+	roleHandler := identityhttp.NewRoleAssignmentHandler(
+		application.NewRoleAssignmentService(identitypg.NewRoleAssignmentRepository(h.App, recorder...), cursors), mw, logger)
+	roleChangeHandler := identityhttp.NewPrivilegedRoleChangeHandler(
+		application.NewPrivilegedRoleChangeService(identitypg.NewPrivilegedRoleChangeRepository(h.App, recorder...), cursors), mw, logger)
+	ruleService, err := rulesapp.New(rulesapp.Deps{Pool: h.App, Repo: rulespg.New(), Audit: auditpg.New(), Cursors: cursors})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ruleHandler := ruleshttp.NewHandler(ruleService, mw, logger)
+	invitationKeys, err := localkey.New(bytes.Repeat([]byte{0x42}, 32))
+	if err != nil {
+		t.Fatal(err)
+	}
+	invitationRepo := identitypg.NewInvitationRepository(h.App, invitationKeys, invitationKeys, recorder...).WithDeliveryEnabled(true)
+	invitationHandler := identityhttp.NewInvitationHandler(application.NewInvitationService(invitationRepo), mw, cursors, logger)
+	providerService, err := providerapp.New(providerapp.Deps{Pool: h.App, Repo: providerpg.New(), Cipher: invitationKeys,
+		Index: invitationKeys, Audit: auditpg.New(), Cursors: cursors})
+	if err != nil {
+		t.Fatal(err)
+	}
+	providerHandler := providerhttp.NewHandler(providerService, mw, logger)
 
 	r := chi.NewRouter()
+	r.Group(func(anon chi.Router) {
+		invitationHandler.AnonymousRecipientRoutes(anon, "http://127.0.0.1:5181")
+	})
 	r.Route("/api/v1", func(api chi.Router) {
 		api.Use(mw.LoadSession)
 		api.Post("/session/login", sessionHandler.Login)
@@ -81,12 +125,55 @@ func newAuthzServer(t *testing.T) *authzServer {
 			authed.Use(mw.RequireCSRF)
 			authed.Get("/session", sessionHandler.GetSession)
 			authed.Post("/session/switch-tenant", contextHandler.SwitchTenant)
+			authed.Post("/session/step-up", sessionHandler.StepUp)
 			authed.Get("/me", contextHandler.GetMe)
 			authed.Get("/tenants", contextHandler.ListTenants)
+			authed.Route("/invitations", invitationHandler.RecipientRoutes)
 		})
 		api.Group(func(tenant chi.Router) {
 			tenant.Use(mw.RequireCSRF)
 			tenant.Use(mw.RequireTenantContext)
+			tenant.Route("/admin/users", func(r chi.Router) {
+				directoryHandler.Routes(r, idempotency.Middleware(h.App, idempotency.Options{
+					CommandCode: "tenant_membership.suspend",
+					Scope: func(req *http.Request) (idempotency.Scope, bool) {
+						rc, ok := identity.FromContext(req.Context())
+						return idempotency.Scope{TenantID: rc.TenantID, ActorID: rc.Principal.ActorID}, ok
+					},
+					HashHeaders: []string{"If-Match"},
+				}))
+				roleScope := func(req *http.Request) (idempotency.Scope, bool) {
+					rc, ok := identity.FromContext(req.Context())
+					return idempotency.Scope{TenantID: rc.TenantID, ActorID: rc.Principal.ActorID}, ok
+				}
+				roleHandler.UserRoutes(r,
+					idempotency.Middleware(h.App, idempotency.Options{CommandCode: "access_grant.assign", Scope: roleScope, HashHeaders: []string{"If-Match"}}),
+					idempotency.Middleware(h.App, idempotency.Options{CommandCode: "access_grant.revoke", Scope: roleScope, HashHeaders: []string{"If-Match"}}))
+				roleChangeHandler.UserRoutes(r, idempotency.Middleware(h.App, idempotency.Options{CommandCode: "role_change.create", Scope: roleScope, HashHeaders: []string{"If-Match"}, BeforeStoredResult: roleChangeHandler.StoredResultGate}))
+			})
+			tenant.Route("/admin", func(r chi.Router) {
+				roleHandler.CatalogRoutes(r)
+				roleScope := func(req *http.Request) (idempotency.Scope, bool) {
+					rc, ok := identity.FromContext(req.Context())
+					return idempotency.Scope{TenantID: rc.TenantID, ActorID: rc.Principal.ActorID}, ok
+				}
+				roleChangeHandler.CatalogRoutes(r,
+					idempotency.Middleware(h.App, idempotency.Options{CommandCode: "role_change.approve", Scope: roleScope, HashHeaders: []string{"If-Match"}, BeforeStoredResult: roleChangeHandler.StoredResultGate}),
+					idempotency.Middleware(h.App, idempotency.Options{CommandCode: "role_change.reject", Scope: roleScope, HashHeaders: []string{"If-Match"}, BeforeStoredResult: roleChangeHandler.StoredResultGate}),
+					idempotency.Middleware(h.App, idempotency.Options{CommandCode: "role_change.cancel", Scope: roleScope, HashHeaders: []string{"If-Match"}, BeforeStoredResult: roleChangeHandler.StoredResultGate}))
+			})
+			tenant.Route("/rule-sets", func(r chi.Router) { ruleHandler.RuleSetRoutes(r, ruleshttp.Middlewares{}) })
+			tenant.Route("/providers", func(r chi.Router) { providerHandler.ProviderRoutes(r, providerhttp.Middlewares{}) })
+			tenant.Route("/admin/invitations", func(r chi.Router) {
+				invitationHandler.ManagerRoutes(r, idempotency.Middleware(h.App, idempotency.Options{
+					CommandCode: "tenant_invitation.cancel",
+					Scope: func(req *http.Request) (idempotency.Scope, bool) {
+						rc, ok := identity.FromContext(req.Context())
+						return idempotency.Scope{TenantID: rc.TenantID, ActorID: rc.Principal.ActorID}, ok
+					},
+					HashHeaders: []string{"If-Match"},
+				}))
+			})
 			tenant.Get("/probe", func(w http.ResponseWriter, r *http.Request) {
 				rc, err := identity.Require(r.Context(), "audit.read")
 				if err != nil {
@@ -103,14 +190,43 @@ func newAuthzServer(t *testing.T) *authzServer {
 				}
 				w.WriteHeader(http.StatusNoContent)
 			})
+			tenant.Get("/probe-rule", func(w http.ResponseWriter, r *http.Request) {
+				if _, err := identity.Require(r.Context(), "rule.read"); err != nil {
+					mw.Deny(w, r, err, "rule.read")
+					return
+				}
+				w.WriteHeader(http.StatusNoContent)
+			})
+			tenant.Get("/probe-provider/{relationshipId}", func(w http.ResponseWriter, r *http.Request) {
+				rc, err := identity.Require(r.Context(), "provider.read")
+				if err != nil {
+					mw.Deny(w, r, err, "provider.read")
+					return
+				}
+				want, err := uuid.Parse(chi.URLParam(r, "relationshipId"))
+				if err != nil {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				for _, scope := range rc.Scopes {
+					if scope.Type == application.ScopeOrganization && scope.ID.Valid && scope.ID.UUID == want {
+						w.WriteHeader(http.StatusNoContent)
+						return
+					}
+				}
+				w.WriteHeader(http.StatusForbidden)
+			})
 		})
 	})
 	return &authzServer{
-		server:  &server{h: h, handler: r, cookies: cookies},
-		prov:    prov,
-		actor:   actor,
-		tenantA: tenantA,
-		tenantB: tenantB,
+		server:         &server{h: h, handler: r, cookies: cookies},
+		svc:            svc,
+		prov:           prov,
+		actor:          actor,
+		tenantA:        tenantA,
+		tenantB:        tenantB,
+		invitationRepo: invitationRepo,
+		invitationKeys: invitationKeys,
 	}
 }
 

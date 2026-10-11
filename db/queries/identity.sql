@@ -10,6 +10,12 @@ RETURNING id;
 INSERT INTO iam.credential (actor_id, password_hash, must_change_password)
 VALUES ($1, $2, $3);
 
+-- name: CreateLocalActorIfAvailable :one
+INSERT INTO iam.actor (identity_issuer, identity_subject, actor_type, display_name, email, status)
+VALUES ($1, $2, 'HUMAN', $3, NULL, 'ACTIVE')
+ON CONFLICT (identity_issuer, identity_subject) DO NOTHING
+RETURNING id;
+
 -- name: FindAccountByUsername :one
 SELECT a.id, a.identity_subject, a.display_name, a.email, a.status,
        c.password_hash, c.must_change_password, c.failed_attempts, c.locked_until

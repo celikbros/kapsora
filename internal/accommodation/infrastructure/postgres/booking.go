@@ -433,11 +433,18 @@ func (Bookings) RoomTypeBookingContext(ctx context.Context, tx pgx.Tx, tenantID,
 
 // PersonEnrollmentForStay implements application.BookingRepository.
 func (Bookings) PersonEnrollmentForStay(ctx context.Context, tx pgx.Tx, tenantID, personID uuid.UUID,
-	day time.Time, programID *uuid.UUID,
+	day time.Time, programID, enrollmentID *uuid.UUID,
 ) (application.PersonEnrollment, error) {
+	// nullUUID intentionally treats a zero UUID like an omitted filter elsewhere.
+	// Here a non-nil pointer is an explicit command choice: zero must select
+	// nothing, never widen the query to another enrollment or program.
+	if (programID != nil && *programID == uuid.Nil) ||
+		(enrollmentID != nil && *enrollmentID == uuid.Nil) {
+		return application.PersonEnrollment{}, application.ErrEnrollmentNotFound
+	}
 	row, err := sqlcgen.New(tx).GetPersonEnrollmentForStay(ctx, sqlcgen.GetPersonEnrollmentForStayParams{
 		TenantID: tenantID, PersonID: personID, ServiceDate: dateOf(day),
-		ProgramID: nullUUID(programID),
+		ProgramID: nullUUID(programID), EnrollmentID: nullUUID(enrollmentID),
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return application.PersonEnrollment{}, application.ErrEnrollmentNotFound
@@ -445,7 +452,39 @@ func (Bookings) PersonEnrollmentForStay(ctx context.Context, tx pgx.Tx, tenantID
 	if err != nil {
 		return application.PersonEnrollment{}, fmt.Errorf("accommodation: read enrollment: %w", err)
 	}
+	if row.MatchingCount > 1 {
+		return application.PersonEnrollment{}, application.ErrEnrollmentMultiple
+	}
 	return application.PersonEnrollment{EnrollmentID: row.EnrollmentID, ProgramID: row.ProgramID}, nil
+}
+
+// EntitlementCodeForService implements application.BookingRepository.
+func (Bookings) BookingConversionEvidence(ctx context.Context, tx pgx.Tx, tenantID, evaluationID,
+	reservationID, serviceDefinitionID uuid.UUID) (application.BookingConversionEvidence, error) {
+	row, err := sqlcgen.New(tx).GetBookingConversionEvidence(ctx, sqlcgen.GetBookingConversionEvidenceParams{
+		TenantID: tenantID, EvaluationID: evaluationID, ReservationID: reservationID,
+		ServiceDefinitionID: serviceDefinitionID,
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return application.BookingConversionEvidence{}, application.ErrQuoteStale
+	}
+	if err != nil {
+		return application.BookingConversionEvidence{}, fmt.Errorf("accommodation: conversion evidence: %w", err)
+	}
+	if !row.EnrollmentID.Valid || !row.PlanVersionID.Valid || !row.ServiceDate.Valid {
+		return application.BookingConversionEvidence{}, application.ErrQuoteStale
+	}
+	return application.BookingConversionEvidence{
+		PersonID: row.PersonID, EnrollmentID: row.EnrollmentID.UUID,
+		PlanVersionID: row.PlanVersionID.UUID, ServiceDate: row.ServiceDate.Time,
+		DefinitionID: row.EntitlementDefinitionID, UnitFactor: row.UnitFactor,
+		UnitType: row.UnitType, AccountID: row.EntitlementAccountID,
+		ReferenceType: row.ReferenceType, ReferenceID: row.ReferenceID,
+		ReservedUnits: row.ReservedUnits, ConsumedUnits: row.ConsumedUnits,
+		ReleasedUnits: row.ReleasedUnits, ReservationStatus: row.ReservationStatus,
+		UnapprovedReleasedUnits: row.UnapprovedReleasedUnits,
+		PriorAuthorization:      row.PriorAuthorization,
+	}, nil
 }
 
 // EntitlementCodeForService implements application.BookingRepository.
@@ -466,35 +505,6 @@ func (Bookings) EntitlementCodeForService(ctx context.Context, tx pgx.Tx, tenant
 		return "", fmt.Errorf("accommodation: resolve entitlement code: %w", err)
 	}
 	return code, nil
-}
-
-// ContractVersionForProperty implements application.BookingRepository.
-func (Bookings) ContractVersionForProperty(ctx context.Context, tx pgx.Tx, tenantID, propertyID uuid.UUID,
-	day time.Time,
-) (uuid.UUID, error) {
-	q := sqlcgen.New(tx)
-	profileID, err := q.GetProviderProfileForProperty(ctx, sqlcgen.GetProviderProfileForPropertyParams{
-		TenantID: tenantID, PropertyID: propertyID,
-	})
-	if errors.Is(err, pgx.ErrNoRows) {
-		return uuid.Nil, application.ErrLodgingTermsMissing
-	}
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("accommodation: read provider profile: %w", err)
-	}
-	versionID, err := q.GetContractVersionForRoomType(ctx, sqlcgen.GetContractVersionForRoomTypeParams{
-		TenantID: tenantID, ProviderProfileID: profileID, ServiceDate: dateOf(day),
-	})
-	if errors.Is(err, pgx.ErrNoRows) {
-		// No published contract version covers the stay, so there are no terms to freeze.
-		// It is the same refusal as terms that were never written: the member is told the
-		// stay cannot be agreed, rather than agreeing to a policy nobody wrote.
-		return uuid.Nil, application.ErrLodgingTermsMissing
-	}
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("accommodation: read contract version: %w", err)
-	}
-	return versionID, nil
 }
 
 // ---------------------------------------------------------------------------

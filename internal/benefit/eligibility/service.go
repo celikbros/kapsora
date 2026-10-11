@@ -312,6 +312,12 @@ func (s *Service) evaluate(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 		return Result{}, err
 	}
 	resolverInput.PlanVersion = &PlanVersion{ID: ensured.PlanVersionID}
+	selectedAccounts := make(map[uuid.UUID]struct{}, len(ensured.Accounts))
+	if in.EnrollmentID != nil {
+		for _, id := range ensured.Accounts {
+			selectedAccounts[id] = struct{}{}
+		}
+	}
 
 	// The mapping of the resolved version is what turns "İnceleme gerekli" into an
 	// answer: without it every line is SERVICE_MAPPING_PENDING however healthy the
@@ -330,6 +336,7 @@ func (s *Service) evaluate(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 		}
 		resolverInput.Mappings[m.ServiceDefinitionID] = Mapping{
 			EntitlementCode: m.EntitlementCode, UnitFactor: factor,
+			DefinitionID: m.EntitlementDefinitionID, UnitType: m.UnitType,
 		}
 	}
 
@@ -340,6 +347,14 @@ func (s *Service) evaluate(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 	for _, a := range accounts {
 		if a.Status != ledger.AccountOpen {
 			continue
+		}
+		// EnsureAccounts identifies the accounts of this exact plan version, including
+		// a legitimate same-plan principal account for a shared definition. An unrelated
+		// enrollment or principal plan with the same code cannot fund a pinned check.
+		if in.EnrollmentID != nil {
+			if _, ok := selectedAccounts[a.ID]; !ok {
+				continue
+			}
 		}
 		resolverInput.Accounts = append(resolverInput.Accounts, Account{
 			ID: a.ID, EntitlementCode: a.Definition.Code, UnitType: a.Definition.UnitType,

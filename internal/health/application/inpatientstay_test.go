@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	auditpg "github.com/celikbros/kapsora/internal/audit/postgres"
@@ -46,8 +47,9 @@ type stayFixture struct {
 	h    *dbtest.Harness
 	pool *pgxpool.Pool
 
-	health   *application.Service
-	requests *servicerequestapp.Service
+	health         *application.Service
+	requests       *servicerequestapp.Service
+	authorizations *authorizationapp.Service
 
 	tenant     uuid.UUID
 	actor      uuid.UUID
@@ -124,7 +126,7 @@ func newStayFixture(t *testing.T) *stayFixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f.health, f.requests = health, requests
+	f.health, f.requests, f.authorizations = health, requests, authorizations
 	f.seed(t)
 	return f
 }
@@ -942,6 +944,118 @@ func TestDischargeReleasesTheExtensionsHoldToo(t *testing.T) {
 		t.Fatalf("this stay's holds still reserve %s days for the two that were spent",
 			outstanding)
 	}
+	// The days actually spent precede the extension's validity. The original hold must
+	// retain both days so a claim can consume them after discharge.
+	originalID := *authorized.Stay.AuthorizationID
+	extensionID := *authorized.Extensions[0].AuthorizationID
+	outstandingOn := func(id uuid.UUID) benefitdomain.Quantity {
+		t.Helper()
+		return benefitdomain.MustQuantity(f.sum(t, `
+			SELECT coalesce(sum(r.quantity-r.consumed_quantity-r.released_quantity),0)::text
+			  FROM benefit.entitlement_reservation r
+			  JOIN service.authorization_item i ON i.entitlement_reservation_id=r.id
+			 WHERE i.authorization_id=$1`, id))
+	}
+	if got := outstandingOn(originalID); got.Cmp(benefitdomain.MustQuantity("2")) != 0 {
+		t.Fatalf("original hold retains %s, want 2", got.String())
+	}
+	if got := outstandingOn(extensionID); !got.IsZero() {
+		t.Fatalf("extension hold retains %s after discharge, want 0", got.String())
+	}
+	consume := func() authorizationapp.ConsumeResult {
+		t.Helper()
+		var result authorizationapp.ConsumeResult
+		err := db.WithTenantTx(context.Background(), f.pool, db.TenantContext{TenantID: f.tenant},
+			func(ctx context.Context, tx pgx.Tx) error {
+				var err error
+				result, err = f.authorizations.Consume(ctx, tx, authorizationapp.ConsumeInput{
+					TenantID: f.tenant, ActorID: f.actor, AuthorizationID: originalID,
+					ServiceDefinitionID: f.definition, Quantity: benefitdomain.MustQuantity("2"),
+					Key: "inpatient-day-claim", ReasonCode: "CLAIM",
+				})
+				return err
+			})
+		if err != nil {
+			t.Fatalf("consume actual days from original hold: %v", err)
+		}
+		return result
+	}
+	if result := consume(); !result.Matched || result.OverConsumed || result.Consumed.Cmp(benefitdomain.MustQuantity("2")) != 0 {
+		t.Fatalf("consume actual days: %+v", result)
+	}
+	b := f.balances(t)
+	if !b.Reserved.IsZero() || b.Consumed.Cmp(benefitdomain.MustQuantity("2")) != 0 {
+		t.Fatalf("after claim reserve=%s consumed=%s, want 0 and 2", b.Reserved.String(), b.Consumed.String())
+	}
+	if result := consume(); result.Consumed.Cmp(benefitdomain.MustQuantity("2")) != 0 {
+		t.Fatalf("replayed consume: %+v", result)
+	}
+	if after := f.balances(t); !after.Equal(b) {
+		t.Fatalf("replayed consume moved balances: %v then %v", b, after)
+	}
+	f.assertConservation(t)
+}
+
+// A day already consumed before discharge counts toward actual occupancy. Releasing the
+// unused six days must leave the other actual day on the original hold, not on an extension.
+func TestDischargeReleaseWithPartlyConsumedOriginalHold(t *testing.T) {
+	f := newStayFixture(t)
+	caseID := f.newCase(t, f.provider)
+	stay := f.authorizedStay(t, caseID, 5)
+	extended, err := f.health.ExtendStay(context.Background(), f.rc(), stay.Stay.ID,
+		application.StayExtensionInput{AdditionalDays: 3, ReasonCode: "COMPLICATION"},
+		stay.Stay.RowVersion, application.AccessRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.decide(t, extended.Extensions[0].ServiceRequestID, "APPROVE", "")
+	authorized := f.stay(t, stay.Stay.ID)
+	originalID := *authorized.Stay.AuthorizationID
+	extensionID := *authorized.Extensions[0].AuthorizationID
+	consume := func(key string) {
+		t.Helper()
+		err := db.WithTenantTx(context.Background(), f.pool, db.TenantContext{TenantID: f.tenant},
+			func(ctx context.Context, tx pgx.Tx) error {
+				_, err := f.authorizations.Consume(ctx, tx, authorizationapp.ConsumeInput{
+					TenantID: f.tenant, ActorID: f.actor, AuthorizationID: originalID,
+					ServiceDefinitionID: f.definition, Quantity: benefitdomain.MustQuantity("1"),
+					Key: key, ReasonCode: "CLAIM",
+				})
+				return err
+			})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	consume("inpatient-day-before-discharge")
+	f.advance(2)
+	discharged, err := f.health.DischargeStay(context.Background(), f.rc(), stay.Stay.ID,
+		f.clock(), authorized.Stay.RowVersion, application.AccessRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if discharged.Stay.ReleasedDays != "6" {
+		t.Fatalf("released=%s, want 6", discharged.Stay.ReleasedDays)
+	}
+	outstanding := func(id uuid.UUID) benefitdomain.Quantity {
+		t.Helper()
+		return benefitdomain.MustQuantity(f.sum(t, `
+			SELECT coalesce(sum(r.quantity-r.consumed_quantity-r.released_quantity),0)::text
+			  FROM benefit.entitlement_reservation r
+			  JOIN service.authorization_item i ON i.entitlement_reservation_id=r.id
+			 WHERE i.authorization_id=$1`, id))
+	}
+	if got := outstanding(originalID); got.Cmp(benefitdomain.MustQuantity("1")) != 0 {
+		t.Fatalf("original retains %s, want 1", got.String())
+	}
+	if got := outstanding(extensionID); !got.IsZero() {
+		t.Fatalf("extension retains %s, want 0", got.String())
+	}
+	consume("inpatient-day-after-discharge")
+	b := f.balances(t)
+	if !b.Reserved.IsZero() || b.Consumed.Cmp(benefitdomain.MustQuantity("2")) != 0 {
+		t.Fatalf("after claim reserve=%s consumed=%s, want 0 and 2", b.Reserved.String(), b.Consumed.String())
+	}
 	f.assertConservation(t)
 }
 
@@ -1184,4 +1298,67 @@ func TestPendingExtensionIndexRefusesWhatTheServiceLetPast(t *testing.T) {
 // not says so rather than passing on a nil comparison.
 func errorIs(err, target error) bool {
 	return err != nil && errors.Is(err, target)
+}
+
+// Cancellation must unwind extension holds as well as the original, preserving spent units.
+func TestCancelReleasesApprovedExtensionHolds(t *testing.T) {
+	for _, spent := range []string{"0", "1"} {
+		t.Run("spent_"+spent, func(t *testing.T) {
+			f := newStayFixture(t)
+			stay := f.authorizedStay(t, f.newCase(t, f.provider), 5)
+			extended, err := f.health.ExtendStay(context.Background(), f.rc(), stay.Stay.ID,
+				application.StayExtensionInput{AdditionalDays: 3, ReasonCode: "COMPLICATION"},
+				stay.Stay.RowVersion, application.AccessRequest{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			f.decide(t, extended.Extensions[0].ServiceRequestID, "APPROVE", "")
+			current := f.stay(t, stay.Stay.ID)
+			if spent == "1" {
+				err = db.WithTenantTx(context.Background(), f.pool, db.TenantContext{TenantID: f.tenant},
+					func(ctx context.Context, tx pgx.Tx) error {
+						_, err := f.authorizations.Consume(ctx, tx, authorizationapp.ConsumeInput{
+							TenantID: f.tenant, ActorID: f.actor, AuthorizationID: *current.Stay.AuthorizationID,
+							ServiceDefinitionID: f.definition, Quantity: benefitdomain.MustQuantity(spent),
+							Key: "before-stay-cancel", ReasonCode: "CLAIM",
+						})
+						return err
+					})
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			out, err := f.health.CancelStay(context.Background(), f.rc(), stay.Stay.ID,
+				"ADMISSION_NOT_NEEDED", nil, current.Stay.RowVersion, application.AccessRequest{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if out.Stay.Status != domain.StayCancelled {
+				t.Fatalf("status=%s", out.Stay.Status)
+			}
+			b := f.balances(t)
+			used := benefitdomain.MustQuantity(spent)
+			if !b.Reserved.IsZero() || b.Consumed.Cmp(used) != 0 ||
+				b.Available.Cmp(benefitdomain.MustQuantity(dayGrant).Sub(used)) != 0 {
+				t.Fatalf("cancel balances available=%s reserved=%s consumed=%s", b.Available.String(), b.Reserved.String(), b.Consumed.String())
+			}
+			for _, id := range []uuid.UUID{*current.Stay.AuthorizationID, *current.Extensions[0].AuthorizationID} {
+				held := benefitdomain.MustQuantity(f.sum(t, `SELECT coalesce(sum(r.quantity-r.consumed_quantity-r.released_quantity),0)::text
+      FROM benefit.entitlement_reservation r JOIN service.authorization_item i ON i.entitlement_reservation_id=r.id
+      WHERE i.authorization_id=$1`, id))
+				if !held.IsZero() {
+					t.Fatalf("authorization %s retains %s", id, held.String())
+				}
+			}
+			_, err = f.health.CancelStay(context.Background(), f.rc(), stay.Stay.ID,
+				"ADMISSION_NOT_NEEDED", nil, out.Stay.RowVersion, application.AccessRequest{})
+			if !errors.Is(err, application.ErrStayTransitionInvalid) {
+				t.Fatalf("second cancellation=%v", err)
+			}
+			if !f.balances(t).Equal(b) {
+				t.Fatal("second cancellation changed balances")
+			}
+			f.assertConservation(t)
+		})
+	}
 }

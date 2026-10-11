@@ -440,7 +440,7 @@ describe("the provider's earnings", () => {
   });
 
   it('refuses a provider-scoped caller asking about somebody else', async () => {
-    const provider = await signIn('provider.a');
+    const provider = await signIn('billing.a');
     const other = api.world.relationships.find(
       (r) =>
         r.tenantId === provider.tenantId &&

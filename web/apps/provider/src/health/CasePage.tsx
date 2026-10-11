@@ -36,6 +36,7 @@ import { useClaimsOfCase } from '../claims/queries';
 import { DocumentsPanel } from '../documents';
 import { problemOf } from '../problems';
 import { useProviderOrganizationId } from '../queries';
+import { EndEncounterForm } from './EndEncounterForm';
 import { DiagnosisEditor } from './DiagnosisEditor';
 import {
   useAdmit,
@@ -68,29 +69,49 @@ const OPEN_STAY = new Set<InpatientStay['status']>(['REQUESTED', 'AUTHORIZED', '
  * financial one the list would answer 403, so it is not asked for and the cell says so.
  */
 function EncounterDiagnoses({
-  encounterId,
-  clinical,
-  onLoaded,
+  items,
+  pending,
+  error,
+  fetching,
+  onRetry,
 }: {
-  encounterId: string;
-  clinical: boolean;
-  onLoaded: (encounterId: string, items: Diagnosis[]) => void;
+  items: Diagnosis[] | undefined;
+  pending: boolean;
+  error: Error | null;
+  fetching: boolean;
+  onRetry: () => void;
 }) {
   const { t } = useTranslation();
-  const query = useDiagnoses(encounterId, clinical);
-  const items = query.data;
-  useEffect(() => {
-    if (items) onLoaded(encounterId, items);
-  }, [items, encounterId, onLoaded]);
-  if (query.isPending) return <span className="text-fg-muted">…</span>;
+  if (pending) return <span className="text-fg-muted">…</span>;
   const primary = items?.find((d) => d.diagnosisType === 'PRIMARY') ?? items?.[0];
-  if (!primary) return <span className="text-fg-muted">{t('health.encounters.noDiagnosis')}</span>;
   return (
-    <span className="inline-flex flex-wrap items-center gap-2">
-      <span className="font-mono">{primary.code}</span>
-      <span>{primary.display}</span>
-      {primary.sensitive ? <Badge tone="warning">{t('health.diagnoses.sensitive')}</Badge> : null}
-    </span>
+    <div className="grid gap-2">
+      {error ? (
+        <div className="grid gap-2">
+          <ProblemAlert problem={problemOf(error)} />
+          <Button
+            size="sm"
+            variant="secondary"
+            loading={fetching}
+            disabled={fetching}
+            onClick={onRetry}
+          >
+            {t('common.retry')}
+          </Button>
+        </div>
+      ) : null}
+      {primary ? (
+        <span className="inline-flex flex-wrap items-center gap-2">
+          <span className="font-mono">{primary.code}</span>
+          <span>{primary.display}</span>
+          {primary.sensitive ? (
+            <Badge tone="warning">{t('health.diagnoses.sensitive')}</Badge>
+          ) : null}
+        </span>
+      ) : items ? (
+        <span className="text-fg-muted">{t('health.encounters.noDiagnosis')}</span>
+      ) : null}
+    </div>
   );
 }
 
@@ -421,22 +442,35 @@ function AdmitForm({
  * not.
  */
 export function CasePage() {
+  const { caseId } = useParams({ from: '/app/cases/$caseId' });
+  return <CaseContent key={caseId} caseId={caseId} />;
+}
+
+function CaseContent({ caseId }: { caseId: string }) {
   const { t } = useTranslation();
   const toast = useToast();
   const navigate = useNavigate();
-  const { caseId } = useParams({ from: '/app/cases/$caseId' });
   const query = useCase(caseId);
   const canManage = usePermission('health.case.manage');
   const canReport = usePermission('health.medical_report.manage');
-  const canClaim = usePermission('claim.create');
+  const canReadClaims = usePermission('claim.read');
+  const canClaim = usePermission('claim.create') && canReadClaims;
   const reports = useReportsOfCase(caseId);
   const stays = useStaysOfCase(caseId);
-  const claims = useClaimsOfCase(caseId);
+  const claims = useClaimsOfCase(caseId, canReadClaims);
   const close = useCloseCase(caseId);
   const personName = usePersonName(query.data?.data.personId);
   const [adding, setAdding] = useState(false);
-  const [editing, setEditing] = useState<string | null>(null);
-  const [admitting, setAdmitting] = useState(false);
+  const [ending, setEnding] = useState<string | null>(null);
+  const [editing, setEditing] = useState<{
+    caseId: string;
+    encounterId: string;
+    updatedAt: number;
+  } | null>(null);
+  const [admissionReadAtOpen, setAdmissionReadAtOpen] = useState<{
+    caseId: string;
+    updatedAt: number;
+  } | null>(null);
   const [creatingReport, setCreatingReport] = useState(false);
   const [closing, setClosing] = useState(false);
   const [byEncounter, setByEncounter] = useState<Record<string, Diagnosis[]>>({});
@@ -467,8 +501,14 @@ export function CasePage() {
   const clinical = record.projection === 'CLINICAL';
   const open = record.status === 'OPEN';
   const everyEncounterEnded = record.encounters.every((e) => Boolean(e.endedAt));
-  const diagnoses = Object.values(byEncounter).flat();
+  const endingEncounter = record.encounters.find((e) => e.id === ending && !e.endedAt);
+  const diagnoses = record.encounters.flatMap((encounter) => byEncounter[encounter.id] ?? []);
   const openStay = (stays.data?.items ?? []).find((s) => OPEN_STAY.has(s.status));
+  const canStartAdmission = stays.isSuccess && !stays.isFetching && !openStay;
+  const admitting =
+    canStartAdmission &&
+    admissionReadAtOpen?.caseId === caseId &&
+    admissionReadAtOpen.updatedAt === stays.dataUpdatedAt;
   // The chapter headers carry the chapter's state: the newest report's status, the open
   // stay's status, how many claims are still moving. A case with an open stay and a
   // returned claim must not look like an empty one from the first viewport.
@@ -575,10 +615,19 @@ export function CasePage() {
                       encounter={encounter}
                       clinical={clinical}
                       editable={clinical && canManage && open}
-                      editing={editing === encounter.id}
-                      onEdit={() => setEditing(editing === encounter.id ? null : encounter.id)}
+                      onEnd={ending === null ? () => setEnding(encounter.id) : undefined}
+                      editing={editing}
+                      onEdit={(updatedAt) =>
+                        setEditing((current) =>
+                          current?.caseId === record.id &&
+                          current.encounterId === encounter.id &&
+                          current.updatedAt === updatedAt
+                            ? null
+                            : { caseId: record.id, encounterId: encounter.id, updatedAt },
+                        )
+                      }
+                      onClose={() => setEditing(null)}
                       caseId={record.id}
-                      current={byEncounter[encounter.id] ?? []}
                       onLoaded={onLoaded}
                     />
                   ))}
@@ -586,6 +635,16 @@ export function CasePage() {
               </Table>
             </div>
           )}
+          {endingEncounter && clinical && canManage && open ? (
+            <div className="border-line mt-4 border-t pt-4">
+              <h3 className="text-sm font-semibold">{t('health.encounters.end.action')}</h3>
+              <EndEncounterForm
+                key={endingEncounter.id}
+                encounter={endingEncounter}
+                onDone={() => setEnding(null)}
+              />
+            </div>
+          ) : null}
           {adding ? <EncounterForm caseId={record.id} onDone={() => setAdding(false)} /> : null}
         </Card>
 
@@ -594,7 +653,7 @@ export function CasePage() {
           <DocumentsPanel aggregateType="HEALTH_CASE" aggregateId={record.id} readOnly={!open} />
         </Card>
 
-        <Card>
+        <Card data-testid="case-reports-chapter">
           <div className="flex flex-wrap items-center justify-between gap-2">
             {/* The mark and the badge sit beside the heading, not inside it: neither is its name. */}
             <div className="flex flex-wrap items-baseline gap-2">
@@ -612,9 +671,23 @@ export function CasePage() {
               </Button>
             ) : null}
           </div>
+          {reports.error ? (
+            <div className="mt-2 grid gap-2">
+              <ProblemAlert problem={problemOf(reports.error)} />
+              <Button
+                size="sm"
+                variant="secondary"
+                loading={reports.isFetching}
+                disabled={reports.isFetching}
+                onClick={() => void reports.refetch()}
+              >
+                {t('common.retry')}
+              </Button>
+            </div>
+          ) : null}
           {reports.isPending ? (
             <p className="text-fg-muted mt-2 text-sm">{t('common.loading')}</p>
-          ) : (reports.data?.items.length ?? 0) === 0 ? (
+          ) : !reports.data ? null : reports.data.items.length === 0 ? (
             <p className="text-fg-muted mt-2 text-sm">{t('health.reports.empty')}</p>
           ) : (
             <div className="mt-3">
@@ -665,7 +738,7 @@ export function CasePage() {
           ) : null}
         </Card>
 
-        <Card>
+        <Card data-testid="case-stays-chapter">
           <div className="flex flex-wrap items-center justify-between gap-2">
             {/* The mark and the badge sit beside the heading, not inside it: neither is its name. */}
             <div className="flex flex-wrap items-baseline gap-2">
@@ -683,15 +756,33 @@ export function CasePage() {
                   {t('health.case.sections.stayOpen')}
                 </Button>
               </Link>
-            ) : open && canManage && !admitting && !stays.isPending ? (
-              <Button size="sm" variant="secondary" onClick={() => setAdmitting(true)}>
+            ) : open && canManage && !admitting && canStartAdmission ? (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setAdmissionReadAtOpen({ caseId, updatedAt: stays.dataUpdatedAt })}
+              >
                 {t('health.stays.admit')}
               </Button>
             ) : null}
           </div>
+          {stays.error ? (
+            <div className="mt-2 grid gap-2">
+              <ProblemAlert problem={problemOf(stays.error)} />
+              <Button
+                size="sm"
+                variant="secondary"
+                loading={stays.isFetching}
+                disabled={stays.isFetching}
+                onClick={() => void stays.refetch()}
+              >
+                {t('common.retry')}
+              </Button>
+            </div>
+          ) : null}
           {stays.isPending ? (
             <p className="text-fg-muted mt-2 text-sm">{t('common.loading')}</p>
-          ) : (stays.data?.items.length ?? 0) === 0 ? (
+          ) : !stays.data ? null : stays.data.items.length === 0 ? (
             <p className="text-fg-muted mt-2 text-sm">{t('health.stays.empty')}</p>
           ) : (
             <div className="mt-3">
@@ -731,19 +822,19 @@ export function CasePage() {
               </Table>
             </div>
           )}
-          {admitting ? (
+          {admitting && canStartAdmission ? (
             <AdmitForm
               record={record}
               diagnoses={diagnoses}
               onDone={(stayId) => {
-                setAdmitting(false);
+                setAdmissionReadAtOpen(null);
                 void navigate({ to: '/stays/$stayId', params: { stayId } });
               }}
             />
           ) : null}
         </Card>
 
-        <Card>
+        <Card data-testid="case-claims-card">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="flex flex-wrap items-center gap-2 text-base font-semibold">
               {t('health.case.sections.claims')}
@@ -759,9 +850,25 @@ export function CasePage() {
               </Link>
             ) : null}
           </div>
-          {claims.isPending ? (
+          {canReadClaims && claims.error ? (
+            <div className="mt-2 grid gap-2">
+              <ProblemAlert problem={problemOf(claims.error)} />
+              <Button
+                size="sm"
+                variant="secondary"
+                loading={claims.isFetching}
+                disabled={claims.isFetching}
+                onClick={() => void claims.refetch()}
+              >
+                {t('common.retry')}
+              </Button>
+            </div>
+          ) : null}
+          {!canReadClaims ? (
+            <p className="text-fg-muted mt-2 text-sm">{t('health.case.claimsRestricted')}</p>
+          ) : claims.isPending ? (
             <p className="text-fg-muted mt-2 text-sm">{t('common.loading')}</p>
-          ) : (claims.data?.items.length ?? 0) === 0 ? (
+          ) : !claims.data ? null : claims.data.items.length === 0 ? (
             <p className="text-fg-muted mt-2 text-sm">{t('claims.empty')}</p>
           ) : (
             <div className="mt-3">
@@ -831,20 +938,35 @@ function EncounterRows({
   editable,
   editing,
   onEdit,
+  onClose,
+  onEnd,
   caseId,
-  current,
   onLoaded,
 }: {
   encounter: Encounter;
   clinical: boolean;
   editable: boolean;
-  editing: boolean;
-  onEdit: () => void;
+  editing: { caseId: string; encounterId: string; updatedAt: number } | null;
+  onEdit: (updatedAt: number) => void;
+  onClose: () => void;
+  onEnd: (() => void) | undefined;
   caseId: string;
-  current: Diagnosis[];
   onLoaded: (encounterId: string, items: Diagnosis[]) => void;
 }) {
   const { t } = useTranslation();
+  const diagnoses = useDiagnoses(encounter.id, clinical);
+  const items = diagnoses.data;
+  useEffect(() => {
+    if (clinical && diagnoses.isSuccess && !diagnoses.isFetching && items) {
+      onLoaded(encounter.id, items);
+    }
+  }, [clinical, diagnoses.isSuccess, diagnoses.isFetching, items, encounter.id, onLoaded]);
+  const canEdit = editable && diagnoses.isSuccess && !diagnoses.isFetching && items !== undefined;
+  const isEditing =
+    canEdit &&
+    editing?.caseId === caseId &&
+    editing.encounterId === encounter.id &&
+    editing.updatedAt === diagnoses.dataUpdatedAt;
   const columns = 3 + (clinical ? 2 : 0) + (editable ? 1 : 0);
   return (
     <>
@@ -860,28 +982,43 @@ function EncounterRows({
         {clinical ? (
           <TD>
             <EncounterDiagnoses
-              encounterId={encounter.id}
-              clinical={clinical}
-              onLoaded={onLoaded}
+              items={items}
+              pending={diagnoses.isPending}
+              error={diagnoses.error}
+              fetching={diagnoses.isFetching}
+              onRetry={() => void diagnoses.refetch()}
             />
           </TD>
         ) : null}
         {editable ? (
           <TD>
-            <Button size="sm" variant="ghost" onClick={onEdit} aria-expanded={editing}>
-              {t('health.encounters.editDiagnoses')}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              {!encounter.endedAt && onEnd ? (
+                <Button size="sm" variant="secondary" onClick={onEnd}>
+                  {t('health.encounters.end.action')}
+                </Button>
+              ) : null}
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={!canEdit}
+                onClick={() => onEdit(diagnoses.dataUpdatedAt)}
+                aria-expanded={isEditing}
+              >
+                {t('health.encounters.editDiagnoses')}
+              </Button>
+            </div>
           </TD>
         ) : null}
       </TR>
-      {editing ? (
+      {isEditing && items ? (
         <TR>
           <TD colSpan={columns}>
             <DiagnosisEditor
               caseId={caseId}
               encounterId={encounter.id}
-              current={current}
-              onDone={onEdit}
+              current={items}
+              onDone={onClose}
             />
           </TD>
         </TR>

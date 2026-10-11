@@ -57,6 +57,26 @@ func (q *Queries) CreateLocalActor(ctx context.Context, arg CreateLocalActorPara
 	return id, err
 }
 
+const createLocalActorIfAvailable = `-- name: CreateLocalActorIfAvailable :one
+INSERT INTO iam.actor (identity_issuer, identity_subject, actor_type, display_name, email, status)
+VALUES ($1, $2, 'HUMAN', $3, NULL, 'ACTIVE')
+ON CONFLICT (identity_issuer, identity_subject) DO NOTHING
+RETURNING id
+`
+
+type CreateLocalActorIfAvailableParams struct {
+	IdentityIssuer  string
+	IdentitySubject string
+	DisplayName     string
+}
+
+func (q *Queries) CreateLocalActorIfAvailable(ctx context.Context, arg CreateLocalActorIfAvailableParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, createLocalActorIfAvailable, arg.IdentityIssuer, arg.IdentitySubject, arg.DisplayName)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
 const createSession = `-- name: CreateSession :exec
 INSERT INTO iam.session (
     id_hash, actor_id, active_tenant_id, user_agent_hash, source_ip,

@@ -399,6 +399,18 @@ type AdoptInput struct {
 // reserved. Only the deadline changes, only forwards, and only for a hold that is still
 // open — so a redelivered approval that runs this a second time changes nothing, and a
 // caller cannot use it to expire somebody's hold early.
+// ReadReservation returns the ledger's actual remaining units for release paths. A
+// historical quote is never treated as a substitute for the reservation's counters.
+func (l *Ledger) ReadReservation(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID) (Reservation, error) {
+	return reservationByID(ctx, tx, tenantID, id, false)
+}
+
+// LockReservation gives a caller that already locked its authorization and item a
+// stable baseline for exact movement reporting in the same transaction.
+func (l *Ledger) LockReservation(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID) (Reservation, error) {
+	return reservationByID(ctx, tx, tenantID, id, true)
+}
+
 func (l *Ledger) AdoptReservation(ctx context.Context, tx pgx.Tx, in AdoptInput) (Reservation, error) {
 	current, err := reservationByID(ctx, tx, in.TenantID, in.ReservationID, true)
 	if err != nil {

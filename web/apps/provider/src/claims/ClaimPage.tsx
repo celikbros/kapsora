@@ -22,7 +22,7 @@ import {
   useToast,
 } from '@kapsora/ui';
 import { Link, useParams } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 
 import { usePersonName } from '../health/queries';
 import { REASON_CODE, claimTone, qty } from '../health/words';
@@ -201,31 +201,54 @@ export function LinesTable({
   );
 }
 
-function DraftLines({ claim }: { claim: Claim }) {
+function DraftLines({
+  claim,
+  commands,
+  busy,
+  onSaved,
+}: {
+  claim: Claim;
+  commands: ReturnType<typeof useClaimCommands>;
+  busy: boolean;
+  onSaved: () => void;
+}) {
   const { t } = useTranslation();
-  const toast = useToast();
-  const commands = useClaimCommands(claim.id);
   const [lines, setLines] = useState<DraftLine[]>(draftFrom(claim.lines));
   async function save() {
+    if (busy || !linesValid(lines)) return;
     try {
       await commands.putLines.mutateAsync({
         rowVersion: claim.rowVersion,
         body: { lines: toNewLines(lines) },
       });
-      toast.notify({ tone: 'success', title: t('claims.lines.saved') });
+      onSaved();
     } catch {
       // Rendered below.
     }
   }
   return (
     <div className="grid gap-3">
-      <LinesEditor lines={lines} onChange={setLines} />
+      <fieldset disabled={busy} aria-busy={busy}>
+        <LinesEditor
+          lines={lines}
+          onChange={setLines}
+          {...(claim.projection === 'FINANCIAL'
+            ? {
+                fixedServices: claim.lines.map((line) => ({
+                  value: line.serviceDefinitionId,
+                  label: line.serviceCode ?? line.serviceDefinitionId,
+                  unitType: line.unitType,
+                })),
+              }
+            : {})}
+        />
+      </fieldset>
       <ProblemAlert problem={commands.putLines.error ? problemOf(commands.putLines.error) : null} />
       <div className="flex justify-end">
         <Button
           size="sm"
           loading={commands.putLines.isPending}
-          disabled={!linesValid(lines)}
+          disabled={busy || !linesValid(lines)}
           onClick={() => void save()}
         >
           {t('claims.lines.save')}
@@ -243,13 +266,8 @@ function DraftLines({ claim }: { claim: Claim }) {
  */
 export function ClaimPage() {
   const { t } = useTranslation();
-  const toast = useToast();
   const { claimId } = useParams({ from: '/app/claims/$claimId' });
   const query = useClaim(claimId);
-  const canEdit = usePermission('claim.create');
-  const canSubmit = usePermission('claim.submit');
-  const canCancel = usePermission('claim.cancel');
-  const commands = useClaimCommands(claimId);
   const personName = usePersonName(query.data?.data.personId);
   const claim = query.data?.data;
   const previousNo =
@@ -260,9 +278,6 @@ export function ClaimPage() {
   const versions = useClaimVersions(claimId);
   const decided = claim?.status === 'APPROVED' || claim?.status === 'PARTIALLY_APPROVED';
   const readiness = useReadiness(claimId, Boolean(decided));
-  const [cancelling, setCancelling] = useState(false);
-  const [reasonCode, setReasonCode] = useState('');
-
   if (query.isPending) {
     return (
       <div className="text-fg-muted flex items-center gap-2 p-6 text-sm" aria-busy="true">
@@ -283,7 +298,59 @@ export function ClaimPage() {
       />
     );
   }
+  return (
+    <ClaimDetail
+      key={claim.id}
+      claim={claim}
+      personName={personName}
+      previousNo={previousNo}
+      previous={previous}
+      versions={versions}
+      readiness={readiness}
+    />
+  );
+}
+
+function ClaimDetail({
+  claim,
+  personName,
+  previousNo,
+  previous,
+  versions,
+  readiness,
+}: {
+  claim: Claim;
+  personName: string | null | undefined;
+  previousNo: number | null;
+  previous: ReturnType<typeof useClaimVersion>;
+  versions: ReturnType<typeof useClaimVersions>;
+  readiness: ReturnType<typeof useReadiness>;
+}) {
+  const { t } = useTranslation();
+  const toast = useToast();
+  const canEdit = usePermission('claim.create');
+  const canSubmit = usePermission('claim.submit');
+  const canCancel = usePermission('claim.cancel');
+  const commands = useClaimCommands(claim.id);
+  const busy = Object.values(commands).some((command) => command.isPending);
+  const mounted = useRef(true);
+  const cancelToken = useRef(0);
+  const cancelPending = useRef(false);
+  useLayoutEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      cancelToken.current += 1;
+    };
+  }, []);
+  const [opened, setOpened] = useState<{
+    rowVersion: number;
+    status: Claim['status'];
+    projection: Claim['projection'];
+  } | null>(null);
+  const [reasonCode, setReasonCode] = useState('');
   const clinical = claim.projection === 'CLINICAL';
+  const decided = claim.status === 'APPROVED' || claim.status === 'PARTIALLY_APPROVED';
   const editable = (claim.status === 'DRAFT' || claim.status === 'RETURNED') && canEdit;
   const submittable =
     (claim.status === 'DRAFT' || claim.status === 'RETURNED') &&
@@ -295,22 +362,60 @@ export function ClaimPage() {
       claim.status === 'RETURNED' ||
       claim.status === 'PENDING_MEDICAL' ||
       claim.status === 'PENDING_FINANCIAL');
+  const cancelling =
+    opened !== null &&
+    opened.rowVersion === claim.rowVersion &&
+    opened.status === claim.status &&
+    opened.projection === claim.projection &&
+    cancellable;
+  if (opened && !cancelling) {
+    setOpened(null);
+    setReasonCode('');
+  }
+
+  function closeCancel() {
+    cancelToken.current += 1;
+    setOpened(null);
+    setReasonCode('');
+    if (!cancelPending.current) commands.cancel.reset();
+  }
+
+  function openCancel() {
+    if (!cancellable || busy || cancelPending.current) return;
+    commands.cancel.reset();
+    setReasonCode('');
+    cancelToken.current += 1;
+    setOpened({
+      rowVersion: claim.rowVersion,
+      status: claim.status,
+      projection: claim.projection,
+    });
+  }
 
   async function submit() {
+    if (busy || cancelPending.current || !submittable) return;
     try {
-      await commands.submit.mutateAsync({ rowVersion: claim!.rowVersion });
-      toast.notify({ tone: 'success', title: t('claims.toast.submitted') });
+      await commands.submit.mutateAsync({ rowVersion: claim.rowVersion });
+      if (mounted.current) toast.notify({ tone: 'success', title: t('claims.toast.submitted') });
     } catch (err) {
-      toast.notify({ tone: 'danger', title: problemOf(err).title || t('problems.UNKNOWN') });
+      if (mounted.current)
+        toast.notify({ tone: 'danger', title: problemOf(err).title || t('problems.UNKNOWN') });
     }
   }
   async function cancel() {
+    if (!cancelling || !REASON_CODE.test(reasonCode) || busy || cancelPending.current) return;
+    const attempt = cancelToken.current;
+    cancelPending.current = true;
     try {
-      await commands.cancel.mutateAsync({ rowVersion: claim!.rowVersion, reasonCode });
-      toast.notify({ tone: 'success', title: t('claims.toast.cancelled') });
-      setCancelling(false);
+      await commands.cancel.mutateAsync({ rowVersion: claim.rowVersion, reasonCode });
+      if (mounted.current && cancelToken.current === attempt) {
+        toast.notify({ tone: 'success', title: t('claims.toast.cancelled') });
+        closeCancel();
+      }
     } catch {
       // The dialog shows the problem.
+    } finally {
+      cancelPending.current = false;
     }
   }
 
@@ -339,12 +444,17 @@ export function ClaimPage() {
               {t(`claims.status.${claim.status}`)}
             </Badge>
             {submittable ? (
-              <Button size="sm" loading={commands.submit.isPending} onClick={() => void submit()}>
+              <Button
+                size="sm"
+                loading={commands.submit.isPending}
+                disabled={busy}
+                onClick={() => void submit()}
+              >
                 {t('claims.commands.submit')}
               </Button>
             ) : null}
             {cancellable ? (
-              <Button size="sm" variant="secondary" onClick={() => setCancelling(true)}>
+              <Button size="sm" variant="secondary" disabled={busy} onClick={openCancel}>
                 {t('claims.commands.cancel')}
               </Button>
             ) : null}
@@ -389,7 +499,16 @@ export function ClaimPage() {
                   {t('claims.returned.current', { n: claim.currentVersionNo })}
                 </h3>
                 {editable ? (
-                  <DraftLines key={claim.rowVersion} claim={claim} />
+                  <DraftLines
+                    key={`${claim.id}:${claim.rowVersion}:${claim.status}:${claim.projection}`}
+                    claim={claim}
+                    commands={commands}
+                    busy={busy}
+                    onSaved={() => {
+                      if (mounted.current)
+                        toast.notify({ tone: 'success', title: t('claims.lines.saved') });
+                    }}
+                  />
                 ) : (
                   <LinesTable lines={claim.lines} clinical={clinical} testId="claim-lines" />
                 )}
@@ -401,7 +520,16 @@ export function ClaimPage() {
             <h2 className="text-base font-semibold">{t('claims.lines.title')}</h2>
             <p className="text-fg-muted mb-3 mt-1 text-sm">{t('claims.lines.intro')}</p>
             {claim.status === 'DRAFT' && editable ? (
-              <DraftLines key={claim.rowVersion} claim={claim} />
+              <DraftLines
+                key={`${claim.id}:${claim.rowVersion}:${claim.status}:${claim.projection}`}
+                claim={claim}
+                commands={commands}
+                busy={busy}
+                onSaved={() => {
+                  if (mounted.current)
+                    toast.notify({ tone: 'success', title: t('claims.lines.saved') });
+                }}
+              />
             ) : claim.lines.length === 0 ? (
               <p className="text-fg-muted text-sm">{t('claims.lines.empty')}</p>
             ) : (
@@ -490,17 +618,19 @@ export function ClaimPage() {
 
       <Dialog
         open={cancelling}
-        onOpenChange={setCancelling}
+        onOpenChange={(open) => {
+          if (!open) closeCancel();
+        }}
         title={t('claims.reasonDialog.cancel')}
         actions={
           <>
-            <Button variant="secondary" onClick={() => setCancelling(false)}>
+            <Button variant="secondary" onClick={closeCancel}>
               {t('common.cancel')}
             </Button>
             <Button
               variant="danger"
               loading={commands.cancel.isPending}
-              disabled={!REASON_CODE.test(reasonCode)}
+              disabled={!cancelling || busy || !REASON_CODE.test(reasonCode)}
               onClick={() => void cancel()}
             >
               {t('claims.commands.cancel')}

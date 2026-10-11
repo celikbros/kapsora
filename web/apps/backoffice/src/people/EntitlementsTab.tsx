@@ -26,6 +26,7 @@ import { useForm } from 'react-hook-form';
 
 import { useAdjustmentCommands, useLedger, usePersonEntitlements } from '../benefit/queries';
 import { problemOf } from '../problems';
+import { LedgerDeltas } from './LedgerDeltas';
 
 /** Formats a decimal string for display without ever turning it into a number. */
 function quantity(value: string, unit: string, currencyCode?: string | null): string {
@@ -213,7 +214,7 @@ export function EntitlementsTab({ personId }: { personId: string }) {
               <TR>
                 <TH>{t('entitlements.ledger.columns.movement')}</TH>
                 <TH>{t('entitlements.ledger.columns.effectiveAt')}</TH>
-                <TH>{t('entitlements.ledger.columns.quantity')}</TH>
+                <TH>{t('entitlements.ledger.columns.balanceChanges')}</TH>
                 <TH>{t('entitlements.ledger.columns.reason')}</TH>
               </TR>
             </THead>
@@ -222,7 +223,9 @@ export function EntitlementsTab({ personId }: { personId: string }) {
                 <TR key={entry.id}>
                   <TD>{t(`entitlements.ledger.movements.${entry.movementType}`)}</TD>
                   <TD>{formatDateTime(entry.effectiveAt)}</TD>
-                  <TD className="font-mono">{entry.deltaTotal}</TD>
+                  <TD>
+                    <LedgerDeltas entry={entry} />
+                  </TD>
                   <TD>{entry.reasonCode ?? t('common.none')}</TD>
                 </TR>
               ))}

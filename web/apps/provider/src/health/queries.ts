@@ -1,6 +1,7 @@
 import type {
   CodeValue,
   CreateEncounter,
+  EndEncounter,
   CreateHealthCase,
   CreateInpatientStay,
   CreateMedicalReport,
@@ -12,8 +13,8 @@ import type {
   PutStaySegments,
 } from '@kapsora/api-client';
 import { etagOf } from '@kapsora/api-client';
-import { useTenantId } from '@kapsora/auth';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { usePermission, useTenantId } from '@kapsora/auth';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useOps } from '../services';
 
@@ -29,10 +30,17 @@ const ICD10 = 'ICD10';
 export function useCases(status: string) {
   const ops = useOps();
   const tenantId = useTenantId();
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ['provider', tenantId, 'cases', status],
-    queryFn: () =>
-      ops.health.listCases(tenantId, status ? { status: status as 'OPEN' | 'CLOSED' } : {}),
+    initialPageParam: '' as string,
+    retry: false,
+    queryFn: ({ pageParam }) =>
+      ops.health.listCases(tenantId, {
+        limit: 50,
+        ...(status ? { status: status as 'OPEN' | 'CLOSED' } : {}),
+        ...(pageParam ? { cursor: pageParam } : {}),
+      }),
+    getNextPageParam: (last) => last.nextCursor || undefined,
   });
 }
 
@@ -86,6 +94,17 @@ export function useCreateEncounter(caseId: string) {
   const invalidate = useInvalidateCase();
   return useMutation({
     mutationFn: (body: CreateEncounter) => ops.health.createEncounter(tenantId, caseId, body),
+    onSuccess: () => invalidate(caseId),
+  });
+}
+
+export function useEndEncounter(caseId: string, encounterId: string) {
+  const ops = useOps();
+  const tenantId = useTenantId();
+  const invalidate = useInvalidateCase();
+  return useMutation({
+    mutationFn: (input: { etag: string; key: string; body: EndEncounter }) =>
+      ops.health.endEncounter(tenantId, encounterId, input.etag, input.body, input.key),
     onSuccess: () => invalidate(caseId),
   });
 }
@@ -318,13 +337,15 @@ export function useStayCommands(stayId: string) {
 export function usePersonName(personId: string | null | undefined): string | null | undefined {
   const ops = useOps();
   const tenantId = useTenantId();
+  const canRead = usePermission('member.read');
   const q = useQuery({
     queryKey: ['provider', tenantId, 'person-name', personId ?? ''],
     queryFn: () => ops.people.get(tenantId, personId!),
-    enabled: Boolean(personId),
+    enabled: canRead && Boolean(personId),
     staleTime: 5 * 60_000,
     retry: false,
   });
+  if (!canRead) return null;
   if (q.isPending && q.fetchStatus !== 'idle') return undefined;
   return q.data?.data.displayName ?? null;
 }

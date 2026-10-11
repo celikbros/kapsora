@@ -129,9 +129,9 @@ func (s *Service) CreateReimbursement(ctx context.Context, rc identity.RequestCo
 			return err
 		}
 		if !request.Found || request.RequestType != requestTypeReimbursement ||
-			request.PersonID != in.PersonID {
-			// One refusal for three mistakes, on purpose: telling a member which of the three
-			// it was would answer a question about somebody else's data.
+			request.PersonID != in.PersonID || !reimbursementRequestSubmitted(request.Status) {
+			// Keep one refusal for a missing, mismatched or unsubmitted request. Naming
+			// which check failed could disclose another member's request or its status.
 			return ErrRequestUnusable
 		}
 		if request.ProviderOrganizationID == nil {
@@ -227,6 +227,21 @@ func (s *Service) CreateReimbursement(ctx context.Context, rc identity.RequestCo
 
 // requestTypeReimbursement is `service.service_request.request_type` for the request this wraps.
 const requestTypeReimbursement = "REIMBURSEMENT"
+
+// The service request must have crossed its submit gate before the member opens the
+// financial reimbursement. PENDING_REVIEW may continue: financial reimbursement review
+// is its own decision, not a second approval of the service request. SUBMITTED is kept for
+// older submitted requests and integrations; the current gate commits directly to a
+// decided outcome in the same transaction. Failed, missing-document and terminal states
+// cannot start a reimbursement.
+func reimbursementRequestSubmitted(status string) bool {
+	switch status {
+	case "SUBMITTED", "PENDING_REVIEW", "APPROVED", "PARTIALLY_APPROVED":
+		return true
+	default:
+		return false
+	}
+}
 
 // enrollmentActive is `benefit.enrollment.status` for an enrollment that is actually in force.
 const enrollmentActive = "ACTIVE"

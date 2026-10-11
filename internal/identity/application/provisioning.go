@@ -29,6 +29,10 @@ var tenantCodePattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]{2,39}$`)
 // ErrTenantCodeExists is returned when the tenant code is already taken.
 var ErrTenantCodeExists = errors.New("identity: tenant code already exists")
 
+// ErrRoleConfigurationInUse prevents template sync from changing a supported role
+// while a current or future grant still references its live permission set.
+var ErrRoleConfigurationInUse = errors.New("identity: supported role permission set is in use")
+
 // CatalogEntry is a baseline reference row seeded into every tenant.
 type CatalogEntry struct {
 	Code        string

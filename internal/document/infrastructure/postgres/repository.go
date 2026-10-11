@@ -418,3 +418,16 @@ func (Repository) ActiveTenants(ctx context.Context, tx pgx.Tx) ([]uuid.UUID, er
 	}
 	return out, rows.Err()
 }
+
+// BookingEvidenceLinkAllowed implements the narrowly scoped desk attachment boundary.
+func (Repository) BookingEvidenceLinkAllowed(ctx context.Context, tx pgx.Tx,
+	tenantID, bookingID, documentID uuid.UUID, scope application.Scope,
+) (bool, error) {
+	allowed, err := sqlcgen.New(tx).BookingEvidenceLinkAllowed(ctx, sqlcgen.BookingEvidenceLinkAllowedParams{
+		TenantID: tenantID, BookingID: bookingID, DocumentID: documentID, ScopeIds: scope.OrganizationIDs,
+	})
+	if err != nil {
+		return false, fmt.Errorf("document: check booking evidence target: %w", err)
+	}
+	return allowed, nil
+}

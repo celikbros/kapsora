@@ -214,3 +214,48 @@ func (a *Authorizations) Lines(ctx context.Context, tx pgx.Tx, tenantID,
 	}
 	return out, nil
 }
+
+func (a *Authorizations) CancellationEvidence(ctx context.Context, tx pgx.Tx,
+	tenantID, authorizationID, requestID, personID, bookingID, reservationID,
+	serviceDefinitionID uuid.UUID,
+) (*accommodationapp.BookingCancellationEvidence, error) {
+	evidence, err := a.svc.BookingCancellationEvidence(ctx, tx,
+		authorizationapp.BookingCancellationEvidenceInput{
+			TenantID: tenantID, AuthorizationID: authorizationID, RequestID: requestID,
+			PersonID: personID, BookingID: bookingID, ReservationID: reservationID,
+			ServiceDefinitionID: serviceDefinitionID,
+		})
+	if err != nil || evidence == nil {
+		return nil, err
+	}
+	return &accommodationapp.BookingCancellationEvidence{
+		Approved: evidence.Approved, Consumed: evidence.Consumed,
+		Remaining: evidence.Remaining, UnitFactor: evidence.UnitFactor,
+		Reservation: evidence.Reservation,
+	}, nil
+}
+
+func (a *Authorizations) SettleBookingPenalty(ctx context.Context, tx pgx.Tx,
+	in accommodationapp.BookingPenaltySettlement,
+) (accommodationapp.EntitlementEffect, error) {
+	penalty, err := benefitdomain.ParseQuantity(in.PolicyPenalty)
+	if err != nil {
+		return accommodationapp.EntitlementEffect{}, err
+	}
+	result, err := a.svc.SettleBookingPenalty(ctx, tx, authorizationapp.BookingPenaltyInput{
+		BookingCancellationEvidenceInput: authorizationapp.BookingCancellationEvidenceInput{
+			TenantID: in.TenantID, AuthorizationID: in.AuthorizationID,
+			RequestID: in.RequestID, PersonID: in.PersonID, BookingID: in.BookingID,
+			ReservationID: in.ReservationID, ServiceDefinitionID: in.ServiceDefinitionID,
+		}, EvaluationID: in.EvaluationID, EnrollmentID: in.EnrollmentID,
+		ActorID: in.ActorID, PolicyPenalty: penalty, ConsumeKey: in.ConsumeKey,
+		ConsumeReason: in.ConsumeReason, ReleaseReason: in.ReleaseReason,
+	})
+	if err != nil {
+		return accommodationapp.EntitlementEffect{}, err
+	}
+	return accommodationapp.EntitlementEffect{
+		ConsumedServiceNights: result.ConsumedService.String(), ReleasedServiceNights: result.ReleasedService.String(),
+		ConsumedEntitlementUnits: result.ConsumedUnits.String(), ReleasedEntitlementUnits: result.ReleasedUnits.String(),
+	}, nil
+}

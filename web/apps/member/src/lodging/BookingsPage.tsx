@@ -5,19 +5,19 @@ import { Link } from '@tanstack/react-router';
 import { problemOf } from '../problems';
 import { Loading } from './Loading';
 import { usePropertyNames } from './names';
-import { useAcceptOffer, useBookings, useLeaveWaitlist, useWaitlist } from './queries';
+import { useAcceptOffer, useBookingHistory, useLeaveWaitlist, useWaitlist } from './queries';
 import { bookingTone, money, stayDates } from './words';
 
 /** Rezervasyonlarım: every booking as it is, live ones first; the waiting list under them. */
 export function BookingsPage() {
   const { t } = useTranslation();
-  const bookings = useBookings();
+  const bookings = useBookingHistory();
   const waitlist = useWaitlist();
   const names = usePropertyNames();
   const accept = useAcceptOffer();
   const leave = useLeaveWaitlist();
 
-  const items = [...(bookings.data?.items ?? [])].sort((a, b) =>
+  const items = [...(bookings.data?.pages.flatMap((page) => page.items) ?? [])].sort((a, b) =>
     b.checkIn.localeCompare(a.checkIn),
   );
   const entries = (waitlist.data ?? []).filter(
@@ -29,41 +29,56 @@ export function BookingsPage() {
       <h1 className="text-xl font-semibold">{t('lodging.booking.list')}</h1>
       {bookings.isPending ? (
         <Loading />
-      ) : bookings.isError ? (
+      ) : bookings.isError && !bookings.data ? (
         <ProblemAlert problem={problemOf(bookings.error)} />
       ) : items.length === 0 ? (
         <Card>
           <p className="text-sm">{t('lodging.booking.empty')}</p>
         </Card>
       ) : (
-        <ul className="grid gap-2" data-testid="booking-list">
-          {items.map((b) => (
-            <li key={b.id}>
-              <Link
-                to="/bookings/$bookingId"
-                params={{ bookingId: b.id }}
-                className="bg-surface-raised border-line block rounded-lg border p-3"
-                data-testid="booking-row"
-              >
-                <span className="flex items-baseline justify-between gap-3">
-                  <span className="text-sm font-medium">{names.get(b.propertyId) ?? '…'}</span>
-                  <Badge tone={bookingTone(b.status)}>
-                    {t(`lodging.booking.status.${b.status}`)}
-                  </Badge>
-                </span>
-                <span className="text-fg-muted mt-1 block text-sm">
-                  {stayDates(b.checkIn, b.checkOut)}
-                </span>
-                <span className="mt-1 flex items-baseline justify-between gap-3 text-sm">
-                  <span className="font-mono text-xs">{b.reference}</span>
-                  <span className="font-mono tabular-nums">
-                    {money(b.quoteSnapshot.memberAmount, b.quoteSnapshot.currencyCode)}
+        <div className="grid gap-3">
+          <ul className="grid gap-2" data-testid="booking-list">
+            {items.map((b) => (
+              <li key={b.id}>
+                <Link
+                  to="/bookings/$bookingId"
+                  params={{ bookingId: b.id }}
+                  className="bg-surface-raised border-line block rounded-lg border p-3"
+                  data-testid="booking-row"
+                >
+                  <span className="flex items-baseline justify-between gap-3">
+                    <span className="text-sm font-medium">{names.get(b.propertyId) ?? '…'}</span>
+                    <Badge tone={bookingTone(b.status)}>
+                      {t(`lodging.booking.status.${b.status}`)}
+                    </Badge>
                   </span>
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+                  <span className="text-fg-muted mt-1 block text-sm">
+                    {stayDates(b.checkIn, b.checkOut)}
+                  </span>
+                  <span className="mt-1 flex items-baseline justify-between gap-3 text-sm">
+                    <span className="font-mono text-xs">{b.reference}</span>
+                    <span className="font-mono tabular-nums">
+                      {money(b.quoteSnapshot.memberAmount, b.quoteSnapshot.currencyCode)}
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          {bookings.isFetchNextPageError ? (
+            <ProblemAlert problem={problemOf(bookings.error)} />
+          ) : null}
+          {bookings.hasNextPage ? (
+            <Button
+              variant="secondary"
+              loading={bookings.isFetchingNextPage}
+              disabled={bookings.isFetchingNextPage}
+              onClick={() => void bookings.fetchNextPage()}
+            >
+              {t('common.loadMore')}
+            </Button>
+          ) : null}
+        </div>
       )}
 
       <section aria-labelledby="waitlist-heading" className="grid gap-2">

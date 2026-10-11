@@ -413,6 +413,7 @@ func (Repository) ListPriceCandidates(ctx context.Context, tx pgx.Tx, tenantID u
 	rows, err := sqlcgen.New(tx).ListAccommodationPriceCandidates(ctx,
 		sqlcgen.ListAccommodationPriceCandidatesParams{
 			TenantID: tenantID, ProviderProfileIds: nonNil(q.ProviderProfileIDs),
+			PayerOrganizationIds: nonNil(q.PayerOrganizationIDs),
 			ServiceDefinitionIds: nonNil(q.ServiceDefinitionIDs),
 			CategoryIds:          nonNil(q.CategoryIDs), PackageIds: nonNil(q.PackageIDs),
 			LastNight: dateOf(q.LastNight), CheckIn: dateOf(q.CheckIn),
@@ -457,6 +458,7 @@ func (Repository) ListPriceCandidates(ctx context.Context, tx pgx.Tx, tenantID u
 			ProviderProfileID: r.ProviderProfileID,
 			VersionValidFrom:  dateTime(r.VersionValidFrom),
 			VersionValidTo:    dateTime(r.VersionValidTo),
+			HoldMinutes:       r.HoldMinutes,
 		})
 	}
 	return out, nil

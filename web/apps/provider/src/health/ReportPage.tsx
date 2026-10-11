@@ -22,7 +22,7 @@ import {
   useToast,
 } from '@kapsora/ui';
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 import { DocumentsPanel } from '../documents';
 import { problemOf } from '../problems';
@@ -36,10 +36,19 @@ import {
 } from './queries';
 import { qty, reportTone, today } from './words';
 
-function HeaderForm({ report, onSaved }: { report: MedicalReport; onSaved: () => void }) {
+type ReportCommands = ReturnType<typeof useReportCommands>;
+
+function HeaderForm({
+  report,
+  commands,
+  isCurrent,
+}: {
+  report: MedicalReport;
+  commands: ReportCommands;
+  isCurrent: () => boolean;
+}) {
   const { t } = useTranslation();
   const toast = useToast();
-  const commands = useReportCommands(report.id);
   const [type, setType] = useState(report.reportType ?? '');
   const [subtype, setSubtype] = useState(report.reportSubtype ?? '');
   const [issuedAt, setIssuedAt] = useState(report.issuedAt.slice(0, 10));
@@ -68,8 +77,7 @@ function HeaderForm({ report, onSaved }: { report: MedicalReport; onSaved: () =>
           issuingPractitionerId: report.issuingPractitionerId ?? null,
         },
       });
-      toast.notify({ tone: 'success', title: t('health.reports.header.saved') });
-      onSaved();
+      if (isCurrent()) toast.notify({ tone: 'success', title: t('health.reports.header.saved') });
     } catch {
       // Rendered below.
     }
@@ -175,10 +183,17 @@ interface DraftService {
   notes: string;
 }
 
-function ServicesEditor({ report }: { report: MedicalReport }) {
+function ServicesEditor({
+  report,
+  commands,
+  isCurrent,
+}: {
+  report: MedicalReport;
+  commands: ReportCommands;
+  isCurrent: () => boolean;
+}) {
   const { t } = useTranslation();
   const toast = useToast();
-  const commands = useReportCommands(report.id);
   const options = useServiceDefinitions();
   const [rows, setRows] = useState<DraftService[]>(
     report.services.map((s) => ({
@@ -202,7 +217,7 @@ function ServicesEditor({ report }: { report: MedicalReport }) {
     }));
     try {
       await commands.putServices.mutateAsync({ rowVersion: report.rowVersion, body: { items } });
-      toast.notify({ tone: 'success', title: t('health.reports.services.saved') });
+      if (isCurrent()) toast.notify({ tone: 'success', title: t('health.reports.services.saved') });
     } catch {
       // Rendered below.
     }
@@ -213,7 +228,7 @@ function ServicesEditor({ report }: { report: MedicalReport }) {
       {rows.length === 0 ? (
         <p className="text-fg-muted text-sm">{t('health.reports.services.empty')}</p>
       ) : (
-        <Table data-testid="report-services-editor">
+        <Table data-testid="report-services-editor" className="min-w-[48rem]">
           <THead>
             <TR>
               <TH>{t('health.reports.services.service')}</TH>
@@ -317,14 +332,29 @@ function ServicesEditor({ report }: { report: MedicalReport }) {
  * that stands beside the decided one rather than replacing it.
  */
 export function ReportPage() {
+  const { reportId } = useParams({ from: '/app/reports/$reportId' });
+  return <ReportDetail key={reportId} reportId={reportId} />;
+}
+
+function ReportDetail({ reportId }: { reportId: string }) {
   const { t } = useTranslation();
   const toast = useToast();
   const navigate = useNavigate();
-  const { reportId } = useParams({ from: '/app/reports/$reportId' });
+  const active = useRef(true);
+  useEffect(() => {
+    active.current = true;
+    return () => {
+      active.current = false;
+    };
+  }, []);
+  const isCurrent = () => active.current;
   const query = useReport(reportId);
   const canManage = usePermission('health.medical_report.manage');
   const commands = useReportCommands(reportId);
   const createReport = useCreateReport();
+  // Keep every editor locked until the mutation's awaited refetch has settled.
+  const busy =
+    Object.values(commands).some((command) => command.isPending) || createReport.isPending;
   const personName = usePersonName(query.data?.data.personId);
   const chain = useReportChain(query.data?.data.rootReportId);
 
@@ -357,6 +387,8 @@ export function ReportPage() {
   const laterDraft = (chain.data ?? []).some((r) => r.versionNo > report.versionNo);
   const canCorrect =
     canManage &&
+    chain.isSuccess &&
+    !chain.isFetching &&
     clinical &&
     (report.status === 'APPROVED' || report.status === 'REJECTED') &&
     !laterDraft;
@@ -364,16 +396,19 @@ export function ReportPage() {
   async function run(action: 'submit' | 'cancel') {
     try {
       await commands[action].mutateAsync({ rowVersion: report.rowVersion });
-      toast.notify({
-        tone: 'success',
-        title: t(action === 'submit' ? 'health.reports.submitted' : 'health.reports.cancelled'),
-      });
+      if (isCurrent())
+        toast.notify({
+          tone: 'success',
+          title: t(action === 'submit' ? 'health.reports.submitted' : 'health.reports.cancelled'),
+        });
     } catch (err) {
-      toast.notify({ tone: 'danger', title: problemOf(err).title || t('problems.UNKNOWN') });
+      if (isCurrent())
+        toast.notify({ tone: 'danger', title: problemOf(err).title || t('problems.UNKNOWN') });
     }
   }
 
   async function correct() {
+    if (!canCorrect || busy) return;
     try {
       const created = await createReport.mutateAsync({
         personId: report.personId,
@@ -383,10 +418,12 @@ export function ReportPage() {
           ? { issuingProviderOrganizationId: report.issuingProviderOrganizationId }
           : {}),
       });
+      if (!isCurrent()) return;
       toast.notify({ tone: 'success', title: t('health.reports.correctionOpened') });
       await navigate({ to: '/reports/$reportId', params: { reportId: created.data.id } });
     } catch (err) {
-      toast.notify({ tone: 'danger', title: problemOf(err).title || t('problems.UNKNOWN') });
+      if (isCurrent())
+        toast.notify({ tone: 'danger', title: problemOf(err).title || t('problems.UNKNOWN') });
     }
   }
 
@@ -427,6 +464,7 @@ export function ReportPage() {
               <Button
                 size="sm"
                 loading={commands.submit.isPending}
+                disabled={busy}
                 onClick={() => void run('submit')}
               >
                 {t('health.reports.commands.submit')}
@@ -437,6 +475,7 @@ export function ReportPage() {
                 size="sm"
                 variant="secondary"
                 loading={commands.cancel.isPending}
+                disabled={busy}
                 onClick={() => void run('cancel')}
               >
                 {t('health.reports.commands.cancel')}
@@ -447,6 +486,7 @@ export function ReportPage() {
                 size="sm"
                 variant="secondary"
                 loading={createReport.isPending}
+                disabled={busy}
                 onClick={() => void correct()}
               >
                 {t('health.reports.commands.correct')}
@@ -493,9 +533,9 @@ export function ReportPage() {
         <Card>
           <h2 className="text-base font-semibold">{t('health.reports.header.title')}</h2>
           {draft && canManage && clinical ? (
-            <div className="mt-3">
-              <HeaderForm report={report} onSaved={() => undefined} />
-            </div>
+            <fieldset disabled={busy} aria-busy={busy} className="mt-3 min-w-0">
+              <HeaderForm report={report} commands={commands} isCurrent={isCurrent} />
+            </fieldset>
           ) : (
             <dl className="mt-3 grid gap-x-6 gap-y-1 text-sm md:grid-cols-[minmax(0,12rem)_minmax(0,1fr)]">
               {clinical ? (
@@ -532,7 +572,14 @@ export function ReportPage() {
           <h2 className="text-base font-semibold">{t('health.reports.services.title')}</h2>
           <p className="text-fg-muted mb-3 mt-1 text-sm">{t('health.reports.services.intro')}</p>
           {draft && canManage && clinical ? (
-            <ServicesEditor key={report.rowVersion} report={report} />
+            <fieldset disabled={busy} aria-busy={busy} className="min-w-0">
+              <ServicesEditor
+                key={`${report.id}:${report.rowVersion}`}
+                report={report}
+                commands={commands}
+                isCurrent={isCurrent}
+              />
+            </fieldset>
           ) : report.services.length === 0 ? (
             <p className="text-fg-muted text-sm">{t('health.reports.services.empty')}</p>
           ) : (
@@ -583,47 +630,68 @@ export function ReportPage() {
           </Card>
         ) : null}
 
-        {(chain.data?.length ?? 0) > 1 ? (
+        {chain.isPending || chain.isError || (chain.data?.length ?? 0) > 1 ? (
           <Card>
             <h2 className="text-base font-semibold">{t('health.reports.versions.title')}</h2>
-            <div className="mt-3">
-              <Table data-testid="report-versions">
-                <THead>
-                  <TR>
-                    <TH>{t('health.reports.columns.version')}</TH>
-                    <TH>{t('health.reports.columns.status')}</TH>
-                    <TH>{t('health.reports.columns.issuedAt')}</TH>
-                  </TR>
-                </THead>
-                <TBody>
-                  {chain.data!.map((r) => (
-                    <TR key={r.id}>
-                      <TD className="font-mono">
-                        {r.id === report.id ? (
-                          <>
-                            v{r.versionNo} · {t('health.reports.versions.current')}
-                          </>
-                        ) : (
-                          <Link
-                            to="/reports/$reportId"
-                            params={{ reportId: r.id }}
-                            className="underline-offset-2 hover:underline"
-                          >
-                            v{r.versionNo}
-                          </Link>
-                        )}
-                      </TD>
-                      <TD>
-                        <Badge tone={reportTone(r.status)}>
-                          {t(`health.reports.status.${r.status}`)}
-                        </Badge>
-                      </TD>
-                      <TD>{formatDate(r.issuedAt)}</TD>
+            {chain.isPending ? (
+              <div className="text-fg-muted mt-3 flex items-center gap-2 text-sm" aria-busy="true">
+                <Spinner /> {t('common.loading')}
+              </div>
+            ) : null}
+            {chain.isError ? (
+              <div className="mt-3 grid gap-2">
+                <ProblemAlert problem={problemOf(chain.error)} />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={chain.isFetching}
+                  disabled={chain.isFetching}
+                  onClick={() => void chain.refetch()}
+                >
+                  {t('common.retry')}
+                </Button>
+              </div>
+            ) : null}
+            {(chain.data?.length ?? 0) > 1 ? (
+              <div className="mt-3">
+                <Table data-testid="report-versions">
+                  <THead>
+                    <TR>
+                      <TH>{t('health.reports.columns.version')}</TH>
+                      <TH>{t('health.reports.columns.status')}</TH>
+                      <TH>{t('health.reports.columns.issuedAt')}</TH>
                     </TR>
-                  ))}
-                </TBody>
-              </Table>
-            </div>
+                  </THead>
+                  <TBody>
+                    {chain.data!.map((r) => (
+                      <TR key={r.id}>
+                        <TD className="font-mono">
+                          {r.id === report.id ? (
+                            <>
+                              v{r.versionNo} · {t('health.reports.versions.current')}
+                            </>
+                          ) : (
+                            <Link
+                              to="/reports/$reportId"
+                              params={{ reportId: r.id }}
+                              className="underline-offset-2 hover:underline"
+                            >
+                              v{r.versionNo}
+                            </Link>
+                          )}
+                        </TD>
+                        <TD>
+                          <Badge tone={reportTone(r.status)}>
+                            {t(`health.reports.status.${r.status}`)}
+                          </Badge>
+                        </TD>
+                        <TD>{formatDate(r.issuedAt)}</TD>
+                      </TR>
+                    ))}
+                  </TBody>
+                </Table>
+              </div>
+            ) : null}
           </Card>
         ) : null}
       </div>

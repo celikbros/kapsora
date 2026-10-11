@@ -130,6 +130,11 @@ func (s *seeder) ensureAccommodationSettings(ctx context.Context, tenantID uuid.
 
 func writeAccommodationSettings(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, values map[string]string) error {
 	q := sqlcgen.New(tx)
+	// Settings management takes this parent lock before locking or inserting admitted
+	// keys. The seed uses the same order, including when neither row exists yet.
+	if _, err := q.LockTenantForUserManagement(ctx, tenantID); err != nil {
+		return fmt.Errorf("lock tenant for accommodation settings: %w", err)
+	}
 	for _, key := range settings.Keys {
 		// The threshold is a money value and is stored as a JSON string, not a JSON
 		// number: a float in the document would be the one place in this system where an
@@ -144,6 +149,14 @@ func writeAccommodationSettings(ctx context.Context, tx pgx.Tx, tenantID uuid.UU
 		}
 		if err != nil {
 			return fmt.Errorf("encode setting %s: %w", key, err)
+		}
+		if key == settings.KeyHoldMinutes || key == settings.KeyQuoteTTLMinutes {
+			// A repeated demo seed must never replace an administrator's saved value.
+			if _, err := tx.Exec(ctx, `INSERT INTO platform.tenant_setting(tenant_id,setting_key,value_json,is_sensitive)
+				VALUES($1,$2,$3::jsonb,false) ON CONFLICT(tenant_id,setting_key) DO NOTHING`, tenantID, key, string(encoded)); err != nil {
+				return fmt.Errorf("create setting %s: %w", key, err)
+			}
+			continue
 		}
 		if err := q.UpsertTenantSetting(ctx, sqlcgen.UpsertTenantSettingParams{
 			TenantID: tenantID, SettingKey: key, ValueJson: encoded,

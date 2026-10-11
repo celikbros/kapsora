@@ -18,12 +18,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 
+	benefitdomain "github.com/celikbros/kapsora/internal/benefit/domain"
 	"github.com/celikbros/kapsora/internal/claim/application"
 	"github.com/celikbros/kapsora/internal/platform/sqlcgen"
 )
@@ -35,7 +38,8 @@ const (
 	// constraintLiveBooking is "one live claim per booking": the second delivery of a
 	// check-out event, or a second handler racing the first, is refused here rather than
 	// producing a stay somebody could be billed for twice.
-	constraintLiveBooking = "uq_claim_live_booking"
+	constraintLiveBooking       = "uq_claim_live_booking"
+	constraintLiveInpatientStay = "uq_claim_live_inpatient_stay"
 	// constraintReversal is "one reversal per adjustment".
 	constraintReversal = "uq_claim_adjustment_reversal"
 	sqlStateUnique     = "23505"
@@ -66,7 +70,7 @@ func (Repository) CreateClaim(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID
 	if isUniqueViolation(err, constraintReference) {
 		return application.ClaimRecord{}, application.ErrReferenceCollision
 	}
-	if isUniqueViolation(err, constraintLiveBooking) {
+	if isUniqueViolation(err, constraintLiveBooking) || isUniqueViolation(err, constraintLiveInpatientStay) {
 		// One live claim per booking. The handler looked first and found none; this is the
 		// other delivery having written one in between, and the honest answer is that the
 		// claim exists rather than that the write failed.
@@ -794,4 +798,117 @@ func (Repository) ProviderDisplayName(ctx context.Context, tx pgx.Tx, tenantID,
 		return "", fmt.Errorf("claim: provider name: %w", err)
 	}
 	return name, nil
+}
+
+// InpatientStayPlan binds one discharged stay to this claim's exact source and original hold.
+func (Repository) InpatientStayPlan(ctx context.Context, tx pgx.Tx, tenantID, stayID, caseID, providerID, originalID uuid.UUID) (application.InpatientStayPlan, error) {
+	q := sqlcgen.New(tx)
+	row, err := q.ClaimInpatientStayPlan(ctx, sqlcgen.ClaimInpatientStayPlanParams{
+		TenantID: tenantID, StayID: stayID, CaseID: caseID,
+		ProviderOrganizationID: providerID, AuthorizationID: uuid.NullUUID{UUID: originalID, Valid: true},
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return application.InpatientStayPlan{}, nil
+	}
+	if err != nil {
+		return application.InpatientStayPlan{}, fmt.Errorf("claim: inpatient stay plan: %w", err)
+	}
+	out := application.InpatientStayPlan{Found: true, Discharged: row.Status == "DISCHARGED", OverAuthorization: row.OverAuthorization}
+	if row.ActualDays != "" {
+		out.ActualDays, err = benefitdomain.ParseQuantity(row.ActualDays)
+		if err != nil {
+			return application.InpatientStayPlan{}, err
+		}
+	}
+	if row.AuthorizedDays != "" {
+		days, err := benefitdomain.ParseQuantity(row.AuthorizedDays)
+		if err != nil {
+			return application.InpatientStayPlan{}, err
+		}
+		out.Holds = append(out.Holds, application.InpatientHold{AuthorizationID: originalID, Days: days})
+	}
+	extensions, err := q.ClaimInpatientExtensions(ctx, sqlcgen.ClaimInpatientExtensionsParams{TenantID: tenantID, StayID: stayID})
+	if err != nil {
+		return application.InpatientStayPlan{}, fmt.Errorf("claim: inpatient extensions: %w", err)
+	}
+	for _, extension := range extensions {
+		if !extension.AuthorizationID.Valid || extension.ApprovedDays == "" {
+			out.OverAuthorization = true
+			continue
+		}
+		days, err := benefitdomain.ParseQuantity(extension.ApprovedDays)
+		if err != nil {
+			return application.InpatientStayPlan{}, err
+		}
+		out.Holds = append(out.Holds, application.InpatientHold{AuthorizationID: extension.AuthorizationID.UUID, Days: days})
+		if len(out.Holds) > 0 {
+			out.Holds[0].Days = out.Holds[0].Days.Sub(days)
+		}
+	}
+	if len(out.Holds) == 0 || !out.Holds[0].Days.IsPositive() {
+		out.OverAuthorization = true
+	}
+	return out, nil
+}
+
+func (Repository) CreateLineAllocation(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, row application.LineAllocation) error {
+	if row.Order <= 0 || row.Order > math.MaxInt32 {
+		return fmt.Errorf("claim: allocation order out of range")
+	}
+	planned, err := allocationNumeric(row.Planned)
+	if err != nil {
+		return err
+	}
+	applied, err := allocationNumeric(row.Applied)
+	if err != nil {
+		return err
+	}
+	err = sqlcgen.New(tx).CreateClaimLineAllocation(ctx, sqlcgen.CreateClaimLineAllocationParams{
+		TenantID: tenantID, VersionID: row.VersionID, LineID: row.LineID,
+		AuthorizationID: row.AuthorizationID, AllocationOrder: int32(row.Order),
+		PlannedQuantity: planned, AppliedQuantity: applied, IdempotencyKey: row.Key,
+	})
+	if err != nil {
+		return fmt.Errorf("claim: create line allocation: %w", err)
+	}
+	return nil
+}
+
+func (Repository) ListVersionAllocations(ctx context.Context, tx pgx.Tx, tenantID, versionID uuid.UUID) ([]application.LineAllocation, error) {
+	rows, err := sqlcgen.New(tx).ListClaimVersionAllocations(ctx, sqlcgen.ListClaimVersionAllocationsParams{TenantID: tenantID, VersionID: versionID})
+	if err != nil {
+		return nil, fmt.Errorf("claim: list line allocations: %w", err)
+	}
+	out := make([]application.LineAllocation, 0, len(rows))
+	for _, row := range rows {
+		planned, err := benefitdomain.ParseQuantity(row.PlannedQuantity)
+		if err != nil {
+			return nil, err
+		}
+		applied, err := benefitdomain.ParseQuantity(row.AppliedQuantity)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, application.LineAllocation{VersionID: row.VersionID, LineID: row.LineID,
+			AuthorizationID: row.AuthorizationID, ServiceDefinitionID: row.ServiceDefinitionID,
+			Order: int(row.AllocationOrder), Planned: planned, Applied: applied, Key: row.IdempotencyKey})
+	}
+	return out, nil
+}
+
+func allocationNumeric(q benefitdomain.Quantity) (pgtype.Numeric, error) {
+	var n pgtype.Numeric
+	err := n.Scan(q.String())
+	return n, err
+}
+
+func (Repository) CaseType(ctx context.Context, tx pgx.Tx, tenantID, caseID uuid.UUID) (string, error) {
+	value, err := sqlcgen.New(tx).ClaimCaseType(ctx, sqlcgen.ClaimCaseTypeParams{TenantID: tenantID, CaseID: caseID})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("claim: case type: %w", err)
+	}
+	return value, nil
 }

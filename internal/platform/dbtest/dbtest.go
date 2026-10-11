@@ -65,6 +65,12 @@ type Harness struct {
 
 // New creates the database, the app role and applies migrations; cleanup drops it.
 func New(t *testing.T) *Harness {
+	return NewAtVersion(t, 0)
+}
+
+// NewAtVersion creates a disposable database at a specific migration version.
+// Version zero means all migrations; callers can then exercise a forward upgrade.
+func NewAtVersion(t *testing.T, version uint) *Harness {
 	t.Helper()
 	baseURL := os.Getenv(AdminURLEnv)
 	if baseURL == "" {
@@ -91,7 +97,12 @@ func New(t *testing.T) *Harness {
 	adminURL := withDatabase(t, baseURL, dbName)
 	appURL := withUser(t, adminURL, AppRole, appPassword())
 
-	st, err := dbmigrate.Up(adminURL)
+	var st dbmigrate.Status
+	if version == 0 {
+		st, err = dbmigrate.Up(adminURL)
+	} else {
+		st, err = dbmigrate.UpTo(adminURL, version)
+	}
 	if err != nil {
 		dropDatabase(t, baseURL, dbName)
 		t.Fatalf("dbtest: migrate up: %v", err)

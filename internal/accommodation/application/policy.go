@@ -114,7 +114,10 @@ type CancellationQuote struct {
 	PayerFee       string
 	MemberFee      string
 	ReleasedNights int
-	CurrencyCode   string
+	// EntitlementEffect is the exact prospective or settled effect on a proven
+	// authorization-backed NIGHT reservation. Nil means no exact evidence.
+	EntitlementEffect *EntitlementEffect
+	CurrencyCode      string
 	// FreeUntil is the moment the free window closed or closes, so a member looking at a
 	// fee can see what they missed rather than being told a number.
 	FreeUntil time.Time

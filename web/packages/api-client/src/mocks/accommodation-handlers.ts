@@ -684,10 +684,12 @@ export function accommodationHandlers(api: MockApi): HttpHandler[] {
     programId: string | null,
     serviceDate: string,
     serviceDefinitionId: string,
+    enrollmentId?: string | null,
   ): { eligible: boolean; nightsCarried: number; money: bigint | null } => {
     const check: EligibilityCheckRequest = {
       personId,
       programId,
+      ...(enrollmentId ? { enrollmentId } : {}),
       serviceDate,
       serviceItems: [{ serviceDefinitionId, quantity: '1.000000' }],
       context: { domain: 'ACCOMMODATION' },

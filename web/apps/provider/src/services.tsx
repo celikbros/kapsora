@@ -9,6 +9,10 @@ export interface AppServices {
   queryClient: QueryClient;
 }
 
+export function sessionFingerprint(state: ReturnType<SessionStore['getState']>): string {
+  return `${state.session?.actorId ?? ''}:${JSON.stringify(state.activeTenant ?? null)}`;
+}
+
 /** Client + session store + query client, wired the same way as the backoffice. */
 export function createServices(
   options: { baseUrl?: string; fetch?: typeof fetch } = {},
@@ -22,12 +26,23 @@ export function createServices(
   });
   const ops = createOperations(client);
   store = createSessionStore(ops);
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: 1, staleTime: 15_000, refetchOnWindowFocus: false } },
+  });
+  let context = sessionFingerprint(store.getState());
+  store.subscribe((state) => {
+    const next = sessionFingerprint(state);
+    if (next !== context) {
+      context = next;
+      // Most portal reads predate actor-scoped keys. Clear even in-flight entries before
+      // another actor or grant/scope snapshot can render their cached person or clinical data.
+      queryClient.clear();
+    }
+  });
   return {
     ops,
     store,
-    queryClient: new QueryClient({
-      defaultOptions: { queries: { retry: 1, staleTime: 15_000, refetchOnWindowFocus: false } },
-    }),
+    queryClient,
   };
 }
 

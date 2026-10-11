@@ -215,3 +215,33 @@ func diagnosisList(rows []application.DiagnosisRecord) kapsorav1.DiagnosisList {
 	}
 	return out
 }
+
+// EndEncounter implements endEncounter; no clinical content is edited by this command.
+func (h *Handler) EndEncounter(w http.ResponseWriter, r *http.Request) {
+	rc, ok := h.require(w, r, PermissionCaseManage)
+	if !ok {
+		return
+	}
+	if _, ok := h.require(w, r, PermissionClinicalRead); !ok {
+		return
+	}
+	id, ok := h.pathUUID(w, r, "encounterId", application.ErrEncounterNotFound)
+	if !ok {
+		return
+	}
+	expected, ok := requireIfMatch(w, r)
+	if !ok {
+		return
+	}
+	var body kapsorav1.EndEncounter
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	view, err := h.svc.EndEncounter(r.Context(), rc, id, body.EndedAt, expected)
+	if err != nil {
+		h.writeError(w, r, err)
+		return
+	}
+	w.Header().Set("ETag", etag(view.Encounter.RowVersion))
+	writeJSON(w, http.StatusOK, encounterBody(view.Encounter, view.Projection))
+}

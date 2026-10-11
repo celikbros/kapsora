@@ -1,1 +1,26 @@
-{}
+{
+  "adminUsers": {
+    "title": "Users",
+    "purpose": "Read the memberships of the selected organization. Authorized administrators can suspend an active membership from its detail page. The directory does not show login or contact details.",
+    "sections": [
+      {
+        "label": "Membership status",
+        "body": "Filter memberships by their own status. Account status and membership validity are separate facts."
+      },
+      {
+        "label": "Pages",
+        "body": "Next and Previous show bounded pages of memberships in this organization only."
+      }
+    ]
+  },
+  "adminUser": {
+    "title": "Membership detail",
+    "purpose": "Read one organization's membership and the roles assigned to it. Authorized administrators can suspend an active membership in this organization after choosing a reason and confirming its impact.",
+    "sections": [
+      {
+        "label": "Assigned roles",
+        "body": "A role may start in the future or have expired. Assignment alone does not prove that access is currently effective. Scope names do not reveal other organizations or people."
+      }
+    ]
+  }
+}

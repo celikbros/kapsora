@@ -7,6 +7,8 @@ const PROVIDER_PORT = 5198;
 const MEMBER_PORT = 5197;
 // E2E_REAL_API=1 turns the mock worker off and proxies /api to KAPSORA_API_URL.
 const REAL = process.env['E2E_REAL_API'] === '1';
+// Reuse the operator's single-door server for all real app projects.
+const EXISTING_UI_URL = REAL ? process.env['E2E_EXISTING_UI_URL'] : undefined;
 const API_URL = process.env['KAPSORA_API_URL'] ?? 'http://127.0.0.1:8080';
 // Where each app lives on these ports, for the single sign-in's hand-over between them.
 const APP_URLS = {
@@ -24,8 +26,9 @@ export default defineConfig({
   retries: process.env['CI'] ? 1 : 0,
   reporter: process.env['CI'] ? [['github'], ['list']] : 'list',
   use: {
-    baseURL: `http://127.0.0.1:${PORT}`,
-    trace: 'retain-on-failure',
+    baseURL: EXISTING_UI_URL ?? `http://127.0.0.1:${PORT}`,
+    // Real login requests contain credentials; retain traces only for mock runs.
+    trace: REAL ? 'off' : 'retain-on-failure',
     locale: 'tr-TR',
     timezoneId: 'Europe/Istanbul',
   },
@@ -38,7 +41,10 @@ export default defineConfig({
     {
       name: 'provider',
       testMatch: /(provider[a-z-]*|review-capture)\.spec\.ts$/,
-      use: { ...devices['Desktop Chrome'], baseURL: `http://127.0.0.1:${PROVIDER_PORT}` },
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: EXISTING_UI_URL ?? `http://127.0.0.1:${PROVIDER_PORT}`,
+      },
     },
     {
       // The member PWA is phone-first: its flows run at a phone viewport.
@@ -47,37 +53,39 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 390, height: 844 },
-        baseURL: `http://127.0.0.1:${MEMBER_PORT}`,
+        baseURL: EXISTING_UI_URL ?? `http://127.0.0.1:${MEMBER_PORT}`,
       },
     },
   ],
-  webServer: [
-    {
-      command: `pnpm --filter @kapsora/backoffice exec vite --port ${PORT} --strictPort --host 127.0.0.1`,
-      url: `http://127.0.0.1:${PORT}/auth/login`,
-      reuseExistingServer: !process.env['CI'],
-      timeout: 120_000,
-      env: REAL
-        ? { ...APP_URLS, VITE_API_MOCK: 'false', VITE_API_BASE_URL: API_URL }
-        : { ...APP_URLS, VITE_API_MOCK: 'true' },
-    },
-    {
-      command: `pnpm --filter @kapsora/provider exec vite --port ${PROVIDER_PORT} --strictPort --host 127.0.0.1`,
-      url: `http://127.0.0.1:${PROVIDER_PORT}/auth/login`,
-      reuseExistingServer: !process.env['CI'],
-      timeout: 120_000,
-      env: REAL
-        ? { ...APP_URLS, VITE_API_MOCK: 'false', VITE_API_BASE_URL: API_URL }
-        : { ...APP_URLS, VITE_API_MOCK: 'true' },
-    },
-    {
-      command: `pnpm --filter @kapsora/member exec vite --port ${MEMBER_PORT} --strictPort --host 127.0.0.1`,
-      url: `http://127.0.0.1:${MEMBER_PORT}/auth/login`,
-      reuseExistingServer: !process.env['CI'],
-      timeout: 120_000,
-      env: REAL
-        ? { ...APP_URLS, VITE_API_MOCK: 'false', VITE_API_BASE_URL: API_URL }
-        : { ...APP_URLS, VITE_API_MOCK: 'true' },
-    },
-  ],
+  webServer: EXISTING_UI_URL
+    ? undefined
+    : [
+        {
+          command: `pnpm --filter @kapsora/backoffice exec vite --port ${PORT} --strictPort --host 127.0.0.1`,
+          url: `http://127.0.0.1:${PORT}/auth/login`,
+          reuseExistingServer: !process.env['CI'],
+          timeout: 120_000,
+          env: REAL
+            ? { ...APP_URLS, VITE_API_MOCK: 'false', VITE_API_BASE_URL: API_URL }
+            : { ...APP_URLS, VITE_API_MOCK: 'true' },
+        },
+        {
+          command: `pnpm --filter @kapsora/provider exec vite --port ${PROVIDER_PORT} --strictPort --host 127.0.0.1`,
+          url: `http://127.0.0.1:${PROVIDER_PORT}/auth/login`,
+          reuseExistingServer: !process.env['CI'],
+          timeout: 120_000,
+          env: REAL
+            ? { ...APP_URLS, VITE_API_MOCK: 'false', VITE_API_BASE_URL: API_URL }
+            : { ...APP_URLS, VITE_API_MOCK: 'true' },
+        },
+        {
+          command: `pnpm --filter @kapsora/member exec vite --port ${MEMBER_PORT} --strictPort --host 127.0.0.1`,
+          url: `http://127.0.0.1:${MEMBER_PORT}/auth/login`,
+          reuseExistingServer: !process.env['CI'],
+          timeout: 120_000,
+          env: REAL
+            ? { ...APP_URLS, VITE_API_MOCK: 'false', VITE_API_BASE_URL: API_URL }
+            : { ...APP_URLS, VITE_API_MOCK: 'true' },
+        },
+      ],
 });

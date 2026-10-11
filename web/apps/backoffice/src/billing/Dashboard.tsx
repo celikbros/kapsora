@@ -2,6 +2,7 @@ import type { DashboardFilter } from '@kapsora/api-client';
 import { formatDateTime, formatMoney, useTranslation } from '@kapsora/i18n';
 import { Card, ProblemAlert, Spinner } from '@kapsora/ui';
 import { Link } from '@tanstack/react-router';
+import { usePermission } from '@kapsora/auth';
 import type { ReactNode } from 'react';
 
 import { problemOf } from '../problems';
@@ -23,8 +24,10 @@ function exactTarget(filter: DashboardFilter): ReactNode | null {
 
 function FigureLabel({ filter, children }: { filter: DashboardFilter; children: ReactNode }) {
   const target = exactTarget(filter);
+  const canReadClaims = usePermission('claim.read');
+  const canReadWorklist = usePermission('worklist.read');
   const className = 'text-primary underline-offset-4 hover:underline';
-  if (target === 'claims') {
+  if (target === 'claims' && canReadClaims) {
     const status = filter.statuses![0]!;
     return (
       <Link to="/claims" search={{ status: status as never }} className={className}>
@@ -32,7 +35,7 @@ function FigureLabel({ filter, children }: { filter: DashboardFilter; children: 
       </Link>
     );
   }
-  if (target === 'worklist') {
+  if (target === 'worklist' && canReadWorklist) {
     return (
       <Link to="/worklist" search={{ view: 'overdue' }} className={className}>
         {children}

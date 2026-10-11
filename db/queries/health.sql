@@ -258,3 +258,10 @@ SELECT EXISTS (
 
 -- name: ListClinicalAccessPurposes :many
 SELECT purpose_code, display_name FROM health.clinical_access_purpose ORDER BY sort_order;
+
+-- name: EndEncounter :execrows
+-- The application holds the parent case lock, shared by close/create/diagnosis commands.
+UPDATE health.encounter
+   SET ended_at = sqlc.arg('ended_at'), updated_by = sqlc.narg('actor_id')
+ WHERE tenant_id = sqlc.arg('tenant_id') AND id = sqlc.arg('id')
+   AND row_version = sqlc.arg('expected_version') AND ended_at IS NULL;

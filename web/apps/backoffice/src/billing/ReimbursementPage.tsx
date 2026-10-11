@@ -1,4 +1,4 @@
-import { useSelfPersonId } from '@kapsora/auth';
+import { usePermission, useSelfPersonId } from '@kapsora/auth';
 import { formatDate, formatDateTime, formatMoney, useTranslation } from '@kapsora/i18n';
 import {
   Badge,
@@ -42,6 +42,8 @@ export function ReimbursementPage() {
   const decide = useDecideReimbursement(reimbursementId);
   const pay = useRecordReimbursementPayment(reimbursementId);
   const self = useSelfPersonId();
+  const canReadMembers = usePermission('member.read');
+  const canReadDocuments = usePermission('document.read');
   const record = reimbursement.data?.data ?? null;
   const etag = reimbursement.data?.etag ?? '';
   const person = usePersonName(record?.personId);
@@ -139,13 +141,17 @@ export function ReimbursementPage() {
         >
           <dt className="text-fg-muted">{t('billing.office.person')}</dt>
           <dd>
-            <Link
-              to="/people/$personId"
-              params={{ personId: record.personId }}
-              className="text-primary underline-offset-4 hover:underline"
-            >
-              {person === undefined ? '…' : (person ?? '—')}
-            </Link>
+            {canReadMembers ? (
+              <Link
+                to="/people/$personId"
+                params={{ personId: record.personId }}
+                className="text-primary underline-offset-4 hover:underline"
+              >
+                {person === undefined ? '…' : (person ?? record.personId)}
+              </Link>
+            ) : (
+              <span className="font-mono text-xs">{record.personId}</span>
+            )}
           </dd>
           <dt className="text-fg-muted">{t('billing.member.service')}</dt>
           <dd>{service === undefined ? '…' : (service ?? '—')}</dd>
@@ -198,16 +204,18 @@ export function ReimbursementPage() {
         </dl>
       </Card>
 
-      <Card>
-        <h2 className="text-base font-semibold">{t('billing.office.receipt')}</h2>
-        <div className="mt-3">
-          <DocumentsPanel
-            aggregateType="SERVICE_REQUEST"
-            aggregateId={record.serviceRequestId}
-            readOnly
-          />
-        </div>
-      </Card>
+      {canReadDocuments ? (
+        <Card>
+          <h2 className="text-base font-semibold">{t('billing.office.receipt')}</h2>
+          <div className="mt-3">
+            <DocumentsPanel
+              aggregateType="SERVICE_REQUEST"
+              aggregateId={record.serviceRequestId}
+              readOnly
+            />
+          </div>
+        </Card>
+      ) : null}
 
       <Card>
         <h2 className="text-base font-semibold">{t('billing.office.sequence')}</h2>

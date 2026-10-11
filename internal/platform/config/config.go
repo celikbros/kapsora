@@ -7,6 +7,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -36,6 +38,14 @@ type Config struct {
 	Session         SessionConfig
 	Documents       DocumentConfig
 	Notifications   NotificationConfig
+	Invitations     InvitationConfig
+}
+
+// Invitation delivery is independent from ordinary notifications. Only a deliberately
+// enabled local Mailpit target may receive invitation codes in this increment.
+type InvitationConfig struct {
+	DeliveryEnabled bool
+	LinkBase        string
 }
 
 // NotificationConfig configures where a notification goes and what a link in one points
@@ -163,7 +173,39 @@ func Load(serviceName string) (Config, error) {
 	if cfg.Notifications, err = loadNotifications(); err != nil {
 		return cfg, err
 	}
+	if cfg.Invitations, err = loadInvitations(cfg); err != nil {
+		return cfg, err
+	}
 	return cfg, nil
+}
+
+func loadInvitations(cfg Config) (InvitationConfig, error) {
+	out := InvitationConfig{LinkBase: envOr("KAPSORA_INVITATION_LINK_BASE", "http://127.0.0.1:5181")}
+	parsed, err := url.Parse(out.LinkBase)
+	if err != nil || (parsed.Scheme != "https" && parsed.Scheme != "http") || parsed.Hostname() == "" || parsed.User != nil || parsed.Opaque != "" || parsed.RawQuery != "" || parsed.Fragment != "" || (parsed.Path != "" && parsed.Path != "/") {
+		return out, errors.New("KAPSORA_INVITATION_LINK_BASE must be an HTTP(S) origin without credentials, path, query or fragment")
+	}
+	out.LinkBase = strings.TrimRight(out.LinkBase, "/")
+	mode := envOr("KAPSORA_INVITATION_DELIVERY_MODE", "disabled")
+	if mode == "disabled" {
+		return out, nil
+	}
+	if mode != "local-loopback" {
+		return out, errors.New("KAPSORA_INVITATION_DELIVERY_MODE must be disabled or local-loopback")
+	}
+	if cfg.Environment != EnvLocal && cfg.Environment != EnvTest {
+		return out, errors.New("invitation local-loopback delivery requires local or test environment")
+	}
+	host, _, err := net.SplitHostPort(cfg.Notifications.SMTPAddr)
+	if err != nil {
+		return out, fmt.Errorf("invitation SMTP address invalid: %w", err)
+	}
+	ip := net.ParseIP(host)
+	if ip == nil || !ip.IsLoopback() || cfg.Notifications.SMTPUsername != "" || cfg.Notifications.SMTPPassword != "" {
+		return out, errors.New("invitation delivery requires unauthenticated loopback SMTP")
+	}
+	out.DeliveryEnabled = true
+	return out, nil
 }
 
 // loadNotifications reads the mail relay and the public link base. It fails only on a

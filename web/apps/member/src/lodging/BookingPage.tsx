@@ -1,4 +1,4 @@
-import type { Booking } from '@kapsora/api-client';
+import type { Booking, CancellationResult } from '@kapsora/api-client';
 import { useStepUp } from '@kapsora/auth';
 import { formatDateTime, useTranslation } from '@kapsora/i18n';
 import {
@@ -24,10 +24,19 @@ import {
   useCancel,
   useCancellationPreview,
   useConfirm,
+  useNoShow,
   useRelease,
   useVoucher,
 } from './queries';
-import { bookingTone, cancellationSentences, money, policySentences, stayDates } from './words';
+import {
+  bookingTone,
+  cancellationEffectSentences,
+  cancellationSentences,
+  money,
+  noShowEffectSentences,
+  policySentences,
+  stayDates,
+} from './words';
 
 /**
  * One booking, as the receipt it was made from and the state it is in.
@@ -46,6 +55,7 @@ export function BookingPage() {
   const names = usePropertyNames();
   const roomName = useRoomTypeName(record?.propertyId ?? null, record?.roomTypeId ?? null);
   const [expired, setExpired] = useState(false);
+  const [cancelResult, setCancelResult] = useState<CancellationResult | null>(null);
 
   if (booking.isPending) return <Spinner />;
   if (booking.isError) {
@@ -128,10 +138,10 @@ export function BookingPage() {
       );
       break;
     case 'CONFIRMED':
-      body = <ConfirmedPanel record={record} />;
+      body = <ConfirmedPanel record={record} onCancelled={setCancelResult} />;
       break;
     default:
-      body = <HistoryPanel record={record} />;
+      body = <HistoryPanel record={record} cancelResult={cancelResult} />;
   }
 
   const receipt = (
@@ -241,9 +251,14 @@ function HoldPanel({ record, onExpired }: { record: Booking; onExpired: () => vo
   );
 }
 
-function ConfirmedPanel({ record }: { record: Booking }) {
+function ConfirmedPanel({
+  record,
+  onCancelled,
+}: {
+  record: Booking;
+  onCancelled: (result: CancellationResult) => void;
+}) {
   const { t } = useTranslation();
-  const toast = useToast();
   const voucher = useVoucher(record.id);
   const preview = useCancellationPreview(record.id);
   const cancel = useCancel(record.id);
@@ -328,15 +343,7 @@ function ConfirmedPanel({ record }: { record: Booking }) {
                 size="sm"
                 onClick={() =>
                   cancel.mutate(undefined, {
-                    onSuccess: (result) =>
-                      toast.notify({
-                        tone: 'info',
-                        title: result.quote.free
-                          ? t('lodging.booking.cancelled')
-                          : t('lodging.booking.cancelledFee', {
-                              amount: money(result.quote.memberFee, result.quote.currencyCode),
-                            }),
-                      }),
+                    onSuccess: onCancelled,
                   })
                 }
                 loading={cancel.isPending}
@@ -365,7 +372,13 @@ function ConfirmedPanel({ record }: { record: Booking }) {
 }
 
 /** What happened, in order, for a booking nobody can change any more. */
-function HistoryPanel({ record }: { record: Booking }) {
+function HistoryPanel({
+  record,
+  cancelResult,
+}: {
+  record: Booking;
+  cancelResult: CancellationResult | null;
+}) {
   const { t } = useTranslation();
   const events: { label: string; at: string | null | undefined }[] = [
     { label: t('lodging.booking.status.CONFIRMED'), at: record.confirmedAt },
@@ -375,15 +388,34 @@ function HistoryPanel({ record }: { record: Booking }) {
   ].filter((e) => !!e.at);
   return (
     <Card>
-      {record.status === 'NO_SHOW' ? (
-        <p className="text-sm">{t('lodging.booking.noShow')}</p>
-      ) : null}
+      {record.status === 'NO_SHOW' ? <NoShowHistory bookingId={record.id} /> : null}
       {record.status === 'COMPLETED' &&
       record.actualNights !== null &&
       record.actualNights !== undefined ? (
         <p className="text-sm">
           {t('lodging.booking.actualNights', { count: record.actualNights })}
         </p>
+      ) : null}
+      {record.status === 'CANCELLED' && record.cancelReasonCode !== 'HOLD_RELEASED' ? (
+        <div className="mt-2 grid gap-1 text-sm" data-testid="cancellation-effect-result">
+          {cancelResult?.cancellation && !cancelResult.cancellation.free ? (
+            <p>
+              {t('lodging.booking.cancelledFee', {
+                amount: money(
+                  cancelResult.cancellation.memberFee,
+                  cancelResult.cancellation.currencyCode,
+                ),
+              })}
+            </p>
+          ) : null}
+          {cancellationEffectSentences(
+            t,
+            cancelResult?.cancellation.entitlementEffect,
+            'actual',
+          ).map((line) => (
+            <p key={line}>{line}</p>
+          ))}
+        </div>
       ) : null}
       {events.length > 0 ? (
         <>
@@ -401,5 +433,31 @@ function HistoryPanel({ record }: { record: Booking }) {
         </>
       ) : null}
     </Card>
+  );
+}
+
+function NoShowHistory({ bookingId }: { bookingId: string }) {
+  const { t } = useTranslation();
+  const noShow = useNoShow(bookingId);
+  return (
+    <div className="grid gap-1 text-sm" data-testid="no-show-history">
+      <p>{t('lodging.booking.noShow')}</p>
+      {noShow.isPending ? <Spinner /> : null}
+      {noShow.isError ? <ProblemAlert problem={problemOf(noShow.error)} /> : null}
+      {!noShow.isPending && !noShow.isError ? (
+        <>
+          {noShow.data?.report.status === 'CONFIRMED' ? (
+            <p data-testid="no-show-fee">
+              {t('lodging.booking.noShowFee', {
+                amount: money(noShow.data.report.memberAmount, noShow.data.report.currencyCode),
+              })}
+            </p>
+          ) : null}
+          {noShowEffectSentences(t, noShow.data?.report ?? null).map((line) => (
+            <p key={line}>{line}</p>
+          ))}
+        </>
+      ) : null}
+    </div>
   );
 }

@@ -217,6 +217,7 @@ export function billingOperations(client: KapsoraClient) {
     ): Promise<Versioned<Invoice>> {
       const r = await unwrap(
         client.PATCH('/api/v1/invoices/{invoiceId}', {
+          headers: { 'Content-Type': 'application/merge-patch+json' },
           params: { header: command(tenantId, etag, idempotencyKey), path: { invoiceId } },
           body,
         }),

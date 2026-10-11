@@ -12,6 +12,7 @@ import { HttpResponse, http, type HttpHandler } from 'msw';
 
 import {
   fromMicros,
+  organizationDisplayName,
   multiplyMicros,
   percentOfMicros,
   reachableEntitlementAccounts,
@@ -25,9 +26,12 @@ import { runRules } from './rules-handlers';
 import type { MockApi } from './handlers';
 import {
   ANY,
+  decodeCursor,
+  encodeCursor,
   etagOf,
   guardTenant,
   notFound,
+  organizationScope,
   pathParam,
   problem,
   readJson,
@@ -238,6 +242,78 @@ export function pricingHandlers(api: MockApi): HttpHandler[] {
   };
 
   return [
+    http.get(`${ANY}/api/v1/pricing/options/providers`, async ({ request }) => {
+      await wait(api);
+      const g = guardTenant(api, request, 'pricing.quote', false);
+      if ('error' in g) return g.error;
+      const url = new URL(request.url);
+      const rawLimit = url.searchParams.get('limit');
+      const limit = rawLimit === null ? 50 : Number(rawLimit);
+      if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+        return problem(api, 422, 'VALIDATION_FAILED', 'Doğrulama hatası', {
+          errors: [{ field: 'limit', code: 'RANGE' }],
+        });
+      }
+      const offset = decodeCursor(url.searchParams.get('cursor'));
+      if (offset === null) return problem(api, 400, 'CURSOR_INVALID', 'Sayfa imleci geçersiz');
+      const rawQuery = url.searchParams.get('q') ?? '';
+      if (rawQuery && (Array.from(rawQuery).length < 2 || Array.from(rawQuery).length > 120)) {
+        return problem(api, 422, 'VALIDATION_FAILED', 'Doğrulama hatası', {
+          errors: [{ field: 'q', code: 'LENGTH' }],
+        });
+      }
+      const q = rawQuery.trim().toLocaleLowerCase('tr');
+      const scope = organizationScope(api, g.session, g.tenantId);
+      const rows = world()
+        .providers.filter((p) => p.tenantId === g.tenantId && p.status === 'ACTIVE')
+        .filter((p) => scope === null || scope.includes(p.tenantOrganizationId))
+        .map((p) => ({
+          providerProfileId: p.id,
+          organizationName: organizationDisplayName(world(), p.tenantOrganizationId) ?? '',
+        }))
+        .filter((p) => !q || p.organizationName.toLocaleLowerCase('tr').includes(q));
+      return HttpResponse.json({
+        items: rows.slice(offset, offset + limit),
+        nextCursor: offset + limit < rows.length ? encodeCursor(offset + limit) : null,
+      } satisfies Schemas['PriceProviderOptionPage']);
+    }),
+
+    http.get(`${ANY}/api/v1/pricing/options/services`, async ({ request }) => {
+      await wait(api);
+      const g = guardTenant(api, request, 'pricing.quote', false);
+      if ('error' in g) return g.error;
+      const url = new URL(request.url);
+      const rawLimit = url.searchParams.get('limit');
+      const limit = rawLimit === null ? 50 : Number(rawLimit);
+      if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+        return problem(api, 422, 'VALIDATION_FAILED', 'Doğrulama hatası', {
+          errors: [{ field: 'limit', code: 'RANGE' }],
+        });
+      }
+      const offset = decodeCursor(url.searchParams.get('cursor'));
+      if (offset === null) return problem(api, 400, 'CURSOR_INVALID', 'Sayfa imleci geçersiz');
+      const rawQuery = url.searchParams.get('q') ?? '';
+      if (rawQuery && (Array.from(rawQuery).length < 2 || Array.from(rawQuery).length > 120)) {
+        return problem(api, 422, 'VALIDATION_FAILED', 'Doğrulama hatası', {
+          errors: [{ field: 'q', code: 'LENGTH' }],
+        });
+      }
+      const q = rawQuery.trim().toLocaleLowerCase('tr');
+      const rows = world()
+        .serviceDefinitions.filter((s) => s.tenantId === g.tenantId && s.active)
+        .map((s) => ({ serviceDefinitionId: s.id, code: s.code, name: s.name }))
+        .filter(
+          (s) =>
+            !q ||
+            s.code.toLocaleLowerCase('tr').includes(q) ||
+            s.name.toLocaleLowerCase('tr').includes(q),
+        );
+      return HttpResponse.json({
+        items: rows.slice(offset, offset + limit),
+        nextCursor: offset + limit < rows.length ? encodeCursor(offset + limit) : null,
+      } satisfies Schemas['PriceServiceOptionPage']);
+    }),
+
     http.post(`${ANY}/api/v1/pricing/quotes`, async ({ request }) => {
       await wait(api);
       const g = guardTenant(api, request, 'pricing.quote', true);

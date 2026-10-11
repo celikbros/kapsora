@@ -21,7 +21,10 @@ beforeAll(() => {
   initI18n('tr');
   server.listen({ onUnhandledRequest: 'error' });
 });
-afterEach(() => api.reset());
+afterEach(() => {
+  vi.restoreAllMocks();
+  api.reset();
+});
 afterAll(() => server.close());
 
 function mount(path: string) {
@@ -66,6 +69,146 @@ describe('earnings', () => {
 });
 
 describe('the invoice', () => {
+  it.each(['HEALTH', 'ACCOMMODATION'])(
+    'requires and stores the chosen %s domain on a new invoice',
+    async (domainCode) => {
+      mount('/billing/invoices/new?currency=TRY');
+      const user = await login();
+      const header = await screen.findByTestId('invoice-header');
+      const field = (name: string) => header.querySelector(`[name="${name}"]`)!;
+      fireEvent.change(field('invoiceNumber'), { target: { value: `PC05-${domainCode}` } });
+      fireEvent.change(field('lineExtensionAmount'), { target: { value: '100' } });
+      fireEvent.change(field('taxAmount'), { target: { value: '0' } });
+      fireEvent.change(field('payableAmount'), { target: { value: '100' } });
+      const save = screen.getByRole('button', { name: 'Kaydet' });
+      expect(save).toBeDisabled();
+      const before = api.world.invoices.length;
+      fireEvent.submit(header);
+      expect(api.world.invoices).toHaveLength(before);
+      await user.selectOptions(field('domainCode'), domainCode);
+      await user.click(save);
+      await waitFor(() => expect(api.world.invoices).toHaveLength(before + 1));
+      expect(
+        api.world.invoices.find((i) => i.invoiceNumber === `PC05-${domainCode}`)?.domainCode,
+      ).toBe(domainCode);
+      expect(await screen.findByTestId('invoice-status')).toHaveTextContent('Taslak');
+    },
+  );
+
+  it('lets the provider repair an existing generic draft domain', async () => {
+    const draft = api.world.invoices.find(
+      (i) => i.status === 'DRAFT' && i.supersedesInvoiceId === null,
+    )!;
+    draft.domainCode = 'GENERIC';
+    mount(`/billing/invoices/${draft.id}`);
+    const user = await login();
+    const header = await screen.findByTestId('invoice-header');
+    const domain = header.querySelector('[name="domainCode"]')!;
+    expect(domain).toHaveValue('GENERIC');
+    await user.selectOptions(domain, 'HEALTH');
+    await user.click(screen.getByRole('button', { name: 'Ba\u015fl\u0131\u011f\u0131 kaydet' }));
+    await waitFor(() =>
+      expect(api.world.invoices.find((i) => i.id === draft.id)?.domainCode).toBe('HEALTH'),
+    );
+  });
+
+  it('preserves the accommodation domain when correcting a returned invoice', async () => {
+    const returned = api.world.invoices.find(
+      (i) => i.status === 'RETURNED' && !i.supersededByInvoiceId,
+    )!;
+    returned.domainCode = 'ACCOMMODATION';
+    for (const invoice of api.world.invoices) {
+      if (invoice.supersedesInvoiceId === returned.id) invoice.status = 'CANCELLED';
+    }
+    const beforeIds = new Set(api.world.invoices.map((i) => i.id));
+    mount(`/billing/invoices/${returned.id}`);
+    const user = await login();
+    const header = await screen.findByTestId('invoice-header');
+    expect(header.querySelector('[name="domainCode"]')).toBeDisabled();
+    await user.click(screen.getByTestId('invoice-correct'));
+    await waitFor(() =>
+      expect(
+        api.world.invoices.find(
+          (i) => i.supersedesInvoiceId === returned.id && !beforeIds.has(i.id),
+        ),
+      ).toBeDefined(),
+    );
+    expect(
+      api.world.invoices.find((i) => i.supersedesInvoiceId === returned.id && !beforeIds.has(i.id))
+        ?.domainCode,
+    ).toBe('ACCOMMODATION');
+  });
+
+  it('hydrates invoice candidates in small batches and keeps earlier rows', async () => {
+    const draft = api.world.invoices.find((invoice) => invoice.status === 'DRAFT')!;
+    const candidates = api.world.claims.filter(
+      (claim) =>
+        (claim.status === 'APPROVED' || claim.status === 'PARTIALLY_APPROVED') &&
+        !api.world.invoiceAllocations.some(
+          (allocation) => allocation.invoiceId === draft.id && allocation.claimId === claim.id,
+        ),
+    );
+    expect(candidates.length).toBeGreaterThanOrEqual(4);
+    const firstFour = candidates.slice(0, 4);
+    const { services } = mount(
+      `/billing/invoices/${draft.id}?claims=${firstFour.map((claim) => claim.id).join(',')}`,
+    );
+    const getClaim = vi.spyOn(services.ops.claims, 'get');
+    const getReadiness = vi.spyOn(services.ops.claims, 'readiness');
+    const user = await login();
+    await screen.findByText(firstFour[1]!.reference);
+    await waitFor(() => {
+      expect(getClaim).toHaveBeenCalledTimes(2);
+      expect(getReadiness).toHaveBeenCalledTimes(2);
+    });
+    expect(getClaim.mock.calls.map((call) => call[1])).toEqual(
+      firstFour.slice(0, 2).map((claim) => claim.id),
+    );
+    expect(getReadiness.mock.calls.map((call) => call[1])).toEqual(
+      firstFour.slice(0, 2).map((claim) => claim.id),
+    );
+    await user.click(screen.getByTestId('allocation-show-more'));
+    await screen.findByText(firstFour[3]!.reference);
+    expect(screen.getByText(firstFour[0]!.reference)).toBeInTheDocument();
+    expect(getClaim.mock.calls.map((call) => call[1])).toContain(firstFour[3]!.id);
+    expect(getClaim).toHaveBeenCalledTimes(getReadiness.mock.calls.length);
+    expect(getClaim.mock.calls.length).toBeLessThanOrEqual(5);
+    const hydratedBeforeSave = getClaim.mock.calls.length;
+    await user.click(screen.getByRole('button', { name: 'Dağıtımı kaydet' }));
+    await waitFor(() => expect(getClaim.mock.calls.length).toBeGreaterThan(hydratedBeforeSave));
+  });
+
+  it('shows every persisted allocation on a read-only invoice without claim hydration', async () => {
+    const submitted = api.world.invoices.find((invoice) => invoice.status === 'SUBMITTED')!;
+    const existing = api.world.invoiceAllocations.filter((row) => row.invoiceId === submitted.id);
+    expect(existing).toHaveLength(2);
+    const existingIds = new Set(existing.map((row) => row.claimId));
+    const extraClaims = api.world.claims
+      .filter(
+        (claim) =>
+          claim.providerOrganizationId === submitted.providerOrganizationId &&
+          !existingIds.has(claim.id),
+      )
+      .slice(0, 2);
+    expect(extraClaims).toHaveLength(2);
+    for (const [index, claim] of extraClaims.entries()) {
+      api.world.invoiceAllocations.push({
+        ...existing[0]!,
+        id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+        claimId: claim.id,
+        allocatedAmount: '0',
+      });
+    }
+    const { services } = mount(`/billing/invoices/${submitted.id}`);
+    const getClaim = vi.spyOn(services.ops.claims, 'get');
+    const getReadiness = vi.spyOn(services.ops.claims, 'readiness');
+    await login();
+    await waitFor(() => expect(screen.getAllByTestId('allocation-row')).toHaveLength(4));
+    expect(getClaim).not.toHaveBeenCalled();
+    expect(getReadiness).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('allocation-show-more')).not.toBeInTheDocument();
+  });
+
   it('shows the allocation difference the server computed and is refused while it is not zero', async () => {
     const mismatch = api.world.invoices.find(
       (i) => i.status === 'DRAFT' && i.supersedesInvoiceId === null,
@@ -96,12 +239,15 @@ describe('the invoice', () => {
 describe('the icmal', () => {
   it('lists the submitted invoices in the draft and sends it', async () => {
     const draft = api.world.batches.find((b) => b.status === 'DRAFT')!;
+    // The real API freezes invoiceCount at submit; draft membership lives in invoices.
+    draft.invoiceCount = 0;
     mount(`/billing/batches/${draft.id}`);
     const user = await login();
     expect(await screen.findByTestId('batch-status')).toHaveTextContent('Taslak');
     const list = await screen.findByTestId('membership-list');
     const members = api.world.batchInvoices.filter((m) => m.batchId === draft.id);
     expect(within(list).getAllByRole('checkbox', { checked: true }).length).toBe(members.length);
+    expect(screen.getByTestId('batch-submit')).toBeEnabled();
     await user.click(screen.getByTestId('batch-submit'));
     await waitFor(() => expect(screen.getByTestId('batch-status')).toHaveTextContent('Gönderildi'));
     const rows = within(await screen.findByTestId('decision-table')).getAllByTestId('decision-row');

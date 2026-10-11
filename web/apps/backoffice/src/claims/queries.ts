@@ -10,8 +10,8 @@ import type {
   RejectMedicalReport,
 } from '@kapsora/api-client';
 import { etagOf } from '@kapsora/api-client';
-import { useTenantId } from '@kapsora/auth';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSession, useTenantId } from '@kapsora/auth';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useOps } from '../api';
 
@@ -126,9 +126,19 @@ export function useClaimCommands(claimId: string, access: AccessContext | undefi
 export function useReports(query: MedicalReportListQuery) {
   const ops = useOps();
   const tenantId = useTenantId();
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ['reports', tenantId, 'list', query],
-    queryFn: () => ops.reports.list(tenantId, query),
+    initialPageParam: null as string | null,
+    queryFn: ({ pageParam }) =>
+      ops.reports.list(tenantId, { ...query, ...(pageParam ? { cursor: pageParam } : {}) }),
+    getNextPageParam: (lastPage, pages, lastPageParam) => {
+      const cursor = lastPage.nextCursor;
+      return !cursor ||
+        cursor === lastPageParam ||
+        pages.slice(0, -1).some((page) => page.nextCursor === cursor)
+        ? undefined
+        : cursor;
+    },
   });
 }
 
@@ -190,11 +200,13 @@ export function useClaimsOfPerson(personId: string) {
   });
 }
 
-export function useAccessLog(query: HealthAccessLogQuery) {
+export function useAccessLog(query: HealthAccessLogQuery, enabled = true) {
   const ops = useOps();
   const tenantId = useTenantId();
+  const actorId = useSession((s) => s.session?.actorId ?? null);
   return useQuery({
-    queryKey: ['health', tenantId, 'access-log', query],
+    queryKey: ['health', tenantId, actorId, 'access-log', query],
     queryFn: () => ops.health.listAccessLog(tenantId, query),
+    enabled,
   });
 }

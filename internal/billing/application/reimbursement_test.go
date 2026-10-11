@@ -17,6 +17,54 @@ import (
 // intact, rejection consumes nothing, the member reads only their own, and the IBAN exists in
 // no column but `bank_account_ref_enc`.
 
+// A reimbursement may enter financial review while its submitted service request still
+// awaits review, but it must never wrap a draft or a gate refusal.
+func TestReimbursementRequiresSubmittedUsableRequest(t *testing.T) {
+	for _, status := range []string{"DRAFT", "ELIGIBILITY_FAILED", "PENDING_DOCUMENT", "REJECTED", "CANCELLED", "EXPIRED", "CLOSED"} {
+		t.Run(status, func(t *testing.T) {
+			f := newFixture(t)
+			request := f.reimbursementRequest(t, "2026-03-05")
+			switch status {
+			case "DRAFT":
+				f.h.AdminExec(`UPDATE service.service_request SET status='DRAFT', submitted_at=NULL WHERE tenant_id=$1 AND id=$2`, f.tenant, request)
+			case "PENDING_DOCUMENT":
+				f.h.AdminExec(`UPDATE service.service_request SET status=$3, required_document_types=ARRAY['RECEIPT']::text[] WHERE tenant_id=$1 AND id=$2`, f.tenant, request, status)
+			case "REJECTED":
+				f.h.AdminExec(`UPDATE service.service_request SET status=$3, closed_at=clock_timestamp(), reject_reason_code='NOT_COVERED' WHERE tenant_id=$1 AND id=$2`, f.tenant, request, status)
+			case "CANCELLED", "EXPIRED", "CLOSED":
+				f.h.AdminExec(`UPDATE service.service_request SET status=$3, closed_at=clock_timestamp() WHERE tenant_id=$1 AND id=$2`, f.tenant, request, status)
+			default:
+				f.h.AdminExec(`UPDATE service.service_request SET status=$3 WHERE tenant_id=$1 AND id=$2`, f.tenant, request, status)
+			}
+			_, err := f.invoices.CreateReimbursement(context.Background(), f.memberRC(), application.CreateReimbursementInput{
+				PersonID: f.person, ServiceRequestID: request, ReceiptDocumentID: f.receipt(t),
+				RequestedAmount: "125.50", CurrencyCode: "TRY", BankAccount: testIBAN,
+			})
+			if !errors.Is(err, application.ErrRequestUnusable) {
+				t.Fatalf("request in %s allowed reimbursement: %v", status, err)
+			}
+		})
+	}
+}
+
+// The service-request gate may legitimately leave a request waiting for review. That
+// review does not have to finish before finance opens the separate reimbursement case.
+func TestReimbursementAcceptsGatedPendingReviewRequest(t *testing.T) {
+	f := newFixture(t)
+	request := f.reimbursementRequest(t, "2026-03-05")
+	f.h.AdminExec(`UPDATE service.service_request SET status='PENDING_REVIEW' WHERE tenant_id=$1 AND id=$2`, f.tenant, request)
+	record, err := f.invoices.CreateReimbursement(context.Background(), f.memberRC(), application.CreateReimbursementInput{
+		PersonID: f.person, ServiceRequestID: request, ReceiptDocumentID: f.receipt(t),
+		RequestedAmount: "125.50", CurrencyCode: "TRY", BankAccount: testIBAN,
+	})
+	if err != nil {
+		t.Fatalf("gated request awaiting review: %v", err)
+	}
+	if record.Status != domain.ReimbursementDraft {
+		t.Fatalf("reimbursement status = %s, want DRAFT", record.Status)
+	}
+}
+
 // TestCreatingAReimbursementStoresOnlyTheCiphertextAndTheMask is the fourth bullet of section 3,
 // and the whole privacy claim of this package.
 //

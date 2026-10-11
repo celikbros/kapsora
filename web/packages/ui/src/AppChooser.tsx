@@ -19,6 +19,12 @@ export interface AppChooserProps {
   forwarding?: boolean;
   onSignOut: () => void;
   signingOut?: boolean;
+  /** Active memberships that have no application grants yet. */
+  pendingOrganizations?: readonly string[];
+  /** Refreshes the authenticated context after an administrator changes access. */
+  onRefreshAccess?: () => Promise<void>;
+  refreshingAccess?: boolean;
+  refreshError?: boolean;
 }
 
 /**
@@ -36,6 +42,10 @@ export function AppChooser({
   forwarding = false,
   onSignOut,
   signingOut = false,
+  pendingOrganizations = [],
+  onRefreshAccess,
+  refreshingAccess = false,
+  refreshError = false,
 }: AppChooserProps) {
   const { t } = useTranslation();
   const name = (app: AppKind) => t(`auth.apps.${app}`);
@@ -52,8 +62,8 @@ export function AppChooser({
     title = t('auth.forwardingTitle', { app: name(only) });
     intro = t('auth.forwardingBody');
   } else if (here) {
-    title = t('auth.chooseTitle');
-    intro = t('auth.chooseIntro');
+    title = fits.length === 1 ? t('auth.continueTitle') : t('auth.chooseTitle');
+    intro = fits.length === 1 ? t('auth.continueIntro') : t('auth.chooseIntro');
   } else {
     title = t('auth.notForAppTitle');
     intro = t('auth.notForAppBody');
@@ -88,6 +98,36 @@ export function AppChooser({
             ))}
           </ul>
         ) : null}
+        {pendingOrganizations.length > 0 && (
+          <section
+            className="border-line mt-5 rounded-md border p-3 text-sm"
+            aria-label={t('auth.pendingOrganizationsTitle')}
+          >
+            <h2 className="font-semibold">{t('auth.pendingOrganizationsTitle')}</h2>
+            <p className="text-fg-muted mt-1">{t('auth.pendingOrganizationsBody')}</p>
+            <ul className="mt-2 list-inside list-disc">
+              {pendingOrganizations.map((name) => (
+                <li key={name}>{name}</li>
+              ))}
+            </ul>
+            {onRefreshAccess && (
+              <div className="mt-3">
+                <Button
+                  variant="secondary"
+                  loading={refreshingAccess}
+                  onClick={() => void onRefreshAccess()}
+                >
+                  {t('auth.refreshAccess')}
+                </Button>
+                {refreshError && (
+                  <p role="alert" className="text-danger mt-2">
+                    {t('auth.refreshAccessError')}
+                  </p>
+                )}
+              </div>
+            )}
+          </section>
+        )}
         <div className="mt-6">
           <Button variant="secondary" loading={signingOut} onClick={onSignOut}>
             {t('auth.notForAppSignOut')}

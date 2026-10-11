@@ -52,13 +52,23 @@ describe('bookings', () => {
   });
 
   it('reads one booking as the sequence that produced it, and confirms a no-show as a second person', async () => {
+    const manager = api.world.accounts.find((a) => a.username === 'admin.a')!;
+    for (const membership of manager.memberships) {
+      membership.permissions = membership.permissions.filter(
+        (p) => p !== 'accommodation.booking.manage',
+      );
+    }
     const report = api.world.noShows.find((n) => n.status === 'REPORTED')!;
+    const booking = api.world.bookings.find((b) => b.id === report.bookingId)!;
+    booking.approvedServiceNights = '1.500000';
+    booking.entitlementUnitFactor = '2.000000';
     mount(`/lodging/bookings/${report.bookingId}`);
     const user = await login();
     const sequence = await screen.findByTestId('booking-sequence');
     expect(within(sequence).getByText('Arandı ve gösterildi')).toBeInTheDocument();
     expect(within(sequence).getByText('Kapıda')).toBeInTheDocument();
     expect(await screen.findByTestId('no-show-status')).toHaveTextContent('Bildirildi');
+    expect(screen.queryByTestId('no-show-consumed-service')).toBeNull();
     await user.click(
       within(await screen.findByTestId('no-show-review')).getByRole('button', { name: 'Onayla' }),
     );
@@ -68,7 +78,52 @@ describe('bookings', () => {
     await waitFor(() =>
       expect(screen.getByTestId('booking-status')).toHaveTextContent('Gelinmedi'),
     );
+    expect(screen.getByTestId('no-show-consumed-service')).toHaveTextContent('1.500000');
+    expect(screen.getByTestId('no-show-consumed-units')).toHaveTextContent('3.000000');
+    expect(screen.getByText('Hesaplanan ücret').nextElementSibling).toHaveTextContent(
+      formatMoney(report.assessedFeeAmount, report.currencyCode),
+    );
   });
+
+  it('does not invent exact movement for a historical confirmed no-show', async () => {
+    const report = api.world.noShows.find((n) => n.status === 'CONFIRMED')!;
+    mount(`/lodging/bookings/${report.bookingId}`);
+    await login();
+    expect(await screen.findByTestId('no-show-effect-unknown')).toHaveTextContent(
+      'kesin hak hareketi gösterilemiyor',
+    );
+    expect(screen.queryByTestId('no-show-consumed-service')).toBeNull();
+  });
+});
+
+it('hides the no-show decision controls without either review permission', async () => {
+  const manager = api.world.accounts.find((a) => a.username === 'admin.a')!;
+  for (const membership of manager.memberships) {
+    membership.permissions = membership.permissions.filter(
+      (p) => p !== 'accommodation.booking.manage' && p !== 'accommodation.no_show.review',
+    );
+  }
+  const report = api.world.noShows.find((n) => n.status === 'REPORTED')!;
+  mount(`/lodging/bookings/${report.bookingId}`);
+  await login();
+  await screen.findByTestId('no-show-status');
+  expect(screen.queryByTestId('no-show-review')).toBeNull();
+});
+
+it('shows the existing own-file notice instead of no-show decision controls', async () => {
+  const report = api.world.noShows.find((n) => n.status === 'REPORTED')!;
+  const booking = api.world.bookings.find((b) => b.id === report.bookingId)!;
+  api.world.accounts
+    .find((a) => a.username === 'admin.a')!
+    .memberships.push({
+      tenantCode: 'DEMO_A',
+      permissions: [],
+      scopes: [{ type: 'PERSON', id: booking.personId }],
+    });
+  mount(`/lodging/bookings/${report.bookingId}`);
+  await login();
+  await screen.findByTestId('own-file-notice');
+  expect(screen.queryByTestId('no-show-review')).toBeNull();
 });
 
 describe('the waiting list', () => {

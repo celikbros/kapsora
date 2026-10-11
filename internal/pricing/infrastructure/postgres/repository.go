@@ -192,6 +192,22 @@ func (r Repository) LoadEligibility(ctx context.Context, tx pgx.Tx, tenantID, pe
 		return application.EligibilityInput{}, err
 	}
 	out.PlanVersion = &eligibility.PlanVersion{ID: version.ID}
+	mappings, err := q.ListEligibilityMappings(ctx, sqlcgen.ListEligibilityMappingsParams{
+		TenantID: tenantID, PlanVersionID: version.ID, ServiceDate: dateOf(day),
+	})
+	if err != nil {
+		return application.EligibilityInput{}, fmt.Errorf("pricing: list entitlement mappings: %w", err)
+	}
+	out.Mappings = make(map[uuid.UUID]eligibility.Mapping, len(mappings))
+	for _, m := range mappings {
+		factor, err := benefitdomain.ParseQuantity(m.UnitFactor)
+		if err != nil {
+			return application.EligibilityInput{}, fmt.Errorf("pricing: mapping factor: %w", err)
+		}
+		out.Mappings[m.ServiceDefinitionID] = eligibility.Mapping{
+			EntitlementCode: m.EntitlementCode, UnitFactor: factor,
+		}
+	}
 
 	accounts, err := r.ledger.ResolveAccounts(ctx, tx, tenantID, personID, day)
 	if err != nil {

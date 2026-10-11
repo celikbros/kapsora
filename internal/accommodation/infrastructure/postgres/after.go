@@ -24,6 +24,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/celikbros/kapsora/internal/accommodation/application"
+	benefitdomain "github.com/celikbros/kapsora/internal/benefit/domain"
 	"github.com/celikbros/kapsora/internal/platform/sqlcgen"
 )
 
@@ -114,6 +115,7 @@ func (Bookings) MarkBookingNoShowRow(ctx context.Context, tx pgx.Tx, tenantID, i
 func (Bookings) CreateCancellation(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 	in application.NewCancellationRow,
 ) (application.CancellationRecord, error) {
+	consumedService, releasedService, consumedUnits, releasedUnits := cancellationEffectParams(in.EntitlementEffect)
 	row, err := sqlcgen.New(tx).CreateCancellation(ctx, sqlcgen.CreateCancellationParams{
 		TenantID: tenantID, BookingID: in.BookingID, CancelledAt: in.CancelledAt,
 		CancelledBy: actorUUID(in.CancelledBy), ReasonCode: in.ReasonCode,
@@ -121,17 +123,25 @@ func (Bookings) CreateCancellation(ctx context.Context, tx pgx.Tx, tenantID uuid
 		PenaltyNights:  int32(in.PenaltyNights),  //nolint:gosec // bounded by the stay's length
 		ReleasedNights: int32(in.ReleasedNights), //nolint:gosec // bounded by the stay's length
 		FeeAmount:      in.FeeAmount, PayerFee: in.PayerFee, MemberFee: in.MemberFee,
-		CurrencyCode: in.CurrencyCode,
+		CurrencyCode:          in.CurrencyCode,
+		ConsumedServiceNights: consumedService, ReleasedServiceNights: releasedService,
+		ConsumedEntitlementUnits: consumedUnits, ReleasedEntitlementUnits: releasedUnits,
 	})
 	if err != nil {
 		return application.CancellationRecord{}, fmt.Errorf("accommodation: create cancellation: %w", err)
+	}
+	effect, err := cancellationEffectFromRow(row.ConsumedServiceNights, row.ReleasedServiceNights,
+		row.ConsumedEntitlementUnits, row.ReleasedEntitlementUnits)
+	if err != nil {
+		return application.CancellationRecord{}, err
 	}
 	return application.CancellationRecord{
 		ID: row.ID, BookingID: row.BookingID, CancelledAt: row.CancelledAt,
 		CancelledBy: uuidPtr(row.CancelledBy), ReasonCode: row.ReasonCode,
 		PolicySnapshot: row.PolicySnapshot, Free: row.Free,
 		PenaltyNights: int(row.PenaltyNights), ReleasedNights: int(row.ReleasedNights),
-		FeeAmount: row.FeeAmount, PayerFee: row.PayerFee, MemberFee: row.MemberFee,
+		EntitlementEffect: effect,
+		FeeAmount:         row.FeeAmount, PayerFee: row.PayerFee, MemberFee: row.MemberFee,
 		CurrencyCode: row.CurrencyCode, CreatedAt: row.CreatedAt,
 	}, nil
 }
@@ -149,13 +159,57 @@ func (Bookings) GetCancellation(ctx context.Context, tx pgx.Tx, tenantID, bookin
 	if err != nil {
 		return application.CancellationRecord{}, fmt.Errorf("accommodation: read cancellation: %w", err)
 	}
+	effect, err := cancellationEffectFromRow(row.ConsumedServiceNights, row.ReleasedServiceNights,
+		row.ConsumedEntitlementUnits, row.ReleasedEntitlementUnits)
+	if err != nil {
+		return application.CancellationRecord{}, err
+	}
 	return application.CancellationRecord{
 		ID: row.ID, BookingID: row.BookingID, CancelledAt: row.CancelledAt,
 		CancelledBy: uuidPtr(row.CancelledBy), ReasonCode: row.ReasonCode,
 		PolicySnapshot: row.PolicySnapshot, Free: row.Free,
 		PenaltyNights: int(row.PenaltyNights), ReleasedNights: int(row.ReleasedNights),
-		FeeAmount: row.FeeAmount, PayerFee: row.PayerFee, MemberFee: row.MemberFee,
+		EntitlementEffect: effect,
+		FeeAmount:         row.FeeAmount, PayerFee: row.PayerFee, MemberFee: row.MemberFee,
 		CurrencyCode: row.CurrencyCode, CreatedAt: row.CreatedAt,
+	}, nil
+}
+
+func cancellationEffectParams(effect *application.EntitlementEffect) (consumedService,
+	releasedService, consumedUnits, releasedUnits *string,
+) {
+	if effect == nil {
+		return nil, nil, nil, nil
+	}
+	return &effect.ConsumedServiceNights, &effect.ReleasedServiceNights,
+		&effect.ConsumedEntitlementUnits, &effect.ReleasedEntitlementUnits
+}
+
+func cancellationEffectFromRow(values ...pgtype.Numeric) (*application.EntitlementEffect, error) {
+	if len(values) != 4 {
+		return nil, fmt.Errorf("accommodation: cancellation effect has %d fields", len(values))
+	}
+	if !values[0].Valid {
+		return nil, nil
+	}
+	parts := make([]string, 4)
+	for i, value := range values {
+		if !value.Valid {
+			return nil, fmt.Errorf("accommodation: incomplete cancellation entitlement effect")
+		}
+		encoded, err := value.Value()
+		if err != nil {
+			return nil, fmt.Errorf("accommodation: read cancellation entitlement effect: %w", err)
+		}
+		quantity, err := benefitdomain.ParseQuantity(encoded.(string))
+		if err != nil {
+			return nil, fmt.Errorf("accommodation: invalid cancellation entitlement effect: %w", err)
+		}
+		parts[i] = quantity.String()
+	}
+	return &application.EntitlementEffect{
+		ConsumedServiceNights: parts[0], ReleasedServiceNights: parts[1],
+		ConsumedEntitlementUnits: parts[2], ReleasedEntitlementUnits: parts[3],
 	}, nil
 }
 
@@ -196,7 +250,7 @@ func (Bookings) CreateNoShow(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 		}
 		return application.NoShowRecord{}, fmt.Errorf("accommodation: create no-show: %w", err)
 	}
-	return noShowOf(noShowColumns(row)), nil
+	return noShowOf(noShowColumns(row))
 }
 
 // GetNoShow implements application.BookingRepository.
@@ -212,7 +266,7 @@ func (Bookings) GetNoShow(ctx context.Context, tx pgx.Tx, tenantID, bookingID uu
 	if err != nil {
 		return application.NoShowRecord{}, fmt.Errorf("accommodation: read no-show: %w", err)
 	}
-	return noShowOf(noShowColumns(row)), nil
+	return noShowOf(noShowColumns(row))
 }
 
 // LockNoShow implements application.BookingRepository.
@@ -226,7 +280,7 @@ func (Bookings) LockNoShow(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUI
 	if err != nil {
 		return application.NoShowRecord{}, fmt.Errorf("accommodation: lock no-show: %w", err)
 	}
-	return noShowOf(noShowColumns(row)), nil
+	return noShowOf(noShowColumns(row))
 }
 
 // ReviewNoShowRow implements application.BookingRepository.
@@ -238,11 +292,30 @@ func (Bookings) LockNoShow(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUI
 func (Bookings) ReviewNoShowRow(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 	in application.NoShowReviewRow,
 ) (bool, error) {
+	consumedService, releasedService, consumedUnits, releasedUnits := cancellationEffectParams(in.EntitlementEffect)
+	cs, err := numericEvidenceParam(consumedService)
+	if err != nil {
+		return false, err
+	}
+	rs, err := numericEvidenceParam(releasedService)
+	if err != nil {
+		return false, err
+	}
+	cu, err := numericEvidenceParam(consumedUnits)
+	if err != nil {
+		return false, err
+	}
+	ru, err := numericEvidenceParam(releasedUnits)
+	if err != nil {
+		return false, err
+	}
 	affected, err := sqlcgen.New(tx).ReviewNoShow(ctx, sqlcgen.ReviewNoShowParams{
 		TenantID: tenantID, ID: in.ID, Status: in.Status,
 		ReviewedBy: uuid.NullUUID{UUID: in.ReviewedBy, Valid: in.ReviewedBy != uuid.Nil},
 		ReviewedAt: &in.ReviewedAt, ReviewComment: in.ReviewComment,
-		ConsumedNights: int32(in.ConsumedNights), //nolint:gosec // bounded by the stay's length
+		ConsumedNights:        int32(in.ConsumedNights), //nolint:gosec // bounded by the stay's length
+		ConsumedServiceNights: cs, ReleasedServiceNights: rs,
+		ConsumedEntitlementUnits: cu, ReleasedEntitlementUnits: ru,
 	})
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -254,29 +327,49 @@ func (Bookings) ReviewNoShowRow(ctx context.Context, tx pgx.Tx, tenantID uuid.UU
 	return affected == 1, nil
 }
 
+func numericEvidenceParam(value *string) (pgtype.Numeric, error) {
+	var out pgtype.Numeric
+	if value == nil {
+		return out, nil
+	}
+	if err := out.Scan(*value); err != nil {
+		return pgtype.Numeric{}, err
+	}
+	return out, nil
+}
+
 // noShowColumns is the one shape every no-show read comes back as, so the three generated
 // row types convert into it directly and one mapper turns it into the application record.
 type noShowColumns struct {
-	ID                 uuid.UUID
-	BookingID          uuid.UUID
-	ReportedByActorID  uuid.NullUUID
-	ReportedAt         time.Time
-	EvidenceDocumentID uuid.NullUUID
-	AssessedFeeAmount  string
-	PayerAmount        string
-	MemberAmount       string
-	CurrencyCode       string
-	Status             string
-	ReviewedBy         uuid.NullUUID
-	ReviewedAt         *time.Time
-	ReviewComment      *string
-	ConsumedNights     int32
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
-	RowVersion         int64
+	ID                       uuid.UUID
+	BookingID                uuid.UUID
+	ReportedByActorID        uuid.NullUUID
+	ReportedAt               time.Time
+	EvidenceDocumentID       uuid.NullUUID
+	AssessedFeeAmount        string
+	PayerAmount              string
+	MemberAmount             string
+	CurrencyCode             string
+	Status                   string
+	ReviewedBy               uuid.NullUUID
+	ReviewedAt               *time.Time
+	ReviewComment            *string
+	ConsumedNights           int32
+	ConsumedServiceNights    pgtype.Numeric
+	ReleasedServiceNights    pgtype.Numeric
+	ConsumedEntitlementUnits pgtype.Numeric
+	ReleasedEntitlementUnits pgtype.Numeric
+	CreatedAt                time.Time
+	UpdatedAt                time.Time
+	RowVersion               int64
 }
 
-func noShowOf(c noShowColumns) application.NoShowRecord {
+func noShowOf(c noShowColumns) (application.NoShowRecord, error) {
+	effect, err := cancellationEffectFromRow(c.ConsumedServiceNights, c.ReleasedServiceNights,
+		c.ConsumedEntitlementUnits, c.ReleasedEntitlementUnits)
+	if err != nil {
+		return application.NoShowRecord{}, err
+	}
 	return application.NoShowRecord{
 		ID: c.ID, BookingID: c.BookingID, ReportedByActorID: uuidPtr(c.ReportedByActorID),
 		ReportedAt: c.ReportedAt, EvidenceDocumentID: uuidPtr(c.EvidenceDocumentID),
@@ -284,8 +377,9 @@ func noShowOf(c noShowColumns) application.NoShowRecord {
 		MemberAmount: c.MemberAmount, CurrencyCode: c.CurrencyCode, Status: c.Status,
 		ReviewedBy: uuidPtr(c.ReviewedBy), ReviewedAt: c.ReviewedAt,
 		ReviewComment: c.ReviewComment, ConsumedNights: int(c.ConsumedNights),
-		CreatedAt: c.CreatedAt, UpdatedAt: c.UpdatedAt, RowVersion: c.RowVersion,
-	}
+		EntitlementEffect: effect,
+		CreatedAt:         c.CreatedAt, UpdatedAt: c.UpdatedAt, RowVersion: c.RowVersion,
+	}, nil
 }
 
 // ---------------------------------------------------------------------------
@@ -497,4 +591,16 @@ func waitlistOf(c waitlistColumns) application.WaitlistRecord {
 		OfferExpiresAt: c.OfferExpiresAt, CreatedAt: c.CreatedAt, UpdatedAt: c.UpdatedAt,
 		RowVersion: c.RowVersion,
 	}
+}
+
+// WaitlistEnrollmentProgram returns the still-active program selected by the queued member.
+func (Bookings) WaitlistEnrollmentProgram(ctx context.Context, tx pgx.Tx, tenantID, entryID uuid.UUID) (uuid.UUID, error) {
+	id, err := sqlcgen.New(tx).GetWaitlistEnrollmentProgram(ctx, sqlcgen.GetWaitlistEnrollmentProgramParams{TenantID: tenantID, EntryID: entryID})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return uuid.Nil, application.ErrEnrollmentNotFound
+	}
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("accommodation: waitlist enrollment program: %w", err)
+	}
+	return id, nil
 }

@@ -362,6 +362,79 @@ func TestCheckSeesTheFamilySharedBalanceOfThePrincipal(t *testing.T) {
 	}
 }
 
+func TestPinnedEligibilityUsesOnlySelectedSharedPlanAccounts(t *testing.T) {
+	f := newFixture(t)
+	ctx, cancel := f.h.Ctx()
+	defer cancel()
+	var secondPlan, secondVersion, principalMembership, dependantMembership uuid.UUID
+	if err := f.h.Admin.QueryRow(ctx, `INSERT INTO benefit.plan
+		(tenant_id,program_id,code,name,status) VALUES ($1,$2,'SECOND','Second plan','ACTIVE')
+		RETURNING id`, f.tenant, f.program).Scan(&secondPlan); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.h.Admin.QueryRow(ctx, `INSERT INTO benefit.plan_version
+		(tenant_id,plan_id,version_no,status,valid_period)
+		VALUES ($1,$2,1,'DRAFT',daterange('2026-01-01','2027-01-01','[)')) RETURNING id`,
+		f.tenant, secondPlan).Scan(&secondVersion); err != nil {
+		t.Fatal(err)
+	}
+	f.h.AdminExec(`INSERT INTO benefit.entitlement_definition
+		(tenant_id,plan_version_id,code,name,unit_type,period_type,initial_quantity,family_shared)
+		VALUES ($1,$2,$3,'Other shared optics','COUNT','CALENDAR_YEAR',20,true)`,
+		f.tenant, secondVersion, defOptic)
+	f.h.AdminExec(`UPDATE benefit.plan_version SET status='PUBLISHED',
+		published_at=clock_timestamp(),published_by=$3 WHERE tenant_id=$1 AND id=$2`,
+		f.tenant, secondVersion, f.actor)
+	if err := f.h.Admin.QueryRow(ctx, `SELECT sponsor_membership_id FROM benefit.enrollment
+		WHERE tenant_id=$1 AND id=$2`, f.tenant, f.principalEnrollment).Scan(&principalMembership); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.h.Admin.QueryRow(ctx, `SELECT sponsor_membership_id FROM benefit.enrollment
+		WHERE tenant_id=$1 AND id=$2`, f.tenant, f.dependantEnrollment).Scan(&dependantMembership); err != nil {
+		t.Fatal(err)
+	}
+	var otherPrincipal, otherDependant uuid.UUID
+	if err := f.h.Admin.QueryRow(ctx, `INSERT INTO benefit.enrollment
+		(tenant_id,sponsor_membership_id,plan_id,status,valid_period)
+		VALUES ($1,$2,$3,'ACTIVE',daterange('2026-01-01',NULL,'[)')) RETURNING id`,
+		f.tenant, principalMembership, secondPlan).Scan(&otherPrincipal); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.h.Admin.QueryRow(ctx, `INSERT INTO benefit.enrollment
+		(tenant_id,sponsor_membership_id,plan_id,status,valid_period)
+		VALUES ($1,$2,$3,'ACTIVE',daterange('2026-01-01',NULL,'[)')) RETURNING id`,
+		f.tenant, dependantMembership, secondPlan).Scan(&otherDependant); err != nil {
+		t.Fatal(err)
+	}
+	// Open B's principal-shared account first. Its 20 units would win the old
+	// person-wide account-by-code choice even when A's dependant is selected.
+	otherCheck := request(f.dependant, checkDate, defOptic, "1")
+	otherCheck.EnrollmentID = &otherDependant
+	if got := f.check(t, otherCheck); got.Outcome != eligibility.OutcomeEligible {
+		t.Fatalf("second shared plan check = %+v", got)
+	}
+	selectedCheck := request(f.dependant, checkDate, defOptic, "1")
+	selectedCheck.EnrollmentID = &f.dependantEnrollment
+	selected := f.check(t, selectedCheck)
+	if selected.EnrollmentID == nil || *selected.EnrollmentID != f.dependantEnrollment ||
+		selected.PlanVersionID == nil || *selected.PlanVersionID != f.versionID ||
+		selected.Outcome != eligibility.OutcomeEligible ||
+		len(selected.Items) != 1 || selected.Items[0].AccountID == uuid.Nil {
+		t.Fatalf("selected shared plan check = %+v", selected)
+	}
+	if got := balanceOf(t, selected, defOptic); got != "4" {
+		t.Fatalf("selected A shared balance = %s, want 4 despite B's 20", got)
+	}
+	var holder uuid.UUID
+	if err := f.h.Admin.QueryRow(ctx, `SELECT enrollment_id FROM benefit.entitlement_account
+		WHERE tenant_id=$1 AND id=$2`, f.tenant, selected.Items[0].AccountID).Scan(&holder); err != nil {
+		t.Fatal(err)
+	}
+	if holder != f.principalEnrollment || holder == otherPrincipal {
+		t.Fatalf("selected account holder = %s, want A's principal %s", holder, f.principalEnrollment)
+	}
+}
+
 func TestEvaluationRowIsImmutableAndFreeOfPersonalData(t *testing.T) {
 	f := newFixture(t)
 	result := f.check(t, request(f.principal, checkDate, defDental, "2"))

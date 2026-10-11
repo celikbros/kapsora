@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Milestone | M10 |
-| Status | READY for procedure preparation; environment required for execution |
+| Status | DEFERRED by owner (2026-09-13): working product takes priority |
 | Depends on | Existing native deployment, document storage and encrypted fields |
 | Migration numbers | None |
 | API ownership | Existing health probes; no new operation planned |

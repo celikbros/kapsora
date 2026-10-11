@@ -289,6 +289,7 @@ func bookingView(in application.BookingView) kapsorav1.Booking {
 	out.CancelledAt = record.CancelledAt
 	out.CancelReasonCode = record.CancelReasonCode
 	out.ActualNights = record.ActualNights
+	out.OverBooking = &record.OverBooking
 	if !record.UpdatedAt.IsZero() {
 		updated := record.UpdatedAt
 		out.UpdatedAt = &updated
@@ -347,6 +348,11 @@ func quoteSnapshotView(raw []byte) kapsorav1.BookingQuoteSnapshot {
 		PayerAmount: snapshot.PayerAmount, MemberAmount: snapshot.MemberAmount,
 		CoveredNights: snapshot.CoveredNights, Eligible: snapshot.Eligible,
 		Nights: make([]kapsorav1.BookingQuoteNight, 0, len(snapshot.Nights)),
+	}
+	// The public quote snapshot remains the v1 wire shape. Version 2 is an
+	// internal confirmation format and its metadata must not escape this projection.
+	if snapshot.Version == 1 || snapshot.Version == 2 || snapshot.Version == application.QuoteSnapshotVersion {
+		out.Version = 1
 	}
 	for _, night := range snapshot.Nights {
 		day, err := time.Parse(time.DateOnly, night.StayDate)

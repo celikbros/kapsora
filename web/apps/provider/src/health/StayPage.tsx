@@ -24,7 +24,7 @@ import {
   useToast,
 } from '@kapsora/ui';
 import { Link, useParams } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 
 import { problemOf } from '../problems';
 import { usePersonName, useReconciliation, useStay, useStayCommands } from './queries';
@@ -47,9 +47,8 @@ function local(iso: string | null | undefined): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-function SegmentsEditor({ stay }: { stay: InpatientStay }) {
+function SegmentsEditor({ stay, onSaved }: { stay: InpatientStay; onSaved: () => void }) {
   const { t } = useTranslation();
-  const toast = useToast();
   const commands = useStayCommands(stay.id);
   const [rows, setRows] = useState<DraftSegment[]>(
     stay.segments.map((s) => ({
@@ -74,7 +73,7 @@ function SegmentsEditor({ stay }: { stay: InpatientStay }) {
     }));
     try {
       await commands.putSegments.mutateAsync({ rowVersion: stay.rowVersion, body: { items } });
-      toast.notify({ tone: 'success', title: t('health.stays.segments.saved') });
+      onSaved();
     } catch {
       // Rendered below.
     }
@@ -204,19 +203,11 @@ function SegmentsEditor({ stay }: { stay: InpatientStay }) {
  */
 export function StayPage() {
   const { t } = useTranslation();
-  const toast = useToast();
   const { stayId } = useParams({ from: '/app/stays/$stayId' });
   const query = useStay(stayId);
-  const canManage = usePermission('health.case.manage');
-  const commands = useStayCommands(stayId);
   const personName = usePersonName(query.data?.data.personId);
   const status = query.data?.data.status;
   const reconciliation = useReconciliation(stayId, status === 'DISCHARGED');
-  const [dialog, setDialog] = useState<'extend' | 'discharge' | 'cancel' | null>(null);
-  const [days, setDays] = useState('1');
-  const [reasonCode, setReasonCode] = useState('');
-  const [reasonText, setReasonText] = useState('');
-  const [dischargeAt, setDischargeAt] = useState(nowLocal());
 
   if (query.isPending) {
     return (
@@ -239,25 +230,102 @@ export function StayPage() {
     );
   }
   const stay = query.data.data;
+  return (
+    <StayDetail key={stay.id} stay={stay} personName={personName} reconciliation={reconciliation} />
+  );
+}
+
+function StayDetail({
+  stay,
+  personName,
+  reconciliation,
+}: {
+  stay: InpatientStay;
+  personName: string | null | undefined;
+  reconciliation: ReturnType<typeof useReconciliation>;
+}) {
+  const { t } = useTranslation();
+  const toast = useToast();
+  const canManage = usePermission('health.case.manage');
+  const commands = useStayCommands(stay.id);
+  type DialogKind = 'extend' | 'discharge' | 'cancel';
+  const [opened, setOpened] = useState<{
+    kind: DialogKind;
+    status: InpatientStay['status'];
+    rowVersion: number;
+    token: number;
+  } | null>(null);
+  const token = useRef(0);
+  const mounted = useRef(true);
+  useLayoutEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      token.current += 1;
+    };
+  }, []);
+  const [days, setDays] = useState('1');
+  const [reasonCode, setReasonCode] = useState('');
+  const [reasonText, setReasonText] = useState('');
+  const [dischargeAt, setDischargeAt] = useState(nowLocal());
   const clinical = stay.projection === 'CLINICAL';
   const active = stay.status === 'AUTHORIZED' || stay.status === 'ADMITTED';
   const undecided = stay.extensions.some((e) => e.status === 'REQUESTED');
   const canExtend = canManage && active && !undecided;
   const canDischarge = canManage && stay.status === 'ADMITTED';
   const canCancel = canManage && (stay.status === 'REQUESTED' || stay.status === 'AUTHORIZED');
+  const permitted = (kind: DialogKind) =>
+    kind === 'extend' ? canExtend : kind === 'discharge' ? canDischarge : canCancel;
+  const dialog =
+    opened &&
+    opened.status === stay.status &&
+    opened.rowVersion === stay.rowVersion &&
+    permitted(opened.kind)
+      ? opened.kind
+      : null;
+  if (opened && !dialog) {
+    setOpened(null);
+    setDays('1');
+    setReasonCode('');
+    setReasonText('');
+    setDischargeAt(nowLocal());
+  }
   const n = Number(days);
   const extendOk = Number.isInteger(n) && n > 0 && REASON_CODE.test(reasonCode);
 
   function close() {
-    setDialog(null);
+    token.current += 1;
+    setOpened(null);
+    setDays('1');
     setReasonCode('');
     setReasonText('');
+    setDischargeAt(nowLocal());
     commands.extend.reset();
     commands.discharge.reset();
     commands.cancel.reset();
   }
 
+  function open(kind: DialogKind) {
+    if (
+      !permitted(kind) ||
+      commands.extend.isPending ||
+      commands.discharge.isPending ||
+      commands.cancel.isPending
+    )
+      return;
+    commands.extend.reset();
+    commands.discharge.reset();
+    commands.cancel.reset();
+    setOpened({ kind, status: stay.status, rowVersion: stay.rowVersion, token: ++token.current });
+  }
+
+  function stillCurrent(attempt: number) {
+    return mounted.current && token.current === attempt;
+  }
+
   async function extend() {
+    if (dialog !== 'extend' || !canExtend || !extendOk || commands.extend.isPending) return;
+    const attempt = opened!.token;
     try {
       await commands.extend.mutateAsync({
         rowVersion: stay.rowVersion,
@@ -267,29 +335,46 @@ export function StayPage() {
           ...(reasonText.trim() ? { reasonText: reasonText.trim() } : {}),
         },
       });
-      toast.notify({ tone: 'success', title: t('health.stays.extend.created') });
-      close();
+      if (stillCurrent(attempt)) {
+        toast.notify({ tone: 'success', title: t('health.stays.extend.created') });
+        close();
+      }
     } catch {
       // The dialog shows the problem.
     }
   }
   async function discharge() {
+    if (dialog !== 'discharge' || !canDischarge || !dischargeAt || commands.discharge.isPending)
+      return;
+    const attempt = opened!.token;
     try {
       await commands.discharge.mutateAsync({
         rowVersion: stay.rowVersion,
         body: { dischargeAt: toInstant(dischargeAt) },
       });
-      toast.notify({ tone: 'success', title: t('health.stays.discharge.done') });
-      close();
+      if (stillCurrent(attempt)) {
+        toast.notify({ tone: 'success', title: t('health.stays.discharge.done') });
+        close();
+      }
     } catch {
       // The dialog shows the problem.
     }
   }
   async function cancel() {
+    if (
+      dialog !== 'cancel' ||
+      !canCancel ||
+      !REASON_CODE.test(reasonCode) ||
+      commands.cancel.isPending
+    )
+      return;
+    const attempt = opened!.token;
     try {
       await commands.cancel.mutateAsync({ rowVersion: stay.rowVersion, reasonCode });
-      toast.notify({ tone: 'success', title: t('health.stays.cancel.done') });
-      close();
+      if (stillCurrent(attempt)) {
+        toast.notify({ tone: 'success', title: t('health.stays.cancel.done') });
+        close();
+      }
     } catch {
       // The dialog shows the problem.
     }
@@ -328,19 +413,19 @@ export function StayPage() {
               <Button
                 size="sm"
                 variant="secondary"
-                onClick={() => setDialog('extend')}
+                onClick={() => open('extend')}
                 data-testid="extend-button"
               >
                 {t('health.stays.extend.button')}
               </Button>
             ) : null}
             {canDischarge ? (
-              <Button size="sm" onClick={() => setDialog('discharge')}>
+              <Button size="sm" onClick={() => open('discharge')}>
                 {t('health.stays.discharge.button')}
               </Button>
             ) : null}
             {canCancel ? (
-              <Button size="sm" variant="secondary" onClick={() => setDialog('cancel')}>
+              <Button size="sm" variant="secondary" onClick={() => open('cancel')}>
                 {t('health.stays.cancel.button')}
               </Button>
             ) : null}
@@ -417,7 +502,14 @@ export function StayPage() {
           <h2 className="text-base font-semibold">{t('health.stays.segments.title')}</h2>
           <p className="text-fg-muted mb-3 mt-1 text-sm">{t('health.stays.segments.intro')}</p>
           {canManage && active ? (
-            <SegmentsEditor key={stay.rowVersion} stay={stay} />
+            <SegmentsEditor
+              key={`${stay.id}:${stay.rowVersion}`}
+              stay={stay}
+              onSaved={() => {
+                if (mounted.current)
+                  toast.notify({ tone: 'success', title: t('health.stays.segments.saved') });
+              }}
+            />
           ) : stay.segments.length === 0 ? (
             <p className="text-fg-muted text-sm">{t('health.stays.segments.empty')}</p>
           ) : (
@@ -493,7 +585,7 @@ export function StayPage() {
 
       <Dialog
         open={dialog === 'extend'}
-        onOpenChange={(open) => (open ? setDialog('extend') : close())}
+        onOpenChange={(nextOpen) => (nextOpen ? open('extend') : close())}
         title={t('health.stays.extend.title')}
         description={t('health.stays.extend.intro')}
         actions={
@@ -553,7 +645,7 @@ export function StayPage() {
 
       <Dialog
         open={dialog === 'discharge'}
-        onOpenChange={(open) => (open ? setDialog('discharge') : close())}
+        onOpenChange={(nextOpen) => (nextOpen ? open('discharge') : close())}
         title={t('health.stays.discharge.title')}
         description={t('health.stays.discharge.intro')}
         actions={
@@ -592,7 +684,7 @@ export function StayPage() {
 
       <Dialog
         open={dialog === 'cancel'}
-        onOpenChange={(open) => (open ? setDialog('cancel') : close())}
+        onOpenChange={(nextOpen) => (nextOpen ? open('cancel') : close())}
         title={t('health.stays.cancel.title')}
         actions={
           <>

@@ -532,6 +532,18 @@ func (Repository) ListServiceDefinitions(ctx context.Context, tx pgx.Tx, tenantI
 func (r Repository) LoadEligibility(ctx context.Context, tx pgx.Tx, tenantID, personID uuid.UUID,
 	programID *uuid.UUID, serviceDate time.Time,
 ) (application.EligibilityInput, error) {
+	return r.loadEligibility(ctx, tx, tenantID, personID, programID, serviceDate, nil)
+}
+
+func (r Repository) LoadBookingEligibility(ctx context.Context, tx pgx.Tx, tenantID, personID, programID uuid.UUID,
+	serviceDate time.Time, hold application.BookingHold,
+) (application.EligibilityInput, error) {
+	return r.loadEligibility(ctx, tx, tenantID, personID, &programID, serviceDate, &hold)
+}
+
+func (r Repository) loadEligibility(ctx context.Context, tx pgx.Tx, tenantID, personID uuid.UUID,
+	programID *uuid.UUID, serviceDate time.Time, hold *application.BookingHold,
+) (application.EligibilityInput, error) {
 	day := benefitdomain.DateOnly(serviceDate)
 	q := sqlcgen.New(tx)
 	out := application.EligibilityInput{Person: eligibility.Person{ID: personID}}
@@ -580,23 +592,56 @@ func (r Repository) LoadEligibility(ctx context.Context, tx pgx.Tx, tenantID, pe
 		program = *programID
 	}
 	active := eligibility.SelectEnrollments(out.Enrollments, program, day)
+	if hold != nil {
+		if hold.BookingID == uuid.Nil || hold.ReservationID == uuid.Nil || hold.EnrollmentID == uuid.Nil ||
+			hold.PlanVersionID == uuid.Nil || hold.DefinitionID == uuid.Nil || hold.AccountID == uuid.Nil ||
+			hold.ServiceDefinitionID == uuid.Nil || !hold.UnitFactor.IsPositive() || !hold.Units.IsPositive() {
+			return application.EligibilityInput{}, application.ErrBookingHoldInvalid
+		}
+		active = eligibility.SelectEnrollmentsFor(out.Enrollments, program, hold.EnrollmentID, day)
+	}
 	if len(active) == 0 {
 		return out, nil
 	}
-	version, err := benefitapp.ResolvePlanVersion(ctx, tx, tenantID, active[0].PlanID, day)
-	switch {
-	case errors.Is(err, benefitapp.ErrNoPublishedVersion):
-		return out, nil
-	case err != nil:
-		return application.EligibilityInput{}, err
+	var versionID uuid.UUID
+	if hold != nil {
+		version, err := q.GetPlanVersion(ctx, sqlcgen.GetPlanVersionParams{TenantID: tenantID, ID: hold.PlanVersionID})
+		if err != nil || version.PlanID != active[0].PlanID ||
+			(version.Status != "PUBLISHED" && version.Status != "RETIRED") ||
+			!version.ValidFrom.Valid || day.Before(benefitdomain.DateOnly(version.ValidFrom.Time)) ||
+			(version.ValidTo.Valid && !day.Before(benefitdomain.DateOnly(version.ValidTo.Time))) {
+			return application.EligibilityInput{}, application.ErrBookingHoldInvalid
+		}
+		versionID = version.ID
+		reservation, err := q.GetEntitlementReservation(ctx, sqlcgen.GetEntitlementReservationParams{TenantID: tenantID, ID: hold.ReservationID})
+		if err != nil || reservation.ReferenceType != ledger.ReferenceBooking || reservation.ReferenceID != hold.BookingID ||
+			reservation.EntitlementAccountID != hold.AccountID || reservation.Status != ledger.ReservationHeld {
+			return application.EligibilityInput{}, application.ErrBookingHoldInvalid
+		}
+		quantity, err := benefitdomain.ParseQuantity(reservation.Quantity)
+		consumed, consumedErr := benefitdomain.ParseQuantity(reservation.ConsumedQuantity)
+		released, releasedErr := benefitdomain.ParseQuantity(reservation.ReleasedQuantity)
+		if err != nil || consumedErr != nil || releasedErr != nil || quantity.Cmp(hold.Units) != 0 ||
+			!consumed.IsZero() || !released.IsZero() {
+			return application.EligibilityInput{}, application.ErrBookingHoldInvalid
+		}
+	} else {
+		version, err := benefitapp.ResolvePlanVersion(ctx, tx, tenantID, active[0].PlanID, day)
+		switch {
+		case errors.Is(err, benefitapp.ErrNoPublishedVersion):
+			return out, nil
+		case err != nil:
+			return application.EligibilityInput{}, err
+		}
+		versionID = version.ID
 	}
-	out.PlanVersion = &eligibility.PlanVersion{ID: version.ID}
+	out.PlanVersion = &eligibility.PlanVersion{ID: versionID}
 
 	// The submit gate reads the same mapping the check reads, out of the same table: the
 	// two answers must not be able to differ, because the gate is what turns the check's
 	// answer into a decision the member lives with.
 	mappings, err := q.ListEligibilityMappings(ctx, sqlcgen.ListEligibilityMappingsParams{
-		TenantID: tenantID, PlanVersionID: version.ID, ServiceDate: dateOf(day),
+		TenantID: tenantID, PlanVersionID: versionID, ServiceDate: dateOf(day),
 	})
 	if err != nil {
 		return application.EligibilityInput{}, fmt.Errorf("servicerequest: list entitlement mappings: %w", err)
@@ -609,6 +654,13 @@ func (r Repository) LoadEligibility(ctx context.Context, tx pgx.Tx, tenantID, pe
 		}
 		out.Mappings[m.ServiceDefinitionID] = eligibility.Mapping{
 			EntitlementCode: m.EntitlementCode, UnitFactor: factor,
+			DefinitionID: m.EntitlementDefinitionID, UnitType: m.UnitType,
+		}
+	}
+	if hold != nil {
+		mapping, ok := out.Mappings[hold.ServiceDefinitionID]
+		if !ok || mapping.DefinitionID != hold.DefinitionID || mapping.UnitType != "NIGHT" || mapping.UnitFactor.Cmp(hold.UnitFactor) != 0 {
+			return application.EligibilityInput{}, application.ErrBookingHoldInvalid
 		}
 	}
 
@@ -620,10 +672,16 @@ func (r Repository) LoadEligibility(ctx context.Context, tx pgx.Tx, tenantID, pe
 		if a.Status != ledger.AccountOpen {
 			continue
 		}
+		if hold != nil && (a.ID != hold.AccountID || a.Definition.ID != hold.DefinitionID) {
+			continue
+		}
 		out.Accounts = append(out.Accounts, eligibility.Account{
 			ID: a.ID, EntitlementCode: a.Definition.Code, UnitType: a.Definition.UnitType,
 			Available: a.Balances.Available, AllowOverdraft: a.Definition.AllowOverdraft, Shared: a.Shared,
 		})
+	}
+	if hold != nil && len(out.Accounts) != 1 {
+		return application.EligibilityInput{}, application.ErrBookingHoldInvalid
 	}
 	return out, nil
 }
@@ -733,6 +791,23 @@ func (Repository) CreateRuleEvaluation(ctx context.Context, tx pgx.Tx, tenantID 
 		return uuid.Nil, fmt.Errorf("servicerequest: create rule evaluation results: %w", err)
 	}
 	return header.ID, nil
+}
+
+// ListDocumentEvidence implements application.Repository.
+func (Repository) ListDocumentEvidence(ctx context.Context, tx pgx.Tx, tenantID, requestID uuid.UUID,
+	providerID *uuid.UUID, requiredTypes []string,
+) ([]application.DocumentEvidence, error) {
+	rows, err := sqlcgen.New(tx).ListServiceRequestDocumentEvidence(ctx, sqlcgen.ListServiceRequestDocumentEvidenceParams{
+		TenantID: tenantID, RequestID: requestID, ProviderID: optUUID(providerID), RequiredTypes: requiredTypes,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("servicerequest: read document evidence: %w", err)
+	}
+	out := make([]application.DocumentEvidence, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, application.DocumentEvidence{DocumentID: row.ID, DocumentTypeCode: row.DocumentTypeCode})
+	}
+	return out, nil
 }
 
 // reviewSetting is the shape of the platform.tenant_setting document. A program named in

@@ -53,7 +53,10 @@ const ScopeOrganization = "ORGANIZATION"
 // Errors mapped by the transport layer to problem codes.
 var (
 	ErrCaseNotFound      = errors.New("health: health case not found")
+	ErrEncounterEnded    = errors.New("health: encounter already ended")
 	ErrEncounterNotFound = errors.New("health: encounter not found")
+	// ErrDiagnosisInUse keeps clinical history referenced by an inpatient stay or claim line intact.
+	ErrDiagnosisInUse = errors.New("health: diagnosis is referenced by another clinical record")
 	// ErrCaseClosed refuses a second close and any write into a finished case.
 	ErrCaseClosed = errors.New("health: the case is already closed")
 	// ErrEncounterOpen refuses a close over an encounter nobody ended.
@@ -283,6 +286,7 @@ type Repository interface {
 	CountOpenEncounters(ctx context.Context, tx pgx.Tx, tenantID, caseID uuid.UUID) (int, error)
 
 	CreateEncounter(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, in NewEncounterRow) (EncounterRecord, error)
+	EndEncounter(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID, endedAt time.Time, actorID *uuid.UUID, expected int64) error
 	GetEncounter(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID, scope Scope) (EncounterRecord, error)
 	ListCaseEncounters(ctx context.Context, tx pgx.Tx, tenantID, caseID uuid.UUID) ([]EncounterRecord, error)
 

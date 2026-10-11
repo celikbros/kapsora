@@ -37,10 +37,11 @@ import (
 // in the transport because who may put a document beyond the reach of retention is a
 // business rule, not a routing detail.
 const (
-	PermissionUpload    = "document.upload"
-	PermissionRead      = "document.read"
-	PermissionLink      = "document.link"
-	PermissionLegalHold = "document.legal_hold.manage"
+	PermissionUpload              = "document.upload"
+	PermissionRead                = "document.read"
+	PermissionLink                = "document.link"
+	PermissionBookingEvidenceLink = "document.booking_evidence.link"
+	PermissionLegalHold           = "document.legal_hold.manage"
 )
 
 // ScopeOrganization is the iam.access_grant.scope_type of provider-side roles (v1.2 6.3).
@@ -305,6 +306,7 @@ type Repository interface {
 	CreateScanResult(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, in NewScanResultRow) (ScanResultRecord, error)
 	ListScanResults(ctx context.Context, tx pgx.Tx, tenantID, objectID uuid.UUID) ([]ScanResultRecord, error)
 
+	BookingEvidenceLinkAllowed(ctx context.Context, tx pgx.Tx, tenantID, bookingID, documentID uuid.UUID, scope Scope) (bool, error)
 	CreateLink(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, in NewLinkRow) (LinkRecord, error)
 	DeleteLink(ctx context.Context, tx pgx.Tx, tenantID, objectID, linkID uuid.UUID) (bool, error)
 	ListLinks(ctx context.Context, tx pgx.Tx, tenantID, objectID uuid.UUID) ([]LinkRecord, error)

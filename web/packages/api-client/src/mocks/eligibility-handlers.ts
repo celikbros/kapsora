@@ -6,7 +6,13 @@
  */
 import { HttpResponse, http, type HttpHandler } from 'msw';
 
-import { reachableEntitlementAccounts, type MockWorld, type StoredEvaluation } from './data';
+import {
+  reachableEntitlementAccounts,
+  type MockWorld,
+  type ReachableAccount,
+  type StoredEnrollment,
+  type StoredEvaluation,
+} from './data';
 import type {
   EligibilityBalance,
   EligibilityCheckRequest as DecimalRequest,
@@ -62,6 +68,45 @@ function lessThan(a: string, b: string): boolean {
   const an = BigInt(ai ?? '0') * 1_000_000n + BigInt((af + '000000').slice(0, 6));
   const bn = BigInt(bi ?? '0') * 1_000_000n + BigInt((bf + '000000').slice(0, 6));
   return an < bn;
+}
+
+/** The accounts opened for this enrollment's published definitions, including its own principal. */
+function pinnedAccounts(
+  world: MockWorld,
+  tenantId: string,
+  enrollment: StoredEnrollment,
+  planVersionId: string,
+  serviceDate: string,
+  reachable: ReachableAccount[],
+): ReachableAccount[] {
+  const version = world.planVersions.find((v) => v.id === planVersionId && v.tenantId === tenantId);
+  if (!version) return [];
+  const membership = world.memberships.find(
+    (m) => m.id === enrollment.sponsorMembershipId && m.tenantId === tenantId,
+  );
+  const allowed = new Set<string>();
+  for (const definition of version.definitions) {
+    if (definition.status !== 'ACTIVE') continue;
+    let holderId = enrollment.id;
+    if (definition.familyShared && membership?.principalMembershipId) {
+      const principal = world.enrollments
+        .filter(
+          (e) =>
+            e.tenantId === tenantId &&
+            e.sponsorMembershipId === membership.principalMembershipId &&
+            e.planId === enrollment.planId &&
+            (e.status === 'PENDING' || e.status === 'ACTIVE') &&
+            active(e.validFrom, e.validTo, serviceDate),
+        )
+        .sort((a, b) => b.validFrom.localeCompare(a.validFrom))[0];
+      if (principal) holderId = principal.id;
+    }
+    allowed.add(`${holderId}:${definition.id}`);
+  }
+  return reachable.filter(
+    ({ account }) =>
+      account.status === 'OPEN' && allowed.has(`${account.enrollmentId}:${account.definition.id}`),
+  );
 }
 
 /**
@@ -162,10 +207,17 @@ export function resolveEligibility(
     }
   }
 
-  // Balances of every account the person can reach on the date.
-  const reachable = person
+  // General checks retain the person's full reachable set. An explicitly selected
+  // enrollment uses only accounts of its published definitions and correct holder.
+  const personReachable = person
     ? reachableEntitlementAccounts(world, tenantId, person.id, serviceDate)
     : [];
+  const reachable =
+    input.enrollmentId && chosen?.status === 'ACTIVE' && planVersionId
+      ? pinnedAccounts(world, tenantId, chosen, planVersionId, serviceDate, personReachable)
+      : input.enrollmentId
+        ? []
+        : personReachable;
   const balances: EligibilityBalance[] = reachable.map((r) => ({
     entitlementCode: r.account.definition.code,
     available: r.account.available,

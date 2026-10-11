@@ -43,6 +43,7 @@ import {
   useRequestRules,
   useRequestVersions,
 } from './queries';
+import { RequestAuthorization } from './RequestAuthorization';
 import { allowedCommands, isReturned, requestTone } from './status';
 
 type Command = 'submit' | 'return' | 'reject' | 'approve' | 'partiallyApprove' | 'cancel';
@@ -859,6 +860,9 @@ export function RequestDetailPage() {
       ) : null}
 
       <div className="grid gap-4">
+        {decided && request.status !== 'REJECTED' && request.status !== 'ELIGIBILITY_FAILED' ? (
+          <RequestAuthorization key={request.id} request={request} />
+        ) : null}
         <Card>
           <h2 className="text-base font-semibold">{t('requests.sections.asked')}</h2>
           <dl className="mt-3 grid grid-cols-[max-content_minmax(0,1fr)] [&>dd]:min-w-0 [&>dd]:break-words gap-x-6 gap-y-1 text-sm">

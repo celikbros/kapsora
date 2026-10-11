@@ -270,4 +270,13 @@ func TestSeedAccommodationSettingsAreIdempotentAndReadBack(t *testing.T) {
 	if thresholdType != "string" {
 		t.Fatalf("the step-up threshold is stored as a JSON %s; an amount must never be a number", thresholdType)
 	}
+	// Re-seeding an existing tenant must leave an administrator's admitted values alone.
+	h.AdminExec(`UPDATE platform.tenant_setting SET value_json='22'::jsonb WHERE tenant_id=$1 AND setting_key=$2`, tenant, settings.KeyHoldMinutes)
+	if err := s.ensureAccommodationSettings(ctx, tenant); err != nil {
+		t.Fatal(err)
+	}
+	var hold string
+	if err := h.Admin.QueryRow(ctx, `SELECT value_json::text FROM platform.tenant_setting WHERE tenant_id=$1 AND setting_key=$2`, tenant, settings.KeyHoldMinutes).Scan(&hold); err != nil || hold != "22" {
+		t.Fatalf("seed replaced saved hold: %q %v", hold, err)
+	}
 }

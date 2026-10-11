@@ -114,8 +114,8 @@ func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) 
 	var unpriceable *application.QuoteUnavailable
 	var checkInWindow *application.CheckInWindowClosed
 	switch {
-	case errors.Is(err, identity.ErrOwnFile):
-		h.deny.Deny(w, r, err, "accommodation.no_show.review")
+	case errors.Is(err, identity.ErrOwnFile), errors.Is(err, identity.ErrPermissionDenied):
+		h.deny.Deny(w, r, err, application.PermissionNoShowReview)
 	case errors.As(err, &ve):
 		writeValidation(w, r, ve.Fields)
 	case errors.As(err, &below):
@@ -284,6 +284,10 @@ func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) 
 		problem(w, r, http.StatusUnprocessableEntity, "accommodation/enrollment-not-found",
 			"ENROLLMENT_NOT_FOUND", "Bu tarihlerde geçerli bir plan kaydı yok",
 			"Rezervasyon, giriş tarihinde aktif bir plan kaydı üzerinden yapılır.")
+	case errors.Is(err, application.ErrEnrollmentMultiple):
+		problem(w, r, http.StatusUnprocessableEntity, "accommodation/enrollment-multiple",
+			"ENROLLMENT_MULTIPLE", "Birden fazla geçerli plan kaydı var",
+			"Bu tarihler için kullanılacak plan kaydı kesinleştirilemedi. Kurum yetkilinize başvurun.")
 	case errors.Is(err, identity.ErrStepUpRequired):
 		problem(w, r, http.StatusForbidden, "identity/step-up-required", "STEP_UP_REQUIRED",
 			"Bu işlem için parolanızı yeniden doğrulayın",

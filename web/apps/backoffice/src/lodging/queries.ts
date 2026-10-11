@@ -68,12 +68,13 @@ export function useCreateRoomType(propertyId: string) {
 }
 
 /** Provider organizations, for the property form's one required choice. */
-export function useProviderOrganizations() {
+export function useProviderOrganizations(enabled = true) {
   const ops = useOps();
   const tenantId = useTenantId();
   return useQuery({
     queryKey: ['lodging', tenantId, 'provider-organizations'],
     queryFn: () => ops.organizations.list(tenantId, { role: 'PROVIDER', limit: 200 }),
+    enabled,
   });
 }
 

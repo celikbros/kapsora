@@ -264,6 +264,28 @@ func (a *Authorizations) Consume(ctx context.Context, tx pgx.Tx, in claimapp.Con
 	}, nil
 }
 
+// ConsumeAllocations sends a complete inpatient line to the atomic authorization consumer.
+func (a *Authorizations) ConsumeAllocations(ctx context.Context, tx pgx.Tx, in claimapp.ConsumeAllocationsRequest) (claimapp.ConsumeAllocationsAnswer, error) {
+	allocations := make([]authorizationapp.ConsumptionAllocation, 0, len(in.Allocations))
+	for _, draw := range in.Allocations {
+		allocations = append(allocations, authorizationapp.ConsumptionAllocation{
+			AuthorizationID: draw.AuthorizationID, Quantity: draw.Quantity, Key: draw.Key,
+		})
+	}
+	answer, err := a.svc.ConsumeAllocations(ctx, tx, authorizationapp.ConsumeAllocationsInput{
+		TenantID: in.TenantID, ActorID: in.ActorID, ServiceDefinitionID: in.ServiceDefinitionID,
+		Quantity: in.Quantity, ReasonCode: in.ReasonCode, Allocations: allocations,
+	})
+	if err != nil {
+		return claimapp.ConsumeAllocationsAnswer{}, fmt.Errorf("claim: consume allocations: %w", err)
+	}
+	out := claimapp.ConsumeAllocationsAnswer{OverConsumed: answer.OverConsumed, Remaining: answer.Remaining, Consumed: answer.Consumed}
+	for _, draw := range answer.Draws {
+		out.Draws = append(out.Draws, claimapp.ConsumptionAllocation{AuthorizationID: draw.AuthorizationID, Quantity: draw.Quantity, Key: draw.Key})
+	}
+	return out, nil
+}
+
 // ReleaseUnused implements claimapp.AuthorizationPort.
 func (a *Authorizations) ReleaseUnused(ctx context.Context, tx pgx.Tx, in claimapp.ReleaseRequest,
 ) (benefitdomain.Quantity, error) {
@@ -392,4 +414,9 @@ func dateParam(t time.Time) pgtype.Date {
 		return pgtype.Date{}
 	}
 	return pgtype.Date{Time: t, Valid: true}
+}
+
+// UndoConsumption restores this frozen claim line's actual draw before a correction.
+func (a *Authorizations) UndoConsumption(ctx context.Context, tx pgx.Tx, in claimapp.ConsumeRequest) error {
+	return a.svc.UndoConsumption(ctx, tx, authorizationapp.ConsumeInput{TenantID: in.TenantID, ActorID: in.ActorID, AuthorizationID: in.AuthorizationID, ServiceDefinitionID: in.ServiceDefinitionID, Quantity: in.Quantity, Key: in.Key, ReasonCode: in.ReasonCode})
 }

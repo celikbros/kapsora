@@ -11,7 +11,7 @@ import type {
   ReviewBatchInvoice,
   SettlementListQuery,
 } from '@kapsora/api-client';
-import { useTenantId } from '@kapsora/auth';
+import { useSession, useTenantId } from '@kapsora/auth';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useOps } from '../api';
@@ -21,12 +21,16 @@ import { useOps } from '../api';
  * approves and pays, the member's reimbursement it decides. Every figure is the server's
  * string; the screens add nothing up.
  */
+function useActorId() {
+  return useSession((s) => s.session?.actorId ?? null);
+}
 
 export function useBatches(query: BatchListQuery) {
   const ops = useOps();
   const tenantId = useTenantId();
+  const actorId = useActorId();
   return useQuery({
-    queryKey: ['billing', tenantId, 'batches', query],
+    queryKey: ['billing', tenantId, 'batches', actorId, query],
     queryFn: () => ops.billing.listBatches(tenantId, { limit: 100, ...query }),
   });
 }
@@ -34,8 +38,9 @@ export function useBatches(query: BatchListQuery) {
 export function useBatch(batchId: string) {
   const ops = useOps();
   const tenantId = useTenantId();
+  const actorId = useActorId();
   return useQuery({
-    queryKey: ['billing', tenantId, 'batch', batchId],
+    queryKey: ['billing', tenantId, 'batch', batchId, actorId],
     queryFn: () => ops.billing.getBatch(tenantId, batchId),
   });
 }
@@ -43,8 +48,9 @@ export function useBatch(batchId: string) {
 export function useBatchSummary(batchId: string) {
   const ops = useOps();
   const tenantId = useTenantId();
+  const actorId = useActorId();
   return useQuery({
-    queryKey: ['billing', tenantId, 'batch-summary', batchId],
+    queryKey: ['billing', tenantId, 'batch-summary', batchId, actorId],
     queryFn: () => ops.billing.getBatchSummary(tenantId, batchId),
   });
 }
@@ -85,8 +91,9 @@ export function useDecideBatch(batchId: string) {
 export function useSettlements(query: SettlementListQuery) {
   const ops = useOps();
   const tenantId = useTenantId();
+  const actorId = useActorId();
   return useQuery({
-    queryKey: ['billing', tenantId, 'settlements', query],
+    queryKey: ['billing', tenantId, 'settlements', actorId, query],
     queryFn: () => ops.billing.listSettlements(tenantId, { limit: 100, ...query }),
   });
 }
@@ -94,8 +101,9 @@ export function useSettlements(query: SettlementListQuery) {
 export function useSettlement(settlementId: string) {
   const ops = useOps();
   const tenantId = useTenantId();
+  const actorId = useActorId();
   return useQuery({
-    queryKey: ['billing', tenantId, 'settlement', settlementId],
+    queryKey: ['billing', tenantId, 'settlement', settlementId, actorId],
     queryFn: () => ops.billing.getSettlement(tenantId, settlementId),
   });
 }
@@ -145,8 +153,9 @@ export function useCreatePaymentRecord(settlementId: string) {
 export function useReimbursements(query: ReimbursementListQuery) {
   const ops = useOps();
   const tenantId = useTenantId();
+  const actorId = useActorId();
   return useQuery({
-    queryKey: ['billing', tenantId, 'reimbursements', query],
+    queryKey: ['billing', tenantId, 'reimbursements', actorId, query],
     queryFn: () => ops.billing.listReimbursements(tenantId, { limit: 100, ...query }),
   });
 }
@@ -154,8 +163,9 @@ export function useReimbursements(query: ReimbursementListQuery) {
 export function useReimbursement(reimbursementId: string) {
   const ops = useOps();
   const tenantId = useTenantId();
+  const actorId = useActorId();
   return useQuery({
-    queryKey: ['billing', tenantId, 'reimbursement', reimbursementId],
+    queryKey: ['billing', tenantId, 'reimbursement', reimbursementId, actorId],
     queryFn: () => ops.billing.getReimbursement(tenantId, reimbursementId),
   });
 }
@@ -284,8 +294,9 @@ export function useDownloadExport() {
 export function useInvoice(invoiceId: string) {
   const ops = useOps();
   const tenantId = useTenantId();
+  const actorId = useActorId();
   return useQuery({
-    queryKey: ['billing', tenantId, 'invoice', invoiceId],
+    queryKey: ['billing', tenantId, 'invoice', invoiceId, actorId],
     queryFn: () => ops.billing.getInvoice(tenantId, invoiceId),
   });
 }

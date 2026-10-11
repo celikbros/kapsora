@@ -90,6 +90,9 @@ import (
 	servicerequestapp "github.com/celikbros/kapsora/internal/servicerequest/application"
 	servicerequestpg "github.com/celikbros/kapsora/internal/servicerequest/infrastructure/postgres"
 	servicerequesthttp "github.com/celikbros/kapsora/internal/servicerequest/transport/http"
+	tenantsettingsapp "github.com/celikbros/kapsora/internal/tenantsettings/application"
+	tenantsettingspg "github.com/celikbros/kapsora/internal/tenantsettings/infrastructure/postgres"
+	tenantsettingshttp "github.com/celikbros/kapsora/internal/tenantsettings/transport/http"
 	workflowapp "github.com/celikbros/kapsora/internal/workflow/application"
 	workflowpg "github.com/celikbros/kapsora/internal/workflow/infrastructure/postgres"
 	workflowhttp "github.com/celikbros/kapsora/internal/workflow/transport/http"
@@ -155,6 +158,13 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	tenantSettingsSvc := tenantsettingsapp.NewService(tenantsettingspg.NewRepository(
+		pool, identitypg.NewTenantSettingsAuthority(cfg.Session.IdleTimeout), auditpg.New()))
+	ident.directory = application.NewDirectoryService(identitypg.NewDirectoryRepository(pool), cursors)
+	ident.roleAssignment = application.NewRoleAssignmentService(identitypg.NewRoleAssignmentRepository(pool).WithIdleTimeout(cfg.Session.IdleTimeout), cursors)
+	ident.privilegedRoleChange = application.NewPrivilegedRoleChangeService(identitypg.NewPrivilegedRoleChangeRepository(pool).WithIdleTimeout(cfg.Session.IdleTimeout), cursors)
+	ident.invitations = application.NewInvitationService(identitypg.NewInvitationRepository(pool, keys, keys).WithDeliveryEnabled(cfg.Invitations.DeliveryEnabled))
+	ident.invitationCursors = cursors
 	orgSvc, err := orgapp.New(orgapp.Deps{
 		Pool: pool, Repo: organizationpg.New(), Cipher: keys, Index: keys,
 		Audit: auditpg.New(), Cursors: cursors,
@@ -217,7 +227,7 @@ func run() error {
 	// evaluates.
 	pricingSvc, err := pricingapp.New(pricingapp.Deps{
 		Pool: pool, Repo: pricingpg.New(), Audit: auditpg.New(),
-		Programs: pricingPrograms, Logger: logger,
+		Programs: pricingPrograms, Logger: logger, Cursors: cursors,
 	})
 	if err != nil {
 		return err
@@ -441,6 +451,7 @@ func run() error {
 		billing:        billingSvc,
 		reports:        reportSvc,
 		accommodation:  accommodationSvc,
+		tenantSettings: tenantSettingsSvc,
 		notifications:  notificationSvc,
 		entitlements:   entitlementSvc,
 		eligibility:    eligibilitySvc,
@@ -515,8 +526,13 @@ func newDocuments(cfg config.Config, pool *pgxpool.Pool, cursors *httpx.CursorCo
 
 // identityDeps bundles the identity module's services for the router.
 type identityDeps struct {
-	service *application.Service
-	authz   *application.Authorizer
+	service              *application.Service
+	authz                *application.Authorizer
+	directory            *application.DirectoryService
+	roleAssignment       *application.RoleAssignmentService
+	privilegedRoleChange *application.PrivilegedRoleChangeService
+	invitations          *application.InvitationService
+	invitationCursors    *httpx.CursorCodec
 }
 
 func newIdentity(cfg config.Config, pool *pgxpool.Pool, logger *slog.Logger) (identityDeps, error) {
@@ -565,6 +581,7 @@ type routerDeps struct {
 	billing        *billingapp.Service
 	reports        *reportapp.Service
 	accommodation  *accommodationapp.Service
+	tenantSettings *tenantsettingsapp.Service
 	notifications  *notificationapp.Service
 	entitlements   *benefitledger.Service
 	eligibility    *benefiteligibility.Service
@@ -578,6 +595,11 @@ func newRouter(d routerDeps) http.Handler {
 	sessions := identityhttp.NewMiddleware(d.ident.service, cookies, signingKey, d.logger).WithAuthorizer(d.ident.authz)
 	sessionHandler := identityhttp.NewHandler(d.ident.service, cookies, signingKey, d.logger)
 	contextHandler := identityhttp.NewContextHandler(d.ident.service, d.ident.authz, d.logger)
+	tenantSettingsHandler := tenantsettingshttp.NewHandler(d.tenantSettings)
+	directoryHandler := identityhttp.NewDirectoryHandler(d.ident.directory, sessions, d.logger)
+	roleAssignmentHandler := identityhttp.NewRoleAssignmentHandler(d.ident.roleAssignment, sessions, d.logger)
+	privilegedRoleChangeHandler := identityhttp.NewPrivilegedRoleChangeHandler(d.ident.privilegedRoleChange, sessions, d.logger)
+	invitationHandler := identityhttp.NewInvitationHandler(d.ident.invitations, sessions, d.ident.invitationCursors, d.logger)
 
 	r := chi.NewRouter()
 	r.Use(httpx.RequestID)
@@ -593,6 +615,20 @@ func newRouter(d routerDeps) http.Handler {
 
 	r.Get("/health/live", health.LiveHandler())
 	r.Get("/health/ready", health.ReadyHandler(d.checker))
+
+	// These three proof routes have no session middleware. A supplied, even stale,
+	// session cookie must never be touched or refreshed by account creation/recovery.
+	r.Group(func(anon chi.Router) {
+		anon.Use(func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.Header().Set("Cache-Control", "no-store")
+				next.ServeHTTP(w, req)
+			})
+		})
+		anon.Use(ratelimit.Middleware(d.limiter, ratelimit.ScopedKey("invitation.anonymous", anonymousScope),
+			ratelimit.Policy{PerMinute: 12, Burst: 5}, d.logger))
+		invitationHandler.AnonymousRecipientRoutes(anon, d.cfg.Invitations.LinkBase)
+	})
 
 	r.Route("/api/v1", func(api chi.Router) {
 		api.Use(sessions.LoadSession)
@@ -612,6 +648,10 @@ func newRouter(d routerDeps) http.Handler {
 			authed.Post("/session/switch-tenant", contextHandler.SwitchTenant)
 			authed.Get("/me", contextHandler.GetMe)
 			authed.Get("/tenants", contextHandler.ListTenants)
+			authed.Route("/invitations", func(r chi.Router) {
+				r.Use(ratelimit.Middleware(d.limiter, ratelimit.ScopedKey("invitation.proof", sessionScope), ratelimit.Policy{PerMinute: 12, Burst: 5}, d.logger))
+				invitationHandler.RecipientRoutes(r)
+			})
 		})
 
 		// Tenant-scoped routes: everything above plus a validated X-Tenant-ID and a
@@ -621,6 +661,43 @@ func newRouter(d routerDeps) http.Handler {
 			tenant.Use(sessions.RequireCSRF)
 			tenant.Use(sessions.RequireTenantContext)
 			tenant.Use(ratelimit.Middleware(d.limiter, ratelimit.ScopedKey("api", tenantScope), apiRateLimit, d.logger))
+			tenant.Route("/admin/users", func(r chi.Router) {
+				directoryHandler.Routes(r, idempotency.Middleware(d.pool, idempotency.Options{
+					CommandCode: "tenant_membership.suspend",
+					Scope:       idempotencyScope, Logger: d.logger,
+					HashHeaders: []string{"If-Match"},
+				}))
+				roleAssignmentHandler.UserRoutes(r,
+					idempotency.Middleware(d.pool, idempotency.Options{CommandCode: "access_grant.assign", Scope: idempotencyScope, Logger: d.logger, HashHeaders: []string{"If-Match"}}),
+					idempotency.Middleware(d.pool, idempotency.Options{CommandCode: "access_grant.revoke", Scope: idempotencyScope, Logger: d.logger, HashHeaders: []string{"If-Match"}}))
+				privilegedRoleChangeHandler.UserRoutes(r, idempotency.Middleware(d.pool, idempotency.Options{CommandCode: "role_change.create", Scope: idempotencyScope, Logger: d.logger, HashHeaders: []string{"If-Match"}, BeforeStoredResult: privilegedRoleChangeHandler.StoredResultGate}))
+			})
+			tenant.Route("/admin", func(r chi.Router) {
+				r.Group(func(settings chi.Router) {
+					settings.Use(func(next http.Handler) http.Handler {
+						return http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+							w.Header().Set("Cache-Control", "no-store")
+							next.ServeHTTP(w, request)
+						})
+					})
+					tenantSettingsHandler.Routes(settings, idempotency.Middleware(d.pool, idempotency.Options{
+						CommandCode: "tenant_settings.accommodation.update", Scope: idempotencyScope,
+						Logger: d.logger, HashHeaders: []string{"If-Match"},
+						BeforeStoredResult: tenantSettingsHandler.StoredResultGate,
+					}))
+				})
+				roleAssignmentHandler.CatalogRoutes(r)
+				privilegedRoleChangeHandler.CatalogRoutes(r,
+					idempotency.Middleware(d.pool, idempotency.Options{CommandCode: "role_change.approve", Scope: idempotencyScope, Logger: d.logger, HashHeaders: []string{"If-Match"}, BeforeStoredResult: privilegedRoleChangeHandler.StoredResultGate}),
+					idempotency.Middleware(d.pool, idempotency.Options{CommandCode: "role_change.reject", Scope: idempotencyScope, Logger: d.logger, HashHeaders: []string{"If-Match"}, BeforeStoredResult: privilegedRoleChangeHandler.StoredResultGate}),
+					idempotency.Middleware(d.pool, idempotency.Options{CommandCode: "role_change.cancel", Scope: idempotencyScope, Logger: d.logger, HashHeaders: []string{"If-Match"}, BeforeStoredResult: privilegedRoleChangeHandler.StoredResultGate}))
+			})
+			tenant.Route("/admin/invitations", func(r chi.Router) {
+				invitationHandler.ManagerRoutes(r, idempotency.Middleware(d.pool, idempotency.Options{
+					CommandCode: "tenant_invitation.cancel", Scope: idempotencyScope,
+					Logger: d.logger, HashHeaders: []string{"If-Match"},
+				}))
+			})
 
 			orgHandler := organizationhttp.NewHandler(d.orgs, sessions, d.logger)
 			tenant.Route("/organizations", func(r chi.Router) {
@@ -868,6 +945,7 @@ func newRouter(d routerDeps) http.Handler {
 				CreateCase:      d.idempotent("health_case.create"),
 				CloseCase:       d.idempotent("health_case.close"),
 				CreateEncounter: d.idempotent("health_encounter.create"),
+				EndEncounter:    d.idempotent("health_encounter.end"),
 				PutDiagnoses:    d.idempotent("health_diagnosis.put"),
 			}
 			tenant.Route("/health-cases", func(r chi.Router) {
@@ -1097,7 +1175,7 @@ func newRouter(d routerDeps) http.Handler {
 			// retried browser submit cannot create a second batch.
 			importHandler := partyhttp.NewImportHandler(d.imports, sessions, d.logger)
 			tenant.Route("/imports/members", func(r chi.Router) {
-				importHandler.Routes(r, d.idempotent("member_import.create"))
+				importHandler.Routes(r, d.idempotentLarge("member_import.create", 28<<20))
 			})
 		})
 	})

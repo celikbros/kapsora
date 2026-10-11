@@ -40,6 +40,7 @@ import (
 	"github.com/celikbros/kapsora/internal/identity"
 	"github.com/celikbros/kapsora/internal/platform/dbtest"
 	"github.com/celikbros/kapsora/internal/platform/httpx"
+	"github.com/celikbros/kapsora/internal/platform/idempotency"
 	servicerequestapp "github.com/celikbros/kapsora/internal/servicerequest/application"
 	servicerequestpg "github.com/celikbros/kapsora/internal/servicerequest/infrastructure/postgres"
 )
@@ -130,6 +131,7 @@ type server struct {
 	h       *dbtest.Harness
 	handler http.Handler
 	svc     *application.Service
+	deps    application.Deps
 	// requests is WP-I4-01's own service, so the booking tests can decide a reservation
 	// request the way a reviewer does rather than writing its rows by hand.
 	requests *servicerequestapp.Service
@@ -175,7 +177,7 @@ type server struct {
 	inactiveRoomType uuid.UUID
 }
 
-func newServer(t *testing.T) *server {
+func newServer(t *testing.T, withHoldIdempotency ...bool) *server {
 	t.Helper()
 	h := dbtest.New(t)
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
@@ -216,7 +218,7 @@ func newServer(t *testing.T) *server {
 	// anywhere: the request really goes through WP-I4-01's gate, the authorization really
 	// adopts the hold's reservation, and the voucher's digest really lands in
 	// service.voucher — because every one of those is a link a stub would hide.
-	svc, err := application.New(application.Deps{
+	deps := application.Deps{
 		Pool: h.App, Repo: accommodationpg.New(), Bookings: accommodationpg.NewBookings(),
 		Ledger: movements, Eligibility: eligibilitySvc,
 		Requests:       accommodationgw.NewRequests(requestSvc),
@@ -224,12 +226,13 @@ func newServer(t *testing.T) *server {
 		Policies:       accommodationgw.NewPolicies(contractSvc),
 		WorkItems:      accommodationpg.NewWorkItems(logger),
 		Audit:          auditpg.New(), Cursors: cursors, Logger: logger, Now: clock.Now,
-	})
+	}
+	svc, err := application.New(deps)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	s := &server{h: h, svc: svc, requests: requestSvc, clock: clock}
+	s := &server{h: h, svc: svc, deps: deps, requests: requestSvc, clock: clock}
 	s.tenant = h.CreateTenant("HTTP_ACC")
 	s.actor = h.CreateActor("acc-http-clerk", "Accommodation Clerk")
 	s.membership = h.CreateMembership(s.tenant, s.actor)
@@ -270,6 +273,21 @@ func newServer(t *testing.T) *server {
 
 	router := chi.NewRouter()
 	router.Use(fakeContext)
+	bookingMW := accommodationhttp.BookingMiddlewares{}
+	if len(withHoldIdempotency) > 0 && withHoldIdempotency[0] {
+		// cmd/api uses this same command code and scope for the create-hold route.
+		bookingMW.CreateHold = idempotency.Middleware(h.App, idempotency.Options{
+			CommandCode: "accommodation.booking.hold",
+			Scope: func(r *http.Request) (idempotency.Scope, bool) {
+				rc, ok := identity.FromContext(r.Context())
+				if !ok {
+					return idempotency.Scope{}, false
+				}
+				return idempotency.Scope{TenantID: rc.TenantID, ActorID: rc.Principal.ActorID}, true
+			},
+			Logger: logger,
+		})
+	}
 	router.Route("/api/v1/accommodation/properties", func(r chi.Router) {
 		handler.PropertyRoutes(r, accommodationhttp.Middlewares{})
 	})
@@ -280,10 +298,14 @@ func newServer(t *testing.T) *server {
 		handler.AvailabilityRoutes(r, accommodationhttp.Middlewares{})
 	})
 	router.Route("/api/v1/accommodation/holds", func(r chi.Router) {
-		handler.HoldRoutes(r, accommodationhttp.BookingMiddlewares{})
+		handler.HoldRoutes(r, bookingMW)
+	})
+	router.Route("/api/v1/accommodation/waitlist", func(r chi.Router) {
+		handler.WaitlistRoutes(r, accommodationhttp.AfterMiddlewares{})
 	})
 	router.Route("/api/v1/accommodation/bookings", func(r chi.Router) {
 		handler.BookingRoutes(r, accommodationhttp.BookingMiddlewares{})
+		handler.AfterBookingRoutes(r, accommodationhttp.AfterMiddlewares{})
 	})
 	s.handler = router
 	return s

@@ -4,8 +4,9 @@ import type {
   CreateHoldRequest,
   JoinWaitlistRequest,
 } from '@kapsora/api-client';
+import { ApiError } from '@kapsora/api-client';
 import { useSession, useTenantId } from '@kapsora/auth';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useOps } from '../services';
 
@@ -93,6 +94,23 @@ export function useBookings(status?: BookingStatus) {
   });
 }
 
+/** Booking history pages only when the member asks for older records. */
+export function useBookingHistory() {
+  const ops = useOps();
+  const tenantId = useTenantId();
+  return useInfiniteQuery({
+    queryKey: ['member', tenantId, 'bookings', 'history'],
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) =>
+      ops.lodging.listBookings(tenantId, {
+        limit: 50,
+        ...(pageParam ? { cursor: pageParam } : {}),
+      }),
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    retry: false,
+  });
+}
+
 /**
  * One booking, re-read while a decision is still on its way: a confirmation is decided
  * through the request pipeline, so a HOLD the member just confirmed and a PENDING_APPROVAL
@@ -151,6 +169,24 @@ export function useCancel(bookingId: string) {
   return useMutation({
     mutationFn: () => ops.lodging.cancel(tenantId, bookingId),
     onSuccess: () => invalidate(bookingId),
+  });
+}
+
+/** The report is separate from Booking GET; a missing historical report has no exact evidence. */
+export function useNoShow(bookingId: string) {
+  const ops = useOps();
+  const tenantId = useTenantId();
+  return useQuery({
+    queryKey: ['member', tenantId, 'no-show', bookingId],
+    queryFn: async () => {
+      try {
+        return await ops.lodging.getNoShow(tenantId, bookingId);
+      } catch (error) {
+        if (error instanceof ApiError && error.problem.status === 404) return null;
+        throw error;
+      }
+    },
+    retry: false,
   });
 }
 

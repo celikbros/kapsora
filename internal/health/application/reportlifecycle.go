@@ -361,6 +361,16 @@ func (s *Service) WorkItemClaimed(ctx context.Context, tx pgx.Tx, rc identity.Re
 	if aggregateType != domain.AggregateMedicalReport || !rc.Has(PermissionReportReview) {
 		return nil
 	}
+	// Claiming from the worklist starts the same review as StartReview. Apply the
+	// same own-file boundary before moving the report. Returning an error also rolls
+	// back the caller's work-item claim, status event and audit record.
+	current, err := s.reports.GetReport(ctx, tx, rc.TenantID, aggregateID, scopeOf(rc))
+	if err != nil {
+		return err
+	}
+	if err := identity.RefuseOwnFile(rc, current.PersonID); err != nil {
+		return err
+	}
 	moved, err := s.reports.MarkReportUnderReview(ctx, tx, rc.TenantID, aggregateID,
 		actorPtr(rc.Principal.ActorID))
 	if err != nil {

@@ -1,0 +1,377 @@
+package accommodationhttp_test
+
+import (
+	"net/http"
+	"testing"
+
+	"github.com/google/uuid"
+
+	"github.com/celikbros/kapsora/api/generated/kapsorav1"
+	"github.com/celikbros/kapsora/internal/accommodation/application"
+	accommodationdomain "github.com/celikbros/kapsora/internal/accommodation/domain"
+	benefitdomain "github.com/celikbros/kapsora/internal/benefit/domain"
+	servicerequestapp "github.com/celikbros/kapsora/internal/servicerequest/application"
+	servicerequestdomain "github.com/celikbros/kapsora/internal/servicerequest/domain"
+)
+
+// fractionalPenaltyBooking follows the published factor-two plan, real reviewer
+// decision and booking outbox adoption. The policy is frozen at confirmation; only
+// the reviewer's approved service quantity differs among the cases below.
+func (s *server) fractionalPenaltyBooking(t *testing.T, now, approved string) application.BookingView {
+	t.Helper()
+	s.clock.At(t, now)
+	s.putLodgingTerms(t)
+	s.replaceNightPlan(t, "4", "2")
+	hold, snapshot := s.conversionHold(t, "2026-06-17")
+	if snapshot.CoveredNights != 2 || hold.Booking.EntitlementReservationID == nil {
+		t.Fatalf("fractional penalty prerequisite hold: %+v %+v", hold.Booking, snapshot)
+	}
+	if _, units := s.conversionReservation(t, hold.Booking.ID); units != "4.000000" {
+		t.Fatalf("fractional penalty prerequisite reserved units=%s, want 4", units)
+	}
+	ctx, cancel := s.h.Ctx()
+	defer cancel()
+	confirmed, err := s.svc.ConfirmBooking(ctx, s.memberContext(), hold.Booking.ID)
+	if err != nil || confirmed.Booking.ServiceRequestID == nil {
+		t.Fatalf("fractional penalty prerequisite confirmation: %+v %v", confirmed.Booking, err)
+	}
+	requestID := *confirmed.Booking.ServiceRequestID
+	request, err := s.requests.Get(ctx, s.deskContext(), requestID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.requests.PartiallyApprove(ctx, s.deskContext(), requestID, servicerequestapp.DecisionInput{
+		ReasonCode: "FRACTIONAL_LIMIT", ExpectedVersion: request.Request.RowVersion,
+		Items: []servicerequestdomain.DecisionItem{{LineNo: 1,
+			Status: servicerequestdomain.ItemPartiallyApproved, ApprovedQuantity: approved}},
+	}); err != nil {
+		t.Fatalf("fractional penalty prerequisite review: %v", err)
+	}
+	s.deliverDecision(t, requestID)
+	final, err := s.svc.GetBooking(ctx, s.deskContext(), hold.Booking.ID)
+	if err != nil || final.Booking.Status != accommodationdomain.BookingConfirmed ||
+		final.Booking.AuthorizationID == nil || final.Booking.EntitlementReservationID == nil ||
+		*final.Booking.EntitlementReservationID != *hold.Booking.EntitlementReservationID {
+		t.Fatalf("fractional penalty prerequisite adoption: %+v %v", final.Booking, err)
+	}
+	var factor, quantity string
+	if err := s.h.Admin.QueryRow(ctx, `SELECT entitlement_unit_factor::text,approved_quantity::text
+		FROM service.authorization_item WHERE tenant_id=$1 AND authorization_id=$2`,
+		s.tenant, *final.Booking.AuthorizationID).Scan(&factor, &quantity); err != nil {
+		t.Fatal(err)
+	}
+	var approvedMatches bool
+	if err := s.h.Admin.QueryRow(ctx, `SELECT $1::text::numeric=$2::text::numeric`,
+		quantity, approved).Scan(&approvedMatches); err != nil {
+		t.Fatal(err)
+	}
+	if factor != "2.000000" || !approvedMatches {
+		t.Fatalf("fractional penalty prerequisite factor/approved=%s/%s, want 2/%s",
+			factor, quantity, approved)
+	}
+	policy, err := application.DecodeLodgingPolicy(final.Booking.PolicySnapshot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	noShowRate, err := benefitdomain.ParseQuantity(policy.NoShowPercent)
+	if err != nil || policy.PenaltyKind != "NIGHTS" || policy.PenaltyNights == nil ||
+		*policy.PenaltyNights != 1 || noShowRate.Cmp(benefitdomain.MustQuantity("100")) != 0 {
+		t.Fatalf("fractional penalty frozen policy=%+v rate=%s error=%v, want one cancellation night and 100 percent no-show",
+			policy, noShowRate.String(), err)
+	}
+	return final
+}
+
+func TestFractionalPenaltyFamilySharedPrincipalAccountCap(t *testing.T) {
+	s := newServer(t)
+	s.clock.At(t, beforeCheckInOpen)
+	s.putLodgingTerms(t)
+	s.replaceNightPlan(t, "4", "2", true)
+	principalEnrollment := s.enrollment
+	ctx, cancel := s.h.Ctx()
+	defer cancel()
+	var principalMembership, dependent, dependentMembership, dependentEnrollment uuid.UUID
+	if err := s.h.Admin.QueryRow(ctx, `SELECT sponsor_membership_id FROM benefit.enrollment
+		WHERE tenant_id=$1 AND id=$2`, s.tenant, principalEnrollment).Scan(&principalMembership); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.h.Admin.QueryRow(ctx, `INSERT INTO party.person
+		(tenant_id,first_name,last_name,normalized_name)
+		VALUES ($1,'Penalty','Dependent','penalty dependent') RETURNING id`, s.tenant).Scan(&dependent); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.h.Admin.QueryRow(ctx, `INSERT INTO party.sponsor_membership
+		(tenant_id,person_id,sponsor_tenant_organization_id,principal_membership_id,
+		 membership_type,status,valid_period)
+		VALUES ($1,$2,$3,$4,'MEMBER','ACTIVE',daterange('2026-01-01',NULL,'[)')) RETURNING id`,
+		s.tenant, dependent, s.sponsor, principalMembership).Scan(&dependentMembership); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.h.Admin.QueryRow(ctx, `INSERT INTO benefit.enrollment
+		(tenant_id,sponsor_membership_id,plan_id,status,valid_period)
+		VALUES ($1,$2,$3,'ACTIVE',daterange('2026-01-01',NULL,'[)')) RETURNING id`,
+		s.tenant, dependentMembership, s.plan).Scan(&dependentEnrollment); err != nil {
+		t.Fatal(err)
+	}
+	s.person, s.enrollment = dependent, dependentEnrollment
+	hold, _ := s.conversionHold(t, "2026-06-17")
+	confirmed, err := s.svc.ConfirmBooking(ctx, s.memberContext(), hold.Booking.ID)
+	if err != nil || confirmed.Booking.ServiceRequestID == nil {
+		t.Fatalf("shared confirmation: %v", err)
+	}
+	requestID := *confirmed.Booking.ServiceRequestID
+	request, err := s.requests.Get(ctx, s.deskContext(), requestID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.requests.PartiallyApprove(ctx, s.deskContext(), requestID,
+		servicerequestapp.DecisionInput{ReasonCode: "SHARED_LIMIT", ExpectedVersion: request.Request.RowVersion,
+			Items: []servicerequestdomain.DecisionItem{{LineNo: 1,
+				Status: servicerequestdomain.ItemPartiallyApproved, ApprovedQuantity: "0.5"}}}); err != nil {
+		t.Fatal(err)
+	}
+	s.deliverDecision(t, requestID)
+	booking, err := s.svc.GetBooking(ctx, s.deskContext(), hold.Booking.ID)
+	if err != nil || booking.Booking.AuthorizationID == nil {
+		t.Fatalf("shared approval: %v", err)
+	}
+	var holder uuid.UUID
+	if err := s.h.Admin.QueryRow(ctx, `SELECT enrollment_id FROM benefit.entitlement_account
+		WHERE tenant_id=$1 AND id=$2`, s.tenant, s.account).Scan(&holder); err != nil {
+		t.Fatal(err)
+	}
+	if holder != principalEnrollment || holder == dependentEnrollment {
+		t.Fatalf("shared account holder=%s", holder)
+	}
+	s.clock.At(t, afterFreeWindow)
+	preview, err := s.svc.PreviewCancellation(ctx, s.memberContext(), booking.Booking.ID)
+	want := application.EntitlementEffect{ConsumedServiceNights: "0.5", ReleasedServiceNights: "0",
+		ConsumedEntitlementUnits: "1", ReleasedEntitlementUnits: "0"}
+	if err != nil || preview.Quote.EntitlementEffect == nil || *preview.Quote.EntitlementEffect != want {
+		t.Fatalf("shared cap preview=%+v err=%v", preview.Quote, err)
+	}
+	result, err := s.svc.CancelBooking(ctx, s.memberContext(), booking.Booking.ID, "")
+	if err != nil || result.Record == nil || result.Record.EntitlementEffect == nil ||
+		*result.Record.EntitlementEffect != want {
+		t.Fatalf("shared cap result=%+v err=%v", result.Quote, err)
+	}
+	available, reserved, consumed := s.fractionalAccountState(t)
+	if available != "3.000000" || reserved != "0.000000" || consumed != "1.000000" {
+		t.Fatalf("shared principal terminal account=%s/%s/%s", available, reserved, consumed)
+	}
+}
+
+func TestFractionalPenaltyFreeCancellationCapsToApproved(t *testing.T) {
+	s := newServer(t)
+	booking := s.fractionalPenaltyBooking(t, insideFreeWindow, "0.5")
+	available, reserved, consumed := s.fractionalAccountState(t)
+	if available != "3.000000" || reserved != "1.000000" || consumed != "0.000000" {
+		t.Fatalf("free cancellation prerequisite account=%s/%s/%s, want 3/1/0",
+			available, reserved, consumed)
+	}
+	ctx, cancel := s.h.Ctx()
+	defer cancel()
+	preview, err := s.svc.PreviewCancellation(ctx, s.memberContext(), booking.Booking.ID)
+	if err != nil || preview.Quote.EntitlementEffect == nil ||
+		preview.Quote.EntitlementEffect.ConsumedServiceNights != "0" ||
+		preview.Quote.EntitlementEffect.ReleasedServiceNights != "0.5" ||
+		preview.Quote.EntitlementEffect.ConsumedEntitlementUnits != "0" ||
+		preview.Quote.EntitlementEffect.ReleasedEntitlementUnits != "1" ||
+		preview.Quote.ReleasedNights != 0 {
+		t.Fatalf("CANCELLATION_EFFECT_PREVIEW: quote=%+v error=%v, want actual 0/.5 service and 0/1 units",
+			preview.Quote, err)
+	}
+	result, err := s.svc.CancelBooking(ctx, s.memberContext(), booking.Booking.ID, "")
+	if err != nil || !result.Quote.Free || result.Quote.ReleasedNights != 0 ||
+		result.Quote.EntitlementEffect == nil || result.Record == nil ||
+		result.Record.EntitlementEffect == nil ||
+		*result.Quote.EntitlementEffect != *result.Record.EntitlementEffect ||
+		*result.Quote.EntitlementEffect != *preview.Quote.EntitlementEffect {
+		t.Fatalf("fractional free cancellation: quote=%+v error=%v", result.Quote, err)
+	}
+	available, reserved, consumed = s.fractionalAccountState(t)
+	if available != "4.000000" || reserved != "0.000000" || consumed != "0.000000" {
+		t.Fatalf("fractional free cancellation account=%s/%s/%s, want 4/0/0",
+			available, reserved, consumed)
+	}
+	if count, units := s.fractionalMovements(t, *booking.Booking.EntitlementReservationID,
+		application.ReasonCancellationRelease); count != 1 || units != "1.000000" {
+		t.Fatalf("fractional free cancellation release=%d/%s, want one actual remaining unit", count, units)
+	}
+	var releasedNights int
+	var releasedService, releasedUnits string
+	if err := s.h.Admin.QueryRow(ctx, `SELECT released_nights,
+		released_service_nights::text,released_entitlement_units::text
+		FROM accommodation.cancellation WHERE tenant_id=$1 AND booking_id=$2`,
+		s.tenant, booking.Booking.ID).Scan(&releasedNights, &releasedService, &releasedUnits); err != nil {
+		t.Fatal(err)
+	}
+	if releasedNights != 0 || releasedService != "0.500000" || releasedUnits != "1.000000" {
+		t.Fatalf("CANCELLATION_EFFECT_RECORD: released whole/service/units=%d/%s/%s, want 0/.5/1",
+			releasedNights, releasedService, releasedUnits)
+	}
+}
+
+func TestFractionalPenaltyReproductionPenalizedCancellation(t *testing.T) {
+	s := newServer(t)
+	booking := s.fractionalPenaltyBooking(t, beforeCheckInOpen, "0.5")
+	s.clock.At(t, afterFreeWindow)
+	ctx, cancel := s.h.Ctx()
+	defer cancel()
+	preview, previewErr := s.svc.PreviewCancellation(ctx, s.memberContext(), booking.Booking.ID)
+	if previewErr != nil || preview.Quote.EntitlementEffect == nil ||
+		preview.Quote.EntitlementEffect.ConsumedServiceNights != "0.5" ||
+		preview.Quote.EntitlementEffect.ConsumedEntitlementUnits != "1" ||
+		preview.Quote.PenaltyNights != 1 || preview.Quote.FeeAmount != "1000" {
+		t.Fatalf("fractional penalized preview policy/effect=%+v error=%v, want frozen fee and capped effect",
+			preview.Quote, previewErr)
+	}
+	result, err := s.svc.CancelBooking(ctx, s.memberContext(), booking.Booking.ID, "")
+	if err != nil || result.Record == nil || result.Record.EntitlementEffect == nil ||
+		*result.Record.EntitlementEffect != *preview.Quote.EntitlementEffect ||
+		result.Quote.FeeAmount != "1000" || result.Quote.PenaltyNights != 1 {
+		t.Fatalf("PENALTY_CAP_CANCEL_ASSERTION: result=%+v error=%v", result.Quote, err)
+	}
+	current, err := s.svc.GetBooking(ctx, s.deskContext(), booking.Booking.ID)
+	if err != nil || current.Booking.Status != accommodationdomain.BookingCancelled {
+		t.Fatalf("fractional penalized cancellation booking=%+v %v", current.Booking, err)
+	}
+	available, reserved, consumed := s.fractionalAccountState(t)
+	if available != "3.000000" || reserved != "0.000000" || consumed != "1.000000" {
+		t.Fatalf("fractional penalized cancellation account=%s/%s/%s, want 3/0/1",
+			available, reserved, consumed)
+	}
+	var cancellationRows int
+	if err := s.h.Admin.QueryRow(ctx, `SELECT count(*) FROM accommodation.cancellation
+		WHERE tenant_id=$1 AND booking_id=$2`, s.tenant, booking.Booking.ID).
+		Scan(&cancellationRows); err != nil {
+		t.Fatal(err)
+	}
+	if cancellationRows != 1 {
+		t.Fatalf("fractional penalized cancellation rows=%d, want 1", cancellationRows)
+	}
+	if _, _, confirmed := s.inventoryOf(t, s.roomType, checkIn); confirmed != 0 {
+		t.Fatalf("fractional penalized cancellation inventory=%d, want zero confirmed rooms", confirmed)
+	}
+}
+
+func TestFractionalPenaltyReproductionNoShow(t *testing.T) {
+	s := newServer(t)
+	booking := s.fractionalPenaltyBooking(t, beforeCheckInOpen, "1.5")
+	clerk := s.h.CreateActor("fractional-no-show-desk", "Fractional Desk")
+	reviewer := s.h.CreateActor("fractional-no-show-reviewer", "Fractional Reviewer")
+	evidence := s.linkCleanBookingDocument(t, booking.Booking.ID)
+	ctx, cancel := s.h.Ctx()
+	defer cancel()
+	s.clock.At(t, afterCheckInCloses)
+	reported, err := s.svc.ReportNoShow(ctx, s.providerContext(clerk), booking.Booking.ID,
+		application.ReportNoShowInput{EvidenceDocumentID: &evidence})
+	if err != nil || reported.Report.Status != application.NoShowReported {
+		t.Fatalf("fractional no-show report: %+v %v", reported.Report, err)
+	}
+	if reported.Report.EntitlementEffect != nil {
+		t.Fatalf("reported no-show invented entitlement effect: %+v", reported.Report.EntitlementEffect)
+	}
+	result, err := s.svc.ReviewNoShow(ctx, s.payerContext(reviewer), booking.Booking.ID,
+		application.ReviewNoShowInput{Status: application.NoShowConfirmed})
+	if err != nil || result.Report.Status != application.NoShowConfirmed ||
+		result.Report.EntitlementEffect == nil || result.Report.ConsumedNights != 1 ||
+		result.Report.EntitlementEffect.ConsumedServiceNights != "1.5" ||
+		result.Report.EntitlementEffect.ConsumedEntitlementUnits != "3" ||
+		result.Report.AssessedFeeAmount != reported.Report.AssessedFeeAmount ||
+		result.Report.PayerAmount != reported.Report.PayerAmount ||
+		result.Report.MemberAmount != reported.Report.MemberAmount {
+		t.Fatalf("PENALTY_CAP_NOSHOW_ASSERTION: result=%+v error=%v", result.Report, err)
+	}
+	current, err := s.svc.GetBooking(ctx, s.deskContext(), booking.Booking.ID)
+	if err != nil || current.Booking.Status != accommodationdomain.BookingNoShow {
+		t.Fatalf("fractional no-show booking=%+v %v", current.Booking, err)
+	}
+	available, reserved, consumed := s.fractionalAccountState(t)
+	if available != "1.000000" || reserved != "0.000000" || consumed != "3.000000" {
+		t.Fatalf("fractional no-show account=%s/%s/%s, want 1/0/3",
+			available, reserved, consumed)
+	}
+	var reportStatus string
+	if err := s.h.Admin.QueryRow(ctx, `SELECT status FROM accommodation.no_show
+		WHERE tenant_id=$1 AND booking_id=$2`, s.tenant, booking.Booking.ID).Scan(&reportStatus); err != nil {
+		t.Fatal(err)
+	}
+	if reportStatus != application.NoShowConfirmed {
+		t.Fatalf("fractional no-show report=%s, want CONFIRMED", reportStatus)
+	}
+	response := s.do(t, http.MethodGet,
+		"/api/v1/accommodation/bookings/"+booking.Booking.ID.String()+"/no-show",
+		bookerPermissions, nil, s.memberHeaders()...)
+	if response.Code != http.StatusOK {
+		t.Fatalf("persisted no-show HTTP=%d %s", response.Code, response.Body.String())
+	}
+	public := decode[kapsorav1.NoShowResult](t, response)
+	if public.Report.EntitlementEffect == nil ||
+		public.Report.EntitlementEffect.ConsumedServiceNights != "1.5" ||
+		public.Report.EntitlementEffect.ConsumedEntitlementUnits != "3" ||
+		public.Report.ConsumedNights != 1 {
+		t.Fatalf("persisted no-show HTTP effect=%+v", public.Report)
+	}
+	if _, _, confirmed := s.inventoryOf(t, s.roomType, checkIn); confirmed != 0 {
+		t.Fatalf("fractional no-show inventory=%d, want zero confirmed rooms", confirmed)
+	}
+}
+
+// An integer partial approval has the same ceiling problem. Keeping this case
+// separate from the fractional proof distinguishes the penalty-policy question
+// from decimal arithmetic at checkout.
+func TestFractionalPenaltyReproductionIntegerPartialNoShow(t *testing.T) {
+	s := newServer(t)
+	booking := s.fractionalPenaltyBooking(t, beforeCheckInOpen, "1")
+	available, reserved, consumed := s.fractionalAccountState(t)
+	if available != "2.000000" || reserved != "2.000000" || consumed != "0.000000" {
+		t.Fatalf("integer partial no-show prerequisite account=%s/%s/%s, want 2/2/0",
+			available, reserved, consumed)
+	}
+	clerk := s.h.CreateActor("integer-partial-no-show-desk", "Partial Desk")
+	reviewer := s.h.CreateActor("integer-partial-no-show-reviewer", "Partial Reviewer")
+	evidence := s.linkCleanBookingDocument(t, booking.Booking.ID)
+	ctx, cancel := s.h.Ctx()
+	defer cancel()
+	s.clock.At(t, afterCheckInCloses)
+	reported, err := s.svc.ReportNoShow(ctx, s.providerContext(clerk), booking.Booking.ID,
+		application.ReportNoShowInput{EvidenceDocumentID: &evidence})
+	if err != nil || reported.Report.Status != application.NoShowReported {
+		t.Fatalf("integer partial no-show report: %+v %v", reported.Report, err)
+	}
+	result, err := s.svc.ReviewNoShow(ctx, s.payerContext(reviewer), booking.Booking.ID,
+		application.ReviewNoShowInput{Status: application.NoShowConfirmed})
+	if err != nil || result.Report.EntitlementEffect == nil ||
+		result.Report.ConsumedNights != 1 ||
+		result.Report.EntitlementEffect.ConsumedServiceNights != "1" ||
+		result.Report.EntitlementEffect.ConsumedEntitlementUnits != "2" {
+		t.Fatalf("PENALTY_CAP_INTEGER_ASSERTION: result=%+v error=%v", result.Report, err)
+	}
+	current, err := s.svc.GetBooking(ctx, s.deskContext(), booking.Booking.ID)
+	if err != nil || current.Booking.Status != accommodationdomain.BookingNoShow {
+		t.Fatalf("integer partial no-show booking=%+v %v", current.Booking, err)
+	}
+	available, reserved, consumed = s.fractionalAccountState(t)
+	if available != "2.000000" || reserved != "0.000000" || consumed != "2.000000" {
+		t.Fatalf("integer partial no-show account=%s/%s/%s, want 2/0/2",
+			available, reserved, consumed)
+	}
+	var reportStatus, reservationRemaining string
+	if err := s.h.Admin.QueryRow(ctx, `SELECT status FROM accommodation.no_show
+		WHERE tenant_id=$1 AND booking_id=$2`, s.tenant, booking.Booking.ID).Scan(&reportStatus); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.h.Admin.QueryRow(ctx, `SELECT (quantity-consumed_quantity-released_quantity)::text
+		FROM benefit.entitlement_reservation WHERE tenant_id=$1 AND id=$2`,
+		s.tenant, *booking.Booking.EntitlementReservationID).Scan(&reservationRemaining); err != nil {
+		t.Fatal(err)
+	}
+	if reportStatus != application.NoShowConfirmed || reservationRemaining != "0.000000" {
+		t.Fatalf("integer partial no-show report/reservation=%s/%s, want CONFIRMED/0",
+			reportStatus, reservationRemaining)
+	}
+	if _, _, confirmed := s.inventoryOf(t, s.roomType, checkIn); confirmed != 0 {
+		t.Fatalf("integer partial no-show inventory=%d, want zero confirmed rooms", confirmed)
+	}
+}
