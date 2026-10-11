@@ -69,7 +69,10 @@ Workspace typecheck, lint, formatting and production builds pass. The complete l
 unit run passed 788/789 tests in 97 files; the only failure was the new 202-row
 desk regression exceeding the default five-second test limit. With a scoped
 90-second allowance and unchanged assertions, the provider suite passed 10/10
-again. Full corrected branch CI is pending at this checkpoint.
+again. The complete corrected suite passed on source `d2554f7` in
+[CI run 38124611065](https://github.com/celikbros/kapsora/actions/runs/38124611065):
+all six jobs successful, 789 unit tests in 97 files and 25 mock browser tests passed.
+The 108 opt-in live/calendar cases were skipped, not accepted by this run.
 
 The current-runtime entry/read pass covered 26 distinct real role/navigation checks plus
 one wholly intercepted audit presentation check. An initially skipped retained paid-detail
