@@ -464,6 +464,8 @@ coverage and document forms, including cached reports with equal version numbers
 report commands retain their original target. After leaving a report, a late report command
 result does not display that report's feedback or navigate to its correction over the
 current record.
+Saving services on the same report preserves unsaved header edits; their next save uses
+the refreshed version.
 
 **Report correction depends on known history.** Version history has loading and retryable
 error states, preserving known versions on a failed refresh. Correction requires a successful,

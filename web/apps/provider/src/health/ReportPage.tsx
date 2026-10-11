@@ -534,12 +534,7 @@ function ReportDetail({ reportId }: { reportId: string }) {
           <h2 className="text-base font-semibold">{t('health.reports.header.title')}</h2>
           {draft && canManage && clinical ? (
             <fieldset disabled={busy} aria-busy={busy} className="mt-3 min-w-0">
-              <HeaderForm
-                key={`${report.id}:${report.rowVersion}`}
-                report={report}
-                commands={commands}
-                isCurrent={isCurrent}
-              />
+              <HeaderForm report={report} commands={commands} isCurrent={isCurrent} />
             </fieldset>
           ) : (
             <dl className="mt-3 grid gap-x-6 gap-y-1 text-sm md:grid-cols-[minmax(0,12rem)_minmax(0,1fr)]">

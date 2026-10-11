@@ -77,6 +77,8 @@ Medical report navigation also clears the previous report's header, service cove
 document form drafts. A correction response may open its new version only while staff are
 still viewing the report they corrected; a late response does not move them away from
 another report.
+Within the same report, saving service coverage preserves an unsaved header draft; its
+later save uses the refreshed report version.
 
 Report version history shows loading and retryable errors while retaining known versions.
 A correction is offered only after a successful, settled history read establishes that no

@@ -163,17 +163,19 @@ Medical report content is also keyed by report identity, including header, servi
 and document form state. Cached navigation resets drafts even when row versions match.
 Late report command feedback and correction navigation are suppressed after leaving the
 source report, including leaving the report route entirely. Normal save and correction
-feedback remain available. These changes preserve the existing clinical, authorization,
+feedback remain available. Saving services on the same report preserves an unsaved header;
+its subsequent save uses the refreshed version. A regression reproduces the discarded draft
+before this follow-up correction. These changes preserve the existing clinical, authorization,
 entitlement and API contracts; no live clinical write is evidence for this checkpoint.
 
 Astra scoped both defects and Sol implemented and independently reviewed them. The three
-stay and five report safety regressions pass; the two initial stay regressions and both
+stay and six report safety regressions pass; the two initial stay regressions and both
 cached-report navigation cases fail against the original components. Delayed-result tests
 wait for the mutation to settle before checking the new screen. Provider typecheck and
 scoped lint/format pass. Intercepted browser checks at 390/1440 verified same-document
 cached navigation, isolated drafts and stay-dialog invalidation/reopening, with no business
 writes or document overflow. Selected captures were manually inspected under PRODUCT/DESIGN.
-The complete provider suite passed 108/108 in 19 files, and its production build passed.
+The complete provider suite passed 109/109 in 19 files, and its production build passed.
 
 **MGT-03B positive distinct-checker acceptance (2026-10-11):** the explicitly authorized
 single DEMO_B positive checker case passed 1/1 in about 1.4 seconds. Separately, the new

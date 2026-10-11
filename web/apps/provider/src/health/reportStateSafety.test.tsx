@@ -1,3 +1,4 @@
+import { etagOf } from '@kapsora/api-client';
 import { createMockServer } from '@kapsora/api-client/mocks/node';
 import { initI18n } from '@kapsora/i18n';
 import { createMemoryHistory } from '@tanstack/react-router';
@@ -95,6 +96,29 @@ it.each([1, 2])(
     await screen.findByText('Rapor kaydedildi.');
   },
 );
+
+it('keeps an unsaved header draft when services are saved on the same report', async () => {
+  const report = api.world.medicalReports.find((row) => row.status === 'DRAFT')!;
+  const originalVersion = report.rowVersion;
+  const { services, user } = await mount(report.id);
+  await screen.findByDisplayValue(report.clinicalSummary!);
+  await user.clear(field('clinicalSummary'));
+  await user.type(field('clinicalSummary'), 'UNSAVED-HEADER-DRAFT');
+
+  await user.click(screen.getByRole('button', { name: 'Hizmetleri kaydet' }));
+  await screen.findByText('Hizmetler kaydedildi.');
+  expect(field('clinicalSummary')).toHaveValue('UNSAVED-HEADER-DRAFT');
+
+  const patch = vi.spyOn(services.ops.reports, 'patchDraft');
+  await user.click(
+    screen.getByTestId('report-header-form').querySelector('button[type="submit"]')!,
+  );
+  await waitFor(() => expect(patch).toHaveBeenCalledTimes(1));
+  expect(patch.mock.calls[0]![1]).toBe(report.id);
+  expect(patch.mock.calls[0]![2]).toBe(etagOf(originalVersion + 1));
+  expect(patch.mock.calls[0]![3].clinicalSummary).toBe('UNSAVED-HEADER-DRAFT');
+  await screen.findByText('Rapor kaydedildi.');
+});
 
 it('ignores a correction completion after moving to another report', async () => {
   const a = api.world.medicalReports.find((row) => row.status === 'APPROVED')!;
