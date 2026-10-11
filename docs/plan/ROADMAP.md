@@ -169,6 +169,12 @@ draft and dialog isolation, with no business writes, unexpected reads, browser e
 document overflow. Selected captures were manually inspected under PRODUCT/DESIGN.
 This is bounded healthcare workflow evidence; the separate live/calendar gates remain open.
 
+**Claim editing and review state isolation CI checkpoint:** source
+`5646bae2a81d00f072b8087cd32ba2e2a3882ae2` passed all six jobs in
+[CI run 38170887880](https://github.com/celikbros/kapsora/actions/runs/38170887880): 836 unit
+tests in 106 files and 25 mock browser tests passed. The 111 opt-in live/calendar cases
+were skipped and are not acceptance evidence.
+
 **Health/lodging working-list closure (2026-10-11):** four observed user-facing
 defects are corrected. Provider arrivals/departures previously stopped at 100 newest
 bookings, member history at 50 bookings, and medical report review at 50 reports. Each
@@ -209,6 +215,23 @@ session commands and normal audited reads are separate from business mutations.
 The retained capped no-show still awaits 12 October 00:00 Europe/Istanbul. Formal owner
 review and genuine October 15/30 scheduler evidence remain separately open; the list
 corrections do not mark those gates passed.
+
+**Provider case opening safety checkpoint (2026-10-11):** linked request mode derives from
+the URL request ID and remains linked through loading, error and retry; it cannot fall back
+to standalone creation. Linked creation requires a successful idle read matching that
+request and confirming its identity and fields, plus the existing member and enrollment
+requirements; linked mode does not run a new eligibility decision. Standalone creation
+requires a successful eligibility read. Source changes clear the draft, pending creation
+blocks repeat submission, and delayed results cannot navigate or notify after leaving the
+source. Synthetic browser checks passed at 390/1440 for initial error/retry, cached B→A→B
+draft reset, cached failed refresh, and creation block/retry, with zero business writes,
+unknown calls, page errors or overflow; selected captures were manually reviewed. The
+focused case-opening suite passed 5/5; both initial regressions failed before the fix.
+Related provider M5/M7/portal-access suites passed 30/30. Typecheck, scoped lint, Prettier
+and production build passed; standalone error recovery now keeps the error in place with
+retry. Independent source review found no material blocker. This is bounded local UI
+verification; CI for the new source has not started, and separate live/calendar and health
+acceptance gates remain unchanged.
 
 **MGT-04 approved implementation checkpoint (2026-10-11):** source `ce79523`
 implements GET/PUT `/api/v1/admin/tenant-settings/accommodation` and the capability-gated

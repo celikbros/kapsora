@@ -446,6 +446,15 @@ loaded rows. Admission requires a successful, settled stay lookup with no open s
 or a fresh lookup closes an open admission form, and recovery does not reopen it silently.
 The restricted claim chapter remains restricted without a read or retry control.
 
+**Case opening follows its source identity.** A linked request is determined by its URL
+request ID. Loading, failed and retrying reads keep the linked flow in place and never expose
+standalone creation. Creation becomes available only after a successful, idle read of the
+matching request confirms its identity and fields, with the existing member and enrollment
+requirements satisfied; linked mode does not run a new eligibility decision. Standalone
+creation waits for a successful eligibility read. Changing source resets the draft; a late
+create result cannot navigate or notify after the provider leaves that source. A pending
+create blocks repeated submission.
+
 **A whole-set clinical editor starts from a successful read.** The encounter diagnosis
 editor stays unavailable while its source is loading or failed. A retry loads existing
 choices before editing; a failed or new read invalidates the open draft. Saving closes the

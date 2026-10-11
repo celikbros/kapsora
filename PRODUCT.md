@@ -62,6 +62,15 @@ chapters with retry. Loaded records remain visible after a failed refresh. Admis
 available only after a successful stay read establishes no open stay; an interrupted
 admission form stays closed when the lookup recovers, until staff explicitly reopen it.
 
+Provider case opening keeps linked and standalone paths distinct. A linked request derives
+its request identity from the URL and never falls back to standalone opening while its read
+is loading, failed or retrying. Creation is available only after a successful, idle read of
+the matching request confirms its identity and fields, with the existing member and
+enrollment requirements satisfied; linked mode does not run a new eligibility decision.
+Standalone opening requires a successful eligibility read. Changing the source clears the
+draft; a delayed create result from a source the provider has left cannot navigate away or
+show feedback there. A pending create also prevents a repeated submission.
+
 Clinical diagnosis editing starts from a successfully loaded diagnosis set. A pending or
 failed read cannot open a blank replacement form; retry restores the existing choices.
 A fresh read or a case change closes the old editor, and a successful save leaves it closed.

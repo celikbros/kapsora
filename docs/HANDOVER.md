@@ -96,6 +96,23 @@ The retained capped no-show still awaits 12 October 00:00 Europe/Istanbul. Forma
 review and genuine October 15/30 scheduler evidence remain separately open; the list
 corrections do not mark those gates passed.
 
+**Provider case opening safety (2026-10-11):** linked request mode is bound to the request
+ID in the URL. Loading, failed and retrying reads remain in that mode; they never expose
+standalone creation. A linked create requires a successful idle read for the matching request
+that confirms its identity and fields, plus the existing member and enrollment requirements;
+linked mode does not run a new eligibility decision. Standalone creation requires a
+successful eligibility read. Source changes reset the draft, pending creation blocks repeat
+submission, and a delayed result after leaving its source cannot navigate or notify.
+Synthetic browser checks passed at 390/1440 for initial error/retry, cached B→A→B draft
+reset, cached failed refresh, and creation block/retry, with zero business writes, unknown
+calls, page errors or overflow. Selected captures were manually reviewed. The focused case
+opening suite passed 5/5; both initial regressions failed before the fix. Related provider
+M5/M7/portal-access suites passed 30/30. Typecheck, scoped lint, Prettier and production
+build passed; standalone error recovery now keeps the error in place with retry. Independent
+source review found no material blocker. This is bounded local UI verification; CI for the
+new source has not started, and separate live/calendar and health acceptance gates remain
+unchanged.
+
 **Provider hospital case paging (2026-10-11):** older cases are now accessible in pages of
 50 under the existing tenant/status scope. Loaded cases survive a next-page error with
 same-cursor retry; overlapping IDs are shown once. The focused regression passes 1/1,
@@ -228,6 +245,12 @@ Synthetic provider, financial-review and medical-review browser checks at 390/14
 draft and dialog isolation, with no business writes, unexpected reads, browser errors or
 document overflow. Selected captures were manually inspected under PRODUCT/DESIGN.
 This is bounded healthcare workflow evidence; the separate live/calendar gates remain open.
+
+**Claim editing and review state isolation CI checkpoint:** source
+`5646bae2a81d00f072b8087cd32ba2e2a3882ae2` passed all six jobs in
+[CI run 38170887880](https://github.com/celikbros/kapsora/actions/runs/38170887880): 836 unit
+tests in 106 files and 25 mock browser tests passed. The 111 opt-in live/calendar cases
+were skipped and are not acceptance evidence.
 
 **MGT-03B positive distinct-checker acceptance (2026-10-11):** the explicitly authorized
 single DEMO_B positive checker case passed 1/1 in about 1.4 seconds. Separately, the new
