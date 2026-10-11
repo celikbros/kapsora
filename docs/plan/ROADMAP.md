@@ -29,8 +29,8 @@ in historical checkpoints.
 
 **Current owner priority:** health is KAPSORA's primary product purpose; lodging and other
 benefits remain secondary. Complete and verify the remaining health user workflows before
-resuming deferred M8/M9 recovery or pilot work. Provider hospital case paging is verified
-below, together with the case-page error/retry and admission-lookup correction. These
+resuming deferred M8/M9 recovery or pilot work. Provider hospital case paging, chapter
+error/retry, diagnosis read safety and report history/correction guards are verified below. These
 bounded fixes do not extend the accepted hospital demo scope or close calendar/owner gates.
 
 **Provider hospital case paging (2026-10-11):** cases load on request in groups of 50,
@@ -59,6 +59,32 @@ business writes. Selected captures were inspected. This is bounded UI evidence, 
 clinical episode, policy decision or calendar acceptance. The complete local web suite
 passed 794/794 in 99 files; the separate provider suite passed 92/92 in 15 files, and the
 final read guard passed its focused 4/4 regressions. The provider production build passed.
+All six checks passed on source `2920c67` in
+[CI run 38143540468](https://github.com/celikbros/kapsora/actions/runs/38143540468):
+794 unit tests in 99 files and 25 mock browser tests passed; 111 opt-in live/calendar
+cases skipped. The skips are not live/calendar acceptance.
+
+**Clinical read safety and report history (2026-10-11):** diagnosis editing now requires a
+successful, idle read of the existing set. Initial loading/error cannot open a blank
+replacement editor; failures show retry and preserve known diagnoses. A refreshed read or
+case change invalidates an open draft; a successful save closes it explicitly. Case content
+is keyed by case ID, and admission diagnosis choices are limited to that case's encounters.
+Financial projections make no diagnosis read and offer no clinical editor. No actual live
+diagnosis loss or cross-case persistence was observed; the corrected UI preconditions were
+source-proven and reproduced with synthetic mocks.
+
+Report history now shows loading/error/retry and retains loaded versions after a failed
+refresh. Correction requires a successful idle chain read plus the existing permission,
+clinical/status and later-version guards; the handler also checks pending mutation state.
+Existing backend predecessor locks and later-version refusal remain unchanged. Single-version
+success retains its quiet presentation. Focused diagnosis 6/6 and history 2/2 regressions pass,
+including completed save, refresh recovery, prior-case admission options, restricted
+financial projection and correction gating. Scoped typecheck/lint/format and independent
+Sol review pass. Synthetic browser checks at 390/1440 verify diagnosis retry with existing
+choices, zero diagnosis reads for financial projections, version retry and correction
+availability with zero business writes or document overflow. Selected captures were inspected.
+The complete provider suite passed 100/100 in 17 files and its production build passed.
+This is bounded UI safety, not a new clinical policy or calendar acceptance.
 
 **Health/lodging working-list closure (2026-10-11):** four observed user-facing
 defects are corrected. Provider arrivals/departures previously stopped at 100 newest

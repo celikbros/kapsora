@@ -446,6 +446,19 @@ loaded rows. Admission requires a successful, settled stay lookup with no open s
 or a fresh lookup closes an open admission form, and recovery does not reopen it silently.
 The restricted claim chapter remains restricted without a read or retry control.
 
+**A whole-set clinical editor starts from a successful read.** The encounter diagnosis
+editor stays unavailable while its source is loading or failed. A retry loads existing
+choices before editing; a failed or new read invalidates the open draft. Saving closes the
+editor explicitly. A case change resets local forms and diagnosis choices, and admission
+choices are limited to encounters on that case. A financial projection makes no diagnosis
+read or clinical editor available.
+
+**Report correction depends on known history.** Version history has loading and retryable
+error states, preserving known versions on a failed refresh. Correction requires a successful,
+idle history read and the existing permission, clinical projection, status and later-version
+checks. Pending mutations remain blocked. A successful single-version history retains the
+existing quiet presentation.
+
 **The member home only names a next stay when its booking result is complete.** If older
 bookings remain, the card uses the neutral booking-list heading, explains that the full booking
 list can be checked, and links to all bookings. It does not select a next stay, a held booking,

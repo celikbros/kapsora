@@ -69,29 +69,49 @@ const OPEN_STAY = new Set<InpatientStay['status']>(['REQUESTED', 'AUTHORIZED', '
  * financial one the list would answer 403, so it is not asked for and the cell says so.
  */
 function EncounterDiagnoses({
-  encounterId,
-  clinical,
-  onLoaded,
+  items,
+  pending,
+  error,
+  fetching,
+  onRetry,
 }: {
-  encounterId: string;
-  clinical: boolean;
-  onLoaded: (encounterId: string, items: Diagnosis[]) => void;
+  items: Diagnosis[] | undefined;
+  pending: boolean;
+  error: Error | null;
+  fetching: boolean;
+  onRetry: () => void;
 }) {
   const { t } = useTranslation();
-  const query = useDiagnoses(encounterId, clinical);
-  const items = query.data;
-  useEffect(() => {
-    if (items) onLoaded(encounterId, items);
-  }, [items, encounterId, onLoaded]);
-  if (query.isPending) return <span className="text-fg-muted">…</span>;
+  if (pending) return <span className="text-fg-muted">…</span>;
   const primary = items?.find((d) => d.diagnosisType === 'PRIMARY') ?? items?.[0];
-  if (!primary) return <span className="text-fg-muted">{t('health.encounters.noDiagnosis')}</span>;
   return (
-    <span className="inline-flex flex-wrap items-center gap-2">
-      <span className="font-mono">{primary.code}</span>
-      <span>{primary.display}</span>
-      {primary.sensitive ? <Badge tone="warning">{t('health.diagnoses.sensitive')}</Badge> : null}
-    </span>
+    <div className="grid gap-2">
+      {error ? (
+        <div className="grid gap-2">
+          <ProblemAlert problem={problemOf(error)} />
+          <Button
+            size="sm"
+            variant="secondary"
+            loading={fetching}
+            disabled={fetching}
+            onClick={onRetry}
+          >
+            {t('common.retry')}
+          </Button>
+        </div>
+      ) : null}
+      {primary ? (
+        <span className="inline-flex flex-wrap items-center gap-2">
+          <span className="font-mono">{primary.code}</span>
+          <span>{primary.display}</span>
+          {primary.sensitive ? (
+            <Badge tone="warning">{t('health.diagnoses.sensitive')}</Badge>
+          ) : null}
+        </span>
+      ) : items ? (
+        <span className="text-fg-muted">{t('health.encounters.noDiagnosis')}</span>
+      ) : null}
+    </div>
   );
 }
 
@@ -422,10 +442,14 @@ function AdmitForm({
  * not.
  */
 export function CasePage() {
+  const { caseId } = useParams({ from: '/app/cases/$caseId' });
+  return <CaseContent key={caseId} caseId={caseId} />;
+}
+
+function CaseContent({ caseId }: { caseId: string }) {
   const { t } = useTranslation();
   const toast = useToast();
   const navigate = useNavigate();
-  const { caseId } = useParams({ from: '/app/cases/$caseId' });
   const query = useCase(caseId);
   const canManage = usePermission('health.case.manage');
   const canReport = usePermission('health.medical_report.manage');
@@ -438,7 +462,11 @@ export function CasePage() {
   const personName = usePersonName(query.data?.data.personId);
   const [adding, setAdding] = useState(false);
   const [ending, setEnding] = useState<string | null>(null);
-  const [editing, setEditing] = useState<string | null>(null);
+  const [editing, setEditing] = useState<{
+    caseId: string;
+    encounterId: string;
+    updatedAt: number;
+  } | null>(null);
   const [admissionReadAtOpen, setAdmissionReadAtOpen] = useState<{
     caseId: string;
     updatedAt: number;
@@ -474,7 +502,7 @@ export function CasePage() {
   const open = record.status === 'OPEN';
   const everyEncounterEnded = record.encounters.every((e) => Boolean(e.endedAt));
   const endingEncounter = record.encounters.find((e) => e.id === ending && !e.endedAt);
-  const diagnoses = Object.values(byEncounter).flat();
+  const diagnoses = record.encounters.flatMap((encounter) => byEncounter[encounter.id] ?? []);
   const openStay = (stays.data?.items ?? []).find((s) => OPEN_STAY.has(s.status));
   const canStartAdmission = stays.isSuccess && !stays.isFetching && !openStay;
   const admitting =
@@ -588,10 +616,18 @@ export function CasePage() {
                       clinical={clinical}
                       editable={clinical && canManage && open}
                       onEnd={ending === null ? () => setEnding(encounter.id) : undefined}
-                      editing={editing === encounter.id}
-                      onEdit={() => setEditing(editing === encounter.id ? null : encounter.id)}
+                      editing={editing}
+                      onEdit={(updatedAt) =>
+                        setEditing((current) =>
+                          current?.caseId === record.id &&
+                          current.encounterId === encounter.id &&
+                          current.updatedAt === updatedAt
+                            ? null
+                            : { caseId: record.id, encounterId: encounter.id, updatedAt },
+                        )
+                      }
+                      onClose={() => setEditing(null)}
                       caseId={record.id}
-                      current={byEncounter[encounter.id] ?? []}
                       onLoaded={onLoaded}
                     />
                   ))}
@@ -902,22 +938,35 @@ function EncounterRows({
   editable,
   editing,
   onEdit,
+  onClose,
   onEnd,
   caseId,
-  current,
   onLoaded,
 }: {
   encounter: Encounter;
   clinical: boolean;
   editable: boolean;
-  editing: boolean;
-  onEdit: () => void;
+  editing: { caseId: string; encounterId: string; updatedAt: number } | null;
+  onEdit: (updatedAt: number) => void;
+  onClose: () => void;
   onEnd: (() => void) | undefined;
   caseId: string;
-  current: Diagnosis[];
   onLoaded: (encounterId: string, items: Diagnosis[]) => void;
 }) {
   const { t } = useTranslation();
+  const diagnoses = useDiagnoses(encounter.id, clinical);
+  const items = diagnoses.data;
+  useEffect(() => {
+    if (clinical && diagnoses.isSuccess && !diagnoses.isFetching && items) {
+      onLoaded(encounter.id, items);
+    }
+  }, [clinical, diagnoses.isSuccess, diagnoses.isFetching, items, encounter.id, onLoaded]);
+  const canEdit = editable && diagnoses.isSuccess && !diagnoses.isFetching && items !== undefined;
+  const isEditing =
+    canEdit &&
+    editing?.caseId === caseId &&
+    editing.encounterId === encounter.id &&
+    editing.updatedAt === diagnoses.dataUpdatedAt;
   const columns = 3 + (clinical ? 2 : 0) + (editable ? 1 : 0);
   return (
     <>
@@ -933,9 +982,11 @@ function EncounterRows({
         {clinical ? (
           <TD>
             <EncounterDiagnoses
-              encounterId={encounter.id}
-              clinical={clinical}
-              onLoaded={onLoaded}
+              items={items}
+              pending={diagnoses.isPending}
+              error={diagnoses.error}
+              fetching={diagnoses.isFetching}
+              onRetry={() => void diagnoses.refetch()}
             />
           </TD>
         ) : null}
@@ -947,21 +998,27 @@ function EncounterRows({
                   {t('health.encounters.end.action')}
                 </Button>
               ) : null}
-              <Button size="sm" variant="ghost" onClick={onEdit} aria-expanded={editing}>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={!canEdit}
+                onClick={() => onEdit(diagnoses.dataUpdatedAt)}
+                aria-expanded={isEditing}
+              >
                 {t('health.encounters.editDiagnoses')}
               </Button>
             </div>
           </TD>
         ) : null}
       </TR>
-      {editing ? (
+      {isEditing && items ? (
         <TR>
           <TD colSpan={columns}>
             <DiagnosisEditor
               caseId={caseId}
               encounterId={encounter.id}
-              current={current}
-              onDone={onEdit}
+              current={items}
+              onDone={onClose}
             />
           </TD>
         </TR>

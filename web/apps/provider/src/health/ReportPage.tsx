@@ -359,6 +359,8 @@ export function ReportPage() {
   const laterDraft = (chain.data ?? []).some((r) => r.versionNo > report.versionNo);
   const canCorrect =
     canManage &&
+    chain.isSuccess &&
+    !chain.isFetching &&
     clinical &&
     (report.status === 'APPROVED' || report.status === 'REJECTED') &&
     !laterDraft;
@@ -376,6 +378,7 @@ export function ReportPage() {
   }
 
   async function correct() {
+    if (!canCorrect || busy) return;
     try {
       const created = await createReport.mutateAsync({
         personId: report.personId,
@@ -590,47 +593,68 @@ export function ReportPage() {
           </Card>
         ) : null}
 
-        {(chain.data?.length ?? 0) > 1 ? (
+        {chain.isPending || chain.isError || (chain.data?.length ?? 0) > 1 ? (
           <Card>
             <h2 className="text-base font-semibold">{t('health.reports.versions.title')}</h2>
-            <div className="mt-3">
-              <Table data-testid="report-versions">
-                <THead>
-                  <TR>
-                    <TH>{t('health.reports.columns.version')}</TH>
-                    <TH>{t('health.reports.columns.status')}</TH>
-                    <TH>{t('health.reports.columns.issuedAt')}</TH>
-                  </TR>
-                </THead>
-                <TBody>
-                  {chain.data!.map((r) => (
-                    <TR key={r.id}>
-                      <TD className="font-mono">
-                        {r.id === report.id ? (
-                          <>
-                            v{r.versionNo} · {t('health.reports.versions.current')}
-                          </>
-                        ) : (
-                          <Link
-                            to="/reports/$reportId"
-                            params={{ reportId: r.id }}
-                            className="underline-offset-2 hover:underline"
-                          >
-                            v{r.versionNo}
-                          </Link>
-                        )}
-                      </TD>
-                      <TD>
-                        <Badge tone={reportTone(r.status)}>
-                          {t(`health.reports.status.${r.status}`)}
-                        </Badge>
-                      </TD>
-                      <TD>{formatDate(r.issuedAt)}</TD>
+            {chain.isPending ? (
+              <div className="text-fg-muted mt-3 flex items-center gap-2 text-sm" aria-busy="true">
+                <Spinner /> {t('common.loading')}
+              </div>
+            ) : null}
+            {chain.isError ? (
+              <div className="mt-3 grid gap-2">
+                <ProblemAlert problem={problemOf(chain.error)} />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={chain.isFetching}
+                  disabled={chain.isFetching}
+                  onClick={() => void chain.refetch()}
+                >
+                  {t('common.retry')}
+                </Button>
+              </div>
+            ) : null}
+            {(chain.data?.length ?? 0) > 1 ? (
+              <div className="mt-3">
+                <Table data-testid="report-versions">
+                  <THead>
+                    <TR>
+                      <TH>{t('health.reports.columns.version')}</TH>
+                      <TH>{t('health.reports.columns.status')}</TH>
+                      <TH>{t('health.reports.columns.issuedAt')}</TH>
                     </TR>
-                  ))}
-                </TBody>
-              </Table>
-            </div>
+                  </THead>
+                  <TBody>
+                    {chain.data!.map((r) => (
+                      <TR key={r.id}>
+                        <TD className="font-mono">
+                          {r.id === report.id ? (
+                            <>
+                              v{r.versionNo} · {t('health.reports.versions.current')}
+                            </>
+                          ) : (
+                            <Link
+                              to="/reports/$reportId"
+                              params={{ reportId: r.id }}
+                              className="underline-offset-2 hover:underline"
+                            >
+                              v{r.versionNo}
+                            </Link>
+                          )}
+                        </TD>
+                        <TD>
+                          <Badge tone={reportTone(r.status)}>
+                            {t(`health.reports.status.${r.status}`)}
+                          </Badge>
+                        </TD>
+                        <TD>{formatDate(r.issuedAt)}</TD>
+                      </TR>
+                    ))}
+                  </TBody>
+                </Table>
+              </div>
+            ) : null}
           </Card>
         ) : null}
       </div>

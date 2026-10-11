@@ -62,6 +62,16 @@ chapters with retry. Loaded records remain visible after a failed refresh. Admis
 available only after a successful stay read establishes no open stay; an interrupted
 admission form stays closed when the lookup recovers, until staff explicitly reopen it.
 
+Clinical diagnosis editing starts from a successfully loaded diagnosis set. A pending or
+failed read cannot open a blank replacement form; retry restores the existing choices.
+A fresh read or a case change closes the old editor, and a successful save leaves it closed.
+Case navigation clears local forms and diagnosis choices; admission choices belong only to
+the current case. Financial projections do not request or offer clinical diagnoses.
+
+Report version history shows loading and retryable errors while retaining known versions.
+A correction is offered only after a successful, settled history read establishes that no
+later version exists, under the existing clinical/status/permission rules.
+
 The member home names the next stay or says there is no planned stay when its booking results
 are complete. When older bookings remain to be read, it gives neutral guidance and a direct
 route to all bookings instead of presenting the first page as the full history.
