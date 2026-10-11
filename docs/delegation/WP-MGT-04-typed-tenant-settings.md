@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Milestone | Management; MGT-03 isolated acceptance passed, local mutation acceptance remains open |
-| Status | ACTIVE; scope approved, source/isolated proof passed, schema 61 applied; live acceptance pending |
+| Status | ACTIVE; scope approved, source/isolated proof passed, schema 61 applied; live reads passed; setting-command acceptance pending |
 | Planned | 2026-10-09, gpt-6-astra |
 | Reviewed | 2026-10-09, gpt-6-sol; permission and consumer gates retained |
 | Delivery | Named operational setting view and validated, auditable changes |
@@ -256,7 +256,7 @@ commands and evidence; update handover/roadmap/product/design only at integratio
 integrator ownership. MGT-04 is complete only after its admitted read/change contract and
 consumer/security evidence pass, not when this plan or a read-only panel exists.
 
-## Delivery checkpoint (2026-10-11)
+## Historical delivery checkpoint (2026-10-11, before restart)
 
 Source `ce79523` passed all six jobs in [CI run 38089128497](https://github.com/celikbros/kapsora/actions/runs/38089128497): settings module 8 plus managed consumers 3, schema 195, accommodation 123 and directory/invitation 70 without skips; web 777 plus 25 mock browser cases. The approved local 60-to-61 rollout preserved original fields across 16 tables and added only the two permission codes/four system TENANT_ADMIN role-permission rows. Schema 61 is clean; existing setting values are unchanged and command receipts are empty. Operator restart, local read/denial verification and explicit setting-command acceptance remain open. See current HANDOVER for the full evidence and retained product gates.
 
@@ -269,3 +269,15 @@ vet and build pass; independent Sol review found no blocker. Reload and live ver
 remain pending; the prior green module/CI tests did not test complete router construction.
 
 Follow-up source `34c31ff` passed all six jobs in [CI run 38102458276](https://github.com/celikbros/kapsora/actions/runs/38102458276), including the new complete-router regression and isolated cap/settings/accommodation checks. Secret-safe startup configuration checks pass. API 8090, MinIO 9000 and ClamAV 3310 remain unavailable; corrected-source reload and live GET/denial/write acceptance are still open. No live business command ran.
+
+## Live read checkpoint (2026-10-11, after operator restart)
+
+API, object store and scanner are now reachable. The bounded settings read/denial helper
+passed all five checks: administrator capabilities, GET/no-store/strong ETag/defaults,
+unchanged repeated response and financial-reviewer denial. Existing Management read-only
+browser regressions passed 9/9, including the anonymous invitation boundary. All six CI
+jobs passed on `12b12cb` in [CI run 38103046179](https://github.com/celikbros/kapsora/actions/runs/38103046179).
+The earlier unavailable-runtime gate is closed. No setting PUT, invitation, suspension,
+role grant or privileged request command ran; setting-command acceptance remains open.
+The separately authorized lodging run created synthetic booking/cancellation/document
+evidence; migration-time preservation counts above precede those business commands.

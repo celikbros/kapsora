@@ -323,7 +323,7 @@ claim projection; and safe no-authorization release without a new factor-evidenc
 Run SQL only in isolated CI. Update ordinary integer projections and UI tests as contract
 changes, never by recording an invented whole night for fractional consumption.
 
-## Current live closure preparation (2026-10-11)
+## Historical live closure preparation (2026-10-11, before restart)
 
 The original lodging technical scope remains accepted; later capped cancellation/no-show
 commands have isolated acceptance only. Current read-only inventory of both demo tenants
@@ -386,6 +386,39 @@ Later terminal reads can validate retained balances/ledger/inventory/claim, but 
 response identity remains pending. Neither checker changes template grants, tenant settings,
 frozen fees, accepted paid episodes or historical movements.
 
-### Source acceptance checkpoint
+### Historical source acceptance checkpoint (before restart)
 
 All six jobs passed for `34c31ff` in [CI run 38102458276](https://github.com/celikbros/kapsora/actions/runs/38102458276): Go build/lint/unit, web lint/typecheck/unit/build/smoke, PostgreSQL 18 schema/acceptance, contracts, security and static binaries. Isolated PostgreSQL includes cap preflight/negative control, settings grants/seed/consumer acceptance and accommodation regressions. This is source acceptance; opt-in live cap commands did not run. Secret-safe API configuration checks pass, but API 8090, MinIO 9000 and ClamAV 3310 are unavailable. A read-only consumer query confirms DEMO_A late hours 24 and hotel timezone Europe/Istanbul, with no reusable HOLD/PENDING_APPROVAL/CONFIRMED booking in either demo tenant. The operator must restore the existing services before live testing; no new permission/policy approval is requested for the already-authorized bounded lodging scenario.
+
+## Live acceptance checkpoint (2026-10-11)
+
+API 8090,
+MinIO 9000 and ClamAV 3310 are reachable. The bounded settings read/denial helper passed
+5/5: administrator capabilities, GET/no-store/strong ETag/defaults and stable repeat,
+plus financial-reviewer denial. Existing Management read-only browser regressions passed
+9/9 in 20.9 seconds, including the anonymous invitation boundary. No setting PUT,
+invitation, suspension, role grant or privileged request command ran.
+
+The capped cancellation checker passed live (one case, 8.3 seconds total). A three-night
+booking approved for 0.5 NIGHT at factor 1 cancelled under a frozen one-night policy:
+exact consumption was 0.5 service night / 0.5 entitlement unit, with zero terminal
+remainder. Partial approval had already released 2.5 units. Ledger and inventory reconcile;
+identical cancellation replay returned the same result and produced exactly one
+CANCELLATION_FEE claim. Frozen money stayed 1800 TRY (payer 1800, member 0).
+
+The separate same-day three-night no-show booking is CONFIRMED with 1.5 NIGHT approval.
+Its real evidence document is uploaded, scanned CLEAN, linked as BOOKING/NO_SHOW_EVIDENCE
+and hash-verified. The report command returned the expected 409 NO_SHOW_TOO_EARLY;
+account and inventory were unchanged. The test is PENDING (one skip), not passed terminal
+acceptance. Resume the same private fixture after **2026-10-12 00:00 Europe/Istanbul**
+(2026-10-11 21:00 UTC); the server's current window remains authoritative. Read-only
+consumer loading confirms a 24-hour late window and Europe/Istanbul timezone. Exactly one
+CONFIRMED booking remains; no HOLD/PENDING_APPROVAL fixture remains in either demo tenant.
+Do not replace this booking or upload its evidence again. A zero-fee outcome would prove
+the cap but would not establish a fee-bearing no-show claim.
+
+This bounded run created two synthetic bookings with partial approvals/authorizations,
+one cancellation, one fee claim and one real evidence document. No no-show report/review,
+invoice, batch, settlement, payment, setting change, grant or historical rewrite occurred.
+Private fixture identities and command keys stay under ignored `tmp/`. All six CI jobs
+passed on `12b12cb` in [CI run 38103046179](https://github.com/celikbros/kapsora/actions/runs/38103046179).

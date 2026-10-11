@@ -41,7 +41,7 @@ records the approved sequence and acceptance criteria.
 **Current snapshot (2026-10-11):** PC-01 through PC-04 are verified locally for the
 specified health/hospital demo scope. PC-05 financial journeys passed local technical
 acceptance; formal owner acceptance and true October 15/30 scheduler observations remain
-open. PC-06 capped penalty settlement has isolated acceptance but no live command proof.
+open. PC-06 capped cancellation passed live; terminal no-show acceptance awaits its natural arrival window.
 MGT-02/03 source and isolated acceptance passed; local invitation/suspension/role mutation
 proof remains open. MGT-04's two-field scope and system TENANT_ADMIN authority expansion
 are approved. Source is implemented on `a6a0c79`; final CI/local rollout status is recorded
@@ -85,16 +85,47 @@ tenant_membership 15; platform.tenant_setting 13. The two new permission catalog
 and four system TENANT_ADMIN role-permission rows are the only admitted authority expansion.
 All 13 setting row versions initialize to 1; existing values remain unchanged, and the
 new forced-RLS command receipt table is empty. Schema 61 is clean; business commands 0.
-The subsequent bounded settings GET/denial checks remain pending; the failed restart
-and reproduced source correction are recorded below.
-No live settings update, grant command, booking or payment was created.
+These are migration-time preservation counts, before the bounded lodging test records
+described below. The subsequent settings GET/denial checks now pass 5/5 after restart.
+No live settings update, grant command or payment was created.
 
-Local setting commands, MGT-02 invitation/suspension and MGT-03 role mutations, capped
-penalty settlement, formal owner walkthrough and genuine October 15/30 observations
+Local setting commands, MGT-02 invitation/suspension and MGT-03 role mutations, terminal
+capped no-show acceptance, formal owner walkthrough and genuine October 15/30 observations
 remain separate acceptance gates. No new clinical, financial or custom-role authority
 is included. This checkpoint supersedes the historical MGT-04 approval status below.
 
-**API startup correction (2026-10-11):** the operator's restart left the panel reachable,
+**Live acceptance checkpoint (2026-10-11, after operator restart):** API 8090,
+MinIO 9000 and ClamAV 3310 are reachable. The bounded settings read/denial helper passed
+5/5: administrator capabilities, GET/no-store/strong ETag/defaults and stable repeat,
+plus financial-reviewer denial. Existing Management read-only browser regressions passed
+9/9 in 20.9 seconds, including the anonymous invitation boundary. No setting PUT,
+invitation, suspension, role grant or privileged request command ran.
+
+The capped cancellation checker passed live (one case, 8.3 seconds total). A three-night
+booking approved for 0.5 NIGHT at factor 1 cancelled under a frozen one-night policy:
+exact consumption was 0.5 service night / 0.5 entitlement unit, with zero terminal
+remainder. Partial approval had already released 2.5 units. Ledger and inventory reconcile;
+identical cancellation replay returned the same result and produced exactly one
+CANCELLATION_FEE claim. Frozen money stayed 1800 TRY (payer 1800, member 0).
+
+The separate same-day three-night no-show booking is CONFIRMED with 1.5 NIGHT approval.
+Its real evidence document is uploaded, scanned CLEAN, linked as BOOKING/NO_SHOW_EVIDENCE
+and hash-verified. The report command returned the expected 409 NO_SHOW_TOO_EARLY;
+account and inventory were unchanged. The test is PENDING (one skip), not passed terminal
+acceptance. Resume the same private fixture after **2026-10-12 00:00 Europe/Istanbul**
+(2026-10-11 21:00 UTC); the server's current window remains authoritative. Read-only
+consumer loading confirms a 24-hour late window and Europe/Istanbul timezone. Exactly one
+CONFIRMED booking remains; no HOLD/PENDING_APPROVAL fixture remains in either demo tenant.
+Do not replace this booking or upload its evidence again. A zero-fee outcome would prove
+the cap but would not establish a fee-bearing no-show claim.
+
+This bounded run created two synthetic bookings with partial approvals/authorizations,
+one cancellation, one fee claim and one real evidence document. No no-show report/review,
+invoice, batch, settlement, payment, setting change, grant or historical rewrite occurred.
+Private fixture identities and command keys stay under ignored `tmp/`. All six CI jobs
+passed on `12b12cb` in [CI run 38103046179](https://github.com/celikbros/kapsora/actions/runs/38103046179).
+
+**Historical API startup correction (2026-10-11, before restart):** the operator's restart left the panel reachable,
 but port 8090 had no listener and the first bounded settings login returned 502. No
 settings read/denial case or live business command passed in that attempt. Local API
 compilation succeeded; a new database-free production-router test reproduced a startup
@@ -106,29 +137,18 @@ independent Sol review found no blocker. All six jobs passed on source `34c31ff`
 [CI run 38102458276](https://github.com/celikbros/kapsora/actions/runs/38102458276), including
 complete production-router construction, the opt-in checker static/smoke gates and isolated
 PostgreSQL cap/settings/accommodation acceptance. The previous green CI did not cover
-complete router construction. Operator reload and live proof remain open; start/stop
-remains operator-owned. A secret-safe configuration preflight confirms the API keys,
-object-store configuration and target port 8090; it opens no server. Fresh TCP checks
+complete router construction. At that checkpoint, operator reload and live proof were open;
+start/stop remains operator-owned. The live checkpoint above supersedes that runtime gate. A secret-safe configuration preflight confirms the API keys,
+object-store configuration and target port 8090; it opens no server. TCP checks at that historical checkpoint
 found API 8090, MinIO 9000 and ClamAV 3310 unavailable.
 
-**Remaining lodging acceptance:** the original lodging journeys have live technical
-acceptance. The later approved partial-approval penalty cap still needs actual cancellation
-and confirmed no-show proof. A fresh read-only inventory of DEMO_A/DEMO_B found no HOLD,
-PENDING_APPROVAL or CONFIRMED record to resume. The new bounded synthetic tests reuse
-published demo terms and existing actors; they retain a private fixture and original
-command keys rather than recreate a booking after an uncertain response. Cancellation
-uses a 0.5-night approval under a one-night monetary policy; no-show uses 1.5 nights under
-a larger frozen policy and the genuine arrival window. Fees remain frozen. Zero-fee
-no-show cap proof cannot establish a fee-bearing no-show claim. Read-only consumer loading
-confirms DEMO_A's effective late window is 24 hours and DEMO_OTEL's timezone is
-Europe/Istanbul; the server remains authoritative when the future command runs.
-No new booking, approval,
-fee claim, document, payment or setting change has run in this checkpoint.
-
-The two opt-in cap checkers are prepared and independently reviewed; TypeScript,
-ESLint, Prettier and discovery pass. An explicit no-opt-in run skipped both without
-business actions; this is guard verification, not cap acceptance. See the
+**Remaining lodging acceptance:** the original lodging journeys and the later capped
+cancellation have live technical acceptance. Resume the retained capped no-show scenario
+after its natural window; terminal review, exact consumption and any applicable scoped
+fee claim remain open. See the
 [bounded live runbook](delegation/PC06-fractional-penalty-decision.md#bounded-opt-in-live-checker).
+The cancellation proof is retained; repeating it after another booking changes the shared
+account baseline and is unnecessary. Keep booking-specific ledger/claim evidence scoped.
 
 Functionality closure depends on these live cap results, not on waiting for October 30.
 Formal owner walkthrough remains separate. The retained hotel's reconciliation requires
