@@ -41,11 +41,13 @@ records the approved sequence and acceptance criteria.
 **Current snapshot (2026-10-11):** PC-01 through PC-04 are verified locally for the
 specified health/hospital demo scope. PC-05 financial journeys passed local technical
 acceptance; formal owner acceptance and true October 15/30 scheduler observations remain
-open. PC-06 capped cancellation passed live; terminal no-show acceptance awaits its natural arrival window.
-MGT-02/03 source and isolated acceptance passed; local invitation/suspension/role mutation
-proof remains open. MGT-04's two-field scope and system TENANT_ADMIN authority expansion
-are approved. Source is implemented on `a6a0c79`; final CI/local rollout status is recorded
-in the checkpoint below. No external bank, fiscal or ERP acceptance is claimed.
+open. PC-06 capped cancellation passed live; terminal no-show acceptance awaits its natural
+arrival window. MGT-02 invitation/membership and MGT-03A ordinary role mutations now pass
+bounded live technical acceptance; MGT-03B pending/self-denial/cancel boundaries also pass,
+but positive distinct-checker approval remains open because no eligible checker is available.
+MGT-04 settings change/replay/restore passes bounded live acceptance. Formal owner review,
+terminal no-show and October 15/30 observations remain separate gates. No external bank,
+fiscal or ERP acceptance is claimed.
 
 **Health/lodging working-list closure (2026-10-11):** four observed user-facing
 defects are corrected. Provider arrivals/departures previously stopped at 100 newest
@@ -84,9 +86,9 @@ writes. Selected health/member captures were manually inspected under PRODUCT/DE
 No booking, clinical episode, upload, export, invoice or payment was created by this pass;
 session commands and normal audited reads are separate from business mutations.
 
-The retained capped no-show still awaits 12 October 00:00 Europe/Istanbul. Management
-mutation acceptance, formal owner review and genuine October 15/30 scheduler evidence
-remain separately open; the list corrections do not mark those gates passed.
+The retained capped no-show still awaits 12 October 00:00 Europe/Istanbul. The positive
+MGT-03B distinct-checker gate, formal owner review and genuine October 15/30 scheduler
+evidence remain separately open; the list corrections do not mark those gates passed.
 
 **MGT-04 approved implementation checkpoint (2026-10-11):** source `ce79523`
 implements GET/PUT `/api/v1/admin/tenant-settings/accommodation` and the capability-gated
@@ -130,17 +132,55 @@ These are migration-time preservation counts, before the bounded lodging test re
 described below. The subsequent settings GET/denial checks now pass 5/5 after restart.
 No live settings update, grant command or payment was created.
 
-Local setting commands, MGT-02 invitation/suspension and MGT-03 role mutations, terminal
-capped no-show acceptance, formal owner walkthrough and genuine October 15/30 observations
-remain separate acceptance gates. No new clinical, financial or custom-role authority
-is included. This checkpoint supersedes the historical MGT-04 approval status below.
+At this implementation checkpoint, local setting commands, MGT-02 invitation/suspension
+and MGT-03 role mutations, terminal capped no-show acceptance, formal owner walkthrough and
+genuine October 15/30 observations were open. The following live checkpoint now closes the
+bounded MGT-02/03A/04 paths; MGT-03B positive checker approval and the other listed gates
+remain open. No new clinical, financial or custom-role authority is included. This checkpoint
+supersedes the historical MGT-04 approval status below.
 
 **Live acceptance checkpoint (2026-10-11, after operator restart):** API 8090,
 MinIO 9000 and ClamAV 3310 are reachable. The bounded settings read/denial helper passed
 5/5: administrator capabilities, GET/no-store/strong ETag/defaults and stable repeat,
 plus financial-reviewer denial. Existing Management read-only browser regressions passed
 9/9 in 20.9 seconds, including the anonymous invitation boundary. No setting PUT,
-invitation, suspension, role grant or privileged request command ran.
+invitation, suspension, role grant or privileged request command ran at this initial
+read-only checkpoint.
+
+**Management live mutation acceptance (2026-10-11):** invitation/membership, ordinary role
+mutation and typed-setting checkers passed 1/1 each. A synthetic `@example.invalid` account
+was invited and accepted in DEMO_A, then accepted an existing-account invitation in DEMO_B;
+both memberships began with zero access. A narrow four-permission RULE_AUTHOR grant was
+applied in A and B, revoked in A, regranted in A, and A was suspended. Suspension removed
+only A access: the already-open B session retained permission reads. B was revoked for
+cleanup. Ten ordinary business commands committed; final state had one global account, two
+memberships and three grant-history rows. Existing operator grants, credentials and policies
+were unchanged. Ordinary-command exact resend was not exercised; journal recovery behavior
+is covered by implementation and isolated checks.
+
+The separate MGT-03B checker passed 1/1: a zero-access DEMO_B member's privileged proposal
+was created and exactly replayed; same-maker approval was denied, pending access stayed
+denied, and the maker cancelled the request with exact cancellation replay. No grant was
+applied. The checker found no eligible distinct authorized approver, so positive approval
+remains open. Across the management run, 13 journal entries comprise 10 committed ordinary
+commands, two accepted proposal/cancellation commands and one refused self-approval.
+
+Settings changed `holdMinutes` 15→16 while `quoteTtlMinutes` stayed 60, exactly replayed the
+PUT, then restored 15/60. Stale ETag returned 412, key reuse 409 and financial reviewer 403;
+booking fingerprint was unchanged. Two accepted PUTs naturally changed setting versions,
+timestamps and audit receipts; no setting value or behavior difference remains. Snapshot
+preserved all 17 original business tables; credential-auth metadata and setting version/
+timestamp fields were excluded from that comparison. Schema stayed 61; no app permissions,
+migration, clinical/lodging/payment data or grants outside the test fixtures changed. The
+final snapshot included 16 new business rows across the bounded fixtures.
+
+The three checkers also passed together on the retained fixtures (3/3, 14.6 seconds),
+without replacement accounts, invitations or grants. Explicit opt-in absent: all
+three skip before business commands. Strict checker TypeScript, scoped lint/format
+and discovery pass. Bounded 429 retries honor Retry-After with the exact same
+request; application limits are unchanged. Run one coordinator serially, preserve
+the private journals under ignored `tmp/`, and keep traces/media off. The privileged
+request checker additionally requires `E2E_MANAGEMENT_PRIVILEGED_REQUEST_LIVE=1`.
 
 The capped cancellation checker passed live (one case, 8.3 seconds total). A three-night
 booking approved for 0.5 NIGHT at factor 1 cancelled under a frozen one-night policy:
