@@ -467,6 +467,11 @@ current record.
 Saving services on the same report preserves unsaved header edits; their next save uses
 the refreshed version.
 
+Approval and rejection decision drafts also belong to the selected report. A changed report
+version, status or eligibility, or a failed report read, closes the open decision. Recovery
+does not reopen it; the reviewer explicitly starts a fresh decision. Delayed command feedback
+cannot affect another report, while normal same-report success feedback remains available.
+
 **Report correction depends on known history.** Version history has loading and retryable
 error states, preserving known versions on a failed refresh. Correction requires a successful,
 idle history read and the existing permission, clinical projection, status and later-version

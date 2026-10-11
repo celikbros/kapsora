@@ -117,6 +117,29 @@ cached navigation, isolated drafts and stay-dialog invalidation/reopening, with 
 writes or document overflow. Selected captures were manually inspected under PRODUCT/DESIGN.
 The complete provider suite passed 109/109 in 19 files, and its production build passed.
 
+All six CI jobs passed on source `019fc326e03fb5200f66eb9c22d1ceefcea67180` in
+[CI run 38154938165](https://github.com/celikbros/kapsora/actions/runs/38154938165): 811 unit
+tests in 103 files and 25 mock browser tests passed; 111 opt-in live/calendar cases were
+skipped. Those skips are not live/calendar acceptance.
+
+**Medical report review decision isolation (2026-10-11):** a cached B→A→B navigation
+reproduced rejection reason/comment from report A appearing in report B's dialog, including
+in an intercepted browser. Approval and rejection drafts now belong to one report identity
+and its current version/status/eligibility;
+a failed read closes the draft. Eligibility is checked again at submit, pending repeats are
+blocked, and a late result from an earlier report cannot affect the current dialog or feedback.
+Normal same-report success feedback remains available, including under StrictMode.
+
+The baseline cached-navigation regression failed before the fix; all eight focused
+regressions now pass, including preservation of a draft across an unchanged successful
+refresh. The related medical review, own-file and report-list suites pass 16/16. Backoffice
+typecheck/build, scoped lint and formatting pass. Independent source review found no
+material blocker.
+
+Synthetic browser checks at 390/1440 verified identity reset and status/version invalidation,
+with zero business writes, unexpected API calls, page errors or overflow. Selected screens
+were manually reviewed. This is bounded UI behavior evidence, not full health acceptance.
+
 **Health/lodging working-list closure (2026-10-11):** four observed user-facing
 defects are corrected. Provider arrivals/departures previously stopped at 100 newest
 bookings, member history at 50 bookings, and medical report review at 50 reports. Each

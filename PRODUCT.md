@@ -80,6 +80,12 @@ another report.
 Within the same report, saving service coverage preserves an unsaved header draft; its
 later save uses the refreshed report version.
 
+Backoffice approval and rejection decisions belong to the selected report. A report version,
+status or eligibility change, or a failed report read, closes the open decision draft.
+When the read recovers, the decision stays closed until the reviewer explicitly starts a fresh
+decision. A delayed command result cannot show feedback on another report; normal success
+feedback remains available while the reviewer stays on the report being decided.
+
 Report version history shows loading and retryable errors while retaining known versions.
 A correction is offered only after a successful, settled history read establishes that no
 later version exists, under the existing clinical/status/permission rules.
