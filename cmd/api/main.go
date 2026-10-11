@@ -661,19 +661,6 @@ func newRouter(d routerDeps) http.Handler {
 			tenant.Use(sessions.RequireCSRF)
 			tenant.Use(sessions.RequireTenantContext)
 			tenant.Use(ratelimit.Middleware(d.limiter, ratelimit.ScopedKey("api", tenantScope), apiRateLimit, d.logger))
-			tenant.Route("/admin", func(r chi.Router) {
-				r.Use(func(next http.Handler) http.Handler {
-					return http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
-						w.Header().Set("Cache-Control", "no-store")
-						next.ServeHTTP(w, request)
-					})
-				})
-				tenantSettingsHandler.Routes(r, idempotency.Middleware(d.pool, idempotency.Options{
-					CommandCode: "tenant_settings.accommodation.update", Scope: idempotencyScope,
-					Logger: d.logger, HashHeaders: []string{"If-Match"},
-					BeforeStoredResult: tenantSettingsHandler.StoredResultGate,
-				}))
-			})
 			tenant.Route("/admin/users", func(r chi.Router) {
 				directoryHandler.Routes(r, idempotency.Middleware(d.pool, idempotency.Options{
 					CommandCode: "tenant_membership.suspend",
@@ -686,6 +673,19 @@ func newRouter(d routerDeps) http.Handler {
 				privilegedRoleChangeHandler.UserRoutes(r, idempotency.Middleware(d.pool, idempotency.Options{CommandCode: "role_change.create", Scope: idempotencyScope, Logger: d.logger, HashHeaders: []string{"If-Match"}, BeforeStoredResult: privilegedRoleChangeHandler.StoredResultGate}))
 			})
 			tenant.Route("/admin", func(r chi.Router) {
+				r.Group(func(settings chi.Router) {
+					settings.Use(func(next http.Handler) http.Handler {
+						return http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+							w.Header().Set("Cache-Control", "no-store")
+							next.ServeHTTP(w, request)
+						})
+					})
+					tenantSettingsHandler.Routes(settings, idempotency.Middleware(d.pool, idempotency.Options{
+						CommandCode: "tenant_settings.accommodation.update", Scope: idempotencyScope,
+						Logger: d.logger, HashHeaders: []string{"If-Match"},
+						BeforeStoredResult: tenantSettingsHandler.StoredResultGate,
+					}))
+				})
 				roleAssignmentHandler.CatalogRoutes(r)
 				privilegedRoleChangeHandler.CatalogRoutes(r,
 					idempotency.Middleware(d.pool, idempotency.Options{CommandCode: "role_change.approve", Scope: idempotencyScope, Logger: d.logger, HashHeaders: []string{"If-Match"}, BeforeStoredResult: privilegedRoleChangeHandler.StoredResultGate}),
