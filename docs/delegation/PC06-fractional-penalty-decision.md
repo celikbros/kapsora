@@ -1,7 +1,11 @@
 # PC06 · Partial-approval penalty decision gate
 
-Status: cap policy approved; cancellation/no-show source/UI implementation and isolated
-technical validation are complete on `bcf0798`. All six jobs passed in
+Status (updated 2026-10-12): cap policy approved; cancellation/no-show source/UI
+implementation and isolated technical validation are complete on `bcf0798`. Capped
+cancellation and the retained zero-fee capped no-show have bounded live technical
+acceptance. This zero-fee result does not verify a fee-bearing no-show claim; formal owner
+acceptance and calendar checks remain open. This is not full PC-06 or health acceptance.
+All six jobs passed in
 [CI run 38079516012](https://github.com/celikbros/kapsora/actions/runs/38079516012): SQL cap
 preflight 11/11 without skips (7.741 s), with restored-public-projection and cap-removal
 marker controls passing; schema 193 without skips (110.161 s), including migration-60
@@ -16,19 +20,20 @@ owner approval. Schema 60 is clean. Pre/post original-field hashes and row count
 tables: accommodation.booking 18, cancellation 4, no_show 1; IAM access_grant 17, actor 15,
 credential 15, permission 105, role 34, role_change_command_receipt 0, role_change_request
 0, role_permission 378, session 52, tenant_invitation 0, tenant_invitation_create_receipt
-0 and tenant_membership 15. Existing no-show exact-effect fields remain NULL; no business
-commands, fee changes, grants or history rewrites occurred. Current operator checkpoint (2026-10-10 23:14 Istanbul): API PID 48468 and panel PID
+0 and tenant_membership 15. At this historical pre-live checkpoint, existing no-show
+exact-effect fields remained NULL and no business commands, fee changes, grants or history
+rewrites had occurred. Current operator checkpoint (2026-10-10 23:14 Istanbul): API PID 48468 and panel PID
 31384 were started after the cap source commit; the API binary contains `SettleBookingPenalty`,
 so the operator restart is complete. Thirteen unique read-only/boundary checks passed:
 Management 9, shared-door 2 and two historical no-show GETs. Member/tenant-admin GETs passed
 in 281/168 ms; the historical row correctly has no exact-effect evidence, frozen fee identity
 is unchanged, and before/after reads matched. Shared-door member passed in 6.7 s; provider's
 initial 429-banner attempt was followed by an isolated 5 s retry pass. No business commands,
-grants, bookings, payments or no-show reviews were performed. No new paid-layout visual test
+grants, bookings, payments or no-show reviews were performed in that historical checkpoint.
+No new paid-layout visual test
 ran; the previous visual checkpoint is historical. No local capped-settlement fixture or
-command was available, so capped settlement remains isolated-CI evidence only; no live
-settlement is accepted.
-No live capped settlement has been accepted. Final synthetic UI review covered 12 390/1440
+command was available at that checkpoint, so capped settlement remained isolated-CI evidence
+only. Final synthetic UI review covered 12 390/1440
 views with all API calls stubbed, detector `[]`, zero errors/overflow/unknown requests, and
 no blockers in independent Sol review; this is not live settlement acceptance. MGT-04
 settings, formal owner acceptance and calendar gates remain separate; PC-06 is not fully
@@ -378,7 +383,8 @@ also needs the operator's MinIO/ClamAV and worker; do not bypass scanning. A nat
 skip retains the same confirmed booking; its retry timestamp is only the documented-default
 estimate, and the server's current window remains authoritative. An uncertain upload must
 reconcile that same reserved document rather than upload another. A stale run lock needs
-inspection of its owner before release. Neither pending path is passed acceptance.
+inspection of its owner before release. These are conditional retry instructions; the
+retained no-show fixture's terminal report/review later passed as recorded below.
 
 Cancellation receipts normally expire after 24 hours. The checker preserves intent time,
 original response and replay proof; it does not resend expired uncertain hold/cancel keys.
@@ -390,7 +396,7 @@ frozen fees, accepted paid episodes or historical movements.
 
 All six jobs passed for `34c31ff` in [CI run 38102458276](https://github.com/celikbros/kapsora/actions/runs/38102458276): Go build/lint/unit, web lint/typecheck/unit/build/smoke, PostgreSQL 18 schema/acceptance, contracts, security and static binaries. Isolated PostgreSQL includes cap preflight/negative control, settings grants/seed/consumer acceptance and accommodation regressions. This is source acceptance; opt-in live cap commands did not run. Secret-safe API configuration checks pass, but API 8090, MinIO 9000 and ClamAV 3310 are unavailable. A read-only consumer query confirms DEMO_A late hours 24 and hotel timezone Europe/Istanbul, with no reusable HOLD/PENDING_APPROVAL/CONFIRMED booking in either demo tenant. The operator must restore the existing services before live testing; no new permission/policy approval is requested for the already-authorized bounded lodging scenario.
 
-## Live acceptance checkpoint (2026-10-11)
+## Historical live acceptance checkpoint (2026-10-11; before natural window)
 
 API 8090,
 MinIO 9000 and ClamAV 3310 are reachable. The bounded settings read/denial helper passed
@@ -406,19 +412,40 @@ remainder. Partial approval had already released 2.5 units. Ledger and inventory
 identical cancellation replay returned the same result and produced exactly one
 CANCELLATION_FEE claim. Frozen money stayed 1800 TRY (payer 1800, member 0).
 
-The separate same-day three-night no-show booking is CONFIRMED with 1.5 NIGHT approval.
+At that checkpoint, the separate same-day three-night no-show booking was CONFIRMED with 1.5 NIGHT approval.
 Its real evidence document is uploaded, scanned CLEAN, linked as BOOKING/NO_SHOW_EVIDENCE
 and hash-verified. The report command returned the expected 409 NO_SHOW_TOO_EARLY;
-account and inventory were unchanged. The test is PENDING (one skip), not passed terminal
-acceptance. Resume the same private fixture after **2026-10-12 00:00 Europe/Istanbul**
+account and inventory were unchanged. At that checkpoint, the test was PENDING (one skip),
+not passed terminal acceptance. The instruction to resume the same private fixture after
+**2026-10-12 00:00 Europe/Istanbul**
 (2026-10-11 21:00 UTC); the server's current window remains authoritative. Read-only
 consumer loading confirms a 24-hour late window and Europe/Istanbul timezone. Exactly one
 CONFIRMED booking remains; no HOLD/PENDING_APPROVAL fixture remains in either demo tenant.
 Do not replace this booking or upload its evidence again. A zero-fee outcome would prove
 the cap but would not establish a fee-bearing no-show claim.
 
-This bounded run created two synthetic bookings with partial approvals/authorizations,
+That bounded run created two synthetic bookings with partial approvals/authorizations,
 one cancellation, one fee claim and one real evidence document. No no-show report/review,
 invoice, batch, settlement, payment, setting change, grant or historical rewrite occurred.
 Private fixture identities and command keys stay under ignored `tmp/`. All six CI jobs
 passed on `12b12cb` in [CI run 38103046179](https://github.com/celikbros/kapsora/actions/runs/38103046179).
+
+## Retained zero-fee capped no-show terminal acceptance (2026-10-12 00:41 Europe/Istanbul)
+
+The existing `tests/e2e/real-lodging-cap-noshow.spec.ts` checker passed 1/1 (5.6 seconds
+test, 6.7 seconds total) against the original retained fixture. The secret-safe retained
+preflight passed 1/1. The fixture journal records report and review complete, and its lock is
+absent. The booking is NO_SHOW and the report CONFIRMED, with distinct reporter and reviewer.
+
+Exact effects: 1.5 service nights and 1.5 entitlement units consumed; zero remainder
+released. Reserved decreased by 1.5, consumed increased by 1.5, and available remained
+unchanged. Each of the three inventory days changed by confirmed −1 and available +1. The
+scoped ledger contains one CONSUME, one RELEASE and one RESERVE: net reserved 0 and net
+consumed 1.5. Report and review replays returned stable results without additional effects.
+
+The frozen assessed fee, payer fee and member fee were all 0 TRY. No fee-bearing source
+claim exists; this zero-fee result does not verify a fee-bearing no-show claim. No new
+booking, upload, setting, grant or payment was created.
+This is bounded live technical evidence, not full PC-06, health, HBYS, external, formal-owner
+or calendar acceptance. The October 11 checkpoint above is historical and its instruction
+to resume after the natural window is superseded by this result.

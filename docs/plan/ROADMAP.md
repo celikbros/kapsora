@@ -14,12 +14,14 @@ Authoritative sources: [docs/plan/KAPSORA_Master_Plan_v2.0.md](KAPSORA_Master_Pl
 (Turkish, normative), [docs/adr](../adr/README.md), the frozen v1.2 specification under
 [docs/baseline-v1.2](../baseline-v1.2/). When they disagree, the master plan and ADRs win.
 
-## Current snapshot (2026-10-11)
+## Current snapshot (2026-10-12)
 
 PC-01 through PC-04 are verified locally for the defined health/hospital demo scope.
 PC-05 financial journeys passed local technical acceptance; formal owner acceptance and
-true October 15/30 scheduler observations remain open. PC-06 capped cancellation passed live; terminal no-show acceptance
-awaits its natural arrival window. MGT-02 invitation/membership, MGT-03A ordinary role
+true October 15/30 scheduler observations remain open. PC-06 capped cancellation and
+retained zero-fee no-show report/review effects passed bounded live technical acceptance.
+This zero-fee result does not verify a fee-bearing no-show claim; formal owner acceptance and
+October 15/30 scheduler observations remain open. MGT-02 invitation/membership, MGT-03A ordinary role
 mutations, MGT-03B pending/self-denial/cancel plus distinct-checker approval, and MGT-04
 settings changes now pass bounded live technical acceptance. Positive MGT-03B evidence uses
 the explicitly authorized one-off DEMO_B bootstrap exception; general bootstrap helpers
@@ -175,6 +177,19 @@ This is bounded healthcare workflow evidence; the separate live/calendar gates r
 tests in 106 files and 25 mock browser tests passed. The 111 opt-in live/calendar cases
 were skipped and are not acceptance evidence.
 
+**Retained capped no-show terminal result (2026-10-12 00:41 Europe/Istanbul):** the existing
+real-lodging checker passed 1/1 (5.6 seconds test, 6.7 seconds total) and its secret-safe
+retained preflight passed 1/1, against the original fixture. It confirmed NO_SHOW and report CONFIRMED,
+with distinct reporter/reviewer; exact consumption was 1.5 service nights and 1.5 entitlement
+units, with zero remainder released. Reserved fell 1.5, consumed rose 1.5 and available was
+unchanged. Across each of three inventory days, confirmed fell one and available rose one.
+The scoped ledger has one CONSUME, RELEASE and RESERVE (net reserved 0, net consumed 1.5).
+Report/review replays were stable with no extra effects; fixture journal is done and its lock
+is absent. Assessed, payer and member fees were 0 TRY; no fee-bearing claim was created.
+This accepts the retained zero-fee capped no-show only. No new booking/upload, settings,
+grant or payment was created; no full-health, HBYS, external, formal-owner or calendar
+acceptance is implied.
+
 **Health/lodging working-list closure (2026-10-11):** four observed user-facing
 defects are corrected. Provider arrivals/departures previously stopped at 100 newest
 bookings, member history at 50 bookings, and medical report review at 50 reports. Each
@@ -212,9 +227,8 @@ writes. Selected health/member captures were manually inspected under PRODUCT/DE
 No booking, clinical episode, upload, export, invoice or payment was created by this pass;
 session commands and normal audited reads are separate from business mutations.
 
-The retained capped no-show still awaits 12 October 00:00 Europe/Istanbul. Formal owner
-review and genuine October 15/30 scheduler evidence remain separately open; the list
-corrections do not mark those gates passed.
+Formal owner review and genuine October 15/30 scheduler evidence remain separately open;
+the bounded PC-06 result above does not close those gates.
 
 **Provider case opening safety checkpoint (2026-10-11):** linked request mode derives from
 the URL request ID and remains linked through loading, error and retry; it cannot fall back
@@ -229,9 +243,11 @@ unknown calls, page errors or overflow; selected captures were manually reviewed
 focused case-opening suite passed 5/5; both initial regressions failed before the fix.
 Related provider M5/M7/portal-access suites passed 30/30. Typecheck, scoped lint, Prettier
 and production build passed; standalone error recovery now keeps the error in place with
-retry. Independent source review found no material blocker. This is bounded local UI
-verification; CI for the new source has not started, and separate live/calendar and health
-acceptance gates remain unchanged.
+retry. Independent source review found no material blocker. All six CI jobs passed on source
+`dfb3de987cc90ae90e533db759f345847badf145` in
+[run 38174623313](https://github.com/celikbros/kapsora/actions/runs/38174623313): 841 unit
+tests in 107 files and 25 mock browser tests passed. The 111 opt-in live/calendar cases were
+skipped, not accepted. Separate live/calendar and health acceptance gates remain unchanged.
 
 **MGT-04 approved implementation checkpoint (2026-10-11):** source `ce79523`
 implements GET/PUT `/api/v1/admin/tenant-settings/accommodation` and the capability-gated
@@ -345,18 +361,20 @@ request; application limits are unchanged. Run one coordinator serially, preserv
 the private journals under ignored `tmp/`, and keep traces/media off. The privileged
 request checker additionally requires `E2E_MANAGEMENT_PRIVILEGED_REQUEST_LIVE=1`.
 
-The capped cancellation checker passed live (one case, 8.3 seconds total). A three-night
+**Historical lodging acceptance status (2026-10-11, before the no-show natural window):**
+the capped cancellation checker passed live (one case, 8.3 seconds total). A three-night
 booking approved for 0.5 NIGHT at factor 1 cancelled under a frozen one-night policy:
 exact consumption was 0.5 service night / 0.5 entitlement unit, with zero terminal
 remainder. Partial approval had already released 2.5 units. Ledger and inventory reconcile;
 identical cancellation replay returned the same result and produced exactly one
 CANCELLATION_FEE claim. Frozen money stayed 1800 TRY (payer 1800, member 0).
 
-The separate same-day three-night no-show booking is CONFIRMED with 1.5 NIGHT approval.
+The separate same-day three-night no-show booking was then CONFIRMED with 1.5 NIGHT approval.
 Its real evidence document is uploaded, scanned CLEAN, linked as BOOKING/NO_SHOW_EVIDENCE
 and hash-verified. The report command returned the expected 409 NO_SHOW_TOO_EARLY;
-account and inventory were unchanged. The test is PENDING (one skip), not passed terminal
-acceptance. Resume the same private fixture after **2026-10-12 00:00 Europe/Istanbul**
+account and inventory were unchanged. At that historical checkpoint the test had one skip
+and terminal acceptance was pending. The then-current instruction was to resume the same
+private fixture after **2026-10-12 00:00 Europe/Istanbul**
 (2026-10-11 21:00 UTC); the server's current window remains authoritative. Read-only
 consumer loading confirms a 24-hour late window and Europe/Istanbul timezone. Exactly one
 CONFIRMED booking remains; no HOLD/PENDING_APPROVAL fixture remains in either demo tenant.
@@ -386,13 +404,12 @@ start/stop remains operator-owned. The live checkpoint above supersedes that run
 object-store configuration and target port 8090; it opens no server. TCP checks at that historical checkpoint
 found API 8090, MinIO 9000 and ClamAV 3310 unavailable.
 
-**Remaining lodging acceptance:** the original lodging journeys and the later capped
-cancellation have live technical acceptance. Resume the retained capped no-show scenario
-after its natural window; terminal review, exact consumption and any applicable scoped
-fee claim remain open. See the
+**Remaining lodging acceptance:** the original lodging journeys, capped cancellation and
+retained zero-fee capped no-show report/review effects have bounded live technical acceptance.
+This zero-fee result does not verify a fee-bearing no-show claim. See the
 [bounded live runbook](../delegation/PC06-fractional-penalty-decision.md#bounded-opt-in-live-checker).
-The cancellation proof is retained; repeating it after another booking changes the shared
-account baseline and is unnecessary. Keep booking-specific ledger/claim evidence scoped.
+The accepted fixtures remain retained; repeating them after another booking changes the
+shared account baseline and is unnecessary. Keep booking-specific ledger evidence scoped.
 
 Functionality closure depends on these live cap results, not on waiting for October 30.
 Formal owner walkthrough remains separate. The retained hotel's reconciliation requires
