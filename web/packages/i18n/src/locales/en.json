@@ -648,7 +648,8 @@
     "copied": "Copied",
     "details": "Details",
     "actions": "Actions",
-    "continue": "Continue"
+    "continue": "Continue",
+    "loadMore": "Load more"
   },
   "problems": {
     "INVITATION_CONFIRMATION_REQUIRED": "Confirm that you want to join the organization.",
@@ -1756,6 +1757,8 @@
       "remainingHint": "What your plan set aside for this period and you have not used.",
       "noEntitlements": "No usable entitlement on your plan.",
       "next": "Next stay",
+      "incompleteBookings": "View all your bookings to check stay dates and reservation statuses.",
+      "allBookings": "View all bookings",
       "none": "No stay planned.",
       "search": "Find a stay",
       "hold": "You have a hold waiting for confirmation",

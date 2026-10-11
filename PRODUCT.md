@@ -51,6 +51,14 @@ financial decisions without being offered clinical report access.
 The backoffice Reports entry leads staff with `report.read` to recorded reconciliation runs
 and export requests. Requesting or downloading exports remains a separate permission.
 
+Long provider lodging arrival and departure lists, member booking history, and backoffice
+medical report review lists let people request older records as needed. If an older page cannot be loaded,
+the records already shown remain available and the page can be retried.
+
+The member home names the next stay or says there is no planned stay when its booking results
+are complete. When older bookings remain to be read, it gives neutral guidance and a direct
+route to all bookings instead of presenting the first page as the full history.
+
 The main Billing entry opens a list the active role can read: invoice batches, settlements
 or reimbursements. Approval, cancellation and payment controls require their own existing
 grants; reading a record alone does not enable a financial command.

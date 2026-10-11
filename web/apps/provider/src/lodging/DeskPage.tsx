@@ -32,6 +32,8 @@ export function DeskPage() {
   const properties = useProperties();
   const arrivals = useBookings('CONFIRMED');
   const departures = useBookings('CHECKED_IN');
+  const arrivalRows = loadedBookings(arrivals.data?.pages);
+  const departureRows = loadedBookings(departures.data?.pages);
   const names = new Map((properties.data?.items ?? []).map((p) => [p.id, p.name] as const));
 
   const sortByArrival = (items: Booking[]) =>
@@ -46,17 +48,34 @@ export function DeskPage() {
         </h2>
         {arrivals.isPending ? (
           <Spinner />
-        ) : arrivals.isError ? (
+        ) : arrivals.isError && !arrivals.data ? (
           <ProblemAlert problem={problemOf(arrivals.error)} />
-        ) : arrivals.data.items.length === 0 ? (
+        ) : arrivalRows.length === 0 ? (
           <p className="text-fg-muted text-sm">{t('provider.lodging.desk.noArrivals')}</p>
         ) : (
           <ul className="grid gap-2" data-testid="arrival-list">
-            {sortByArrival(arrivals.data.items).map((b) => (
+            {sortByArrival(arrivalRows).map((b) => (
               <ArrivalRow key={b.id} booking={b} propertyName={names.get(b.propertyId) ?? '…'} />
             ))}
           </ul>
         )}
+        {arrivals.isFetchNextPageError ? (
+          <>
+            <ProblemAlert problem={problemOf(arrivals.error)} />
+            <Button variant="secondary" size="sm" onClick={() => void arrivals.fetchNextPage()}>
+              {t('common.retry')}
+            </Button>
+          </>
+        ) : arrivals.hasNextPage ? (
+          <Button
+            variant="secondary"
+            size="sm"
+            loading={arrivals.isFetchingNextPage}
+            onClick={() => void arrivals.fetchNextPage()}
+          >
+            {t('common.loadMore')}
+          </Button>
+        ) : null}
       </section>
 
       <section aria-labelledby="departures" className="grid gap-2">
@@ -65,19 +84,47 @@ export function DeskPage() {
         </h2>
         {departures.isPending ? (
           <Spinner />
-        ) : departures.isError ? (
+        ) : departures.isError && !departures.data ? (
           <ProblemAlert problem={problemOf(departures.error)} />
-        ) : departures.data.items.length === 0 ? (
+        ) : departureRows.length === 0 ? (
           <p className="text-fg-muted text-sm">{t('provider.lodging.desk.noDepartures')}</p>
         ) : (
           <ul className="grid gap-2" data-testid="departure-list">
-            {sortByArrival(departures.data.items).map((b) => (
+            {sortByArrival(departureRows).map((b) => (
               <DepartureRow key={b.id} booking={b} propertyName={names.get(b.propertyId) ?? '…'} />
             ))}
           </ul>
         )}
+        {departures.isFetchNextPageError ? (
+          <>
+            <ProblemAlert problem={problemOf(departures.error)} />
+            <Button variant="secondary" size="sm" onClick={() => void departures.fetchNextPage()}>
+              {t('common.retry')}
+            </Button>
+          </>
+        ) : departures.hasNextPage ? (
+          <Button
+            variant="secondary"
+            size="sm"
+            loading={departures.isFetchingNextPage}
+            onClick={() => void departures.fetchNextPage()}
+          >
+            {t('common.loadMore')}
+          </Button>
+        ) : null}
       </section>
     </div>
+  );
+}
+
+function loadedBookings(pages: { items: Booking[] }[] | undefined): Booking[] {
+  const seen = new Set<string>();
+  return (pages ?? []).flatMap((page) =>
+    page.items.filter((booking) => {
+      if (seen.has(booking.id)) return false;
+      seen.add(booking.id);
+      return true;
+    }),
   );
 }
 

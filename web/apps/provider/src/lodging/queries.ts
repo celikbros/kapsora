@@ -5,7 +5,7 @@ import type {
   ReportNoShowRequest,
 } from '@kapsora/api-client';
 import { useTenantId } from '@kapsora/auth';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useOps } from '../services';
 
@@ -62,14 +62,18 @@ export function usePutInventory(roomTypeId: string) {
 export function useBookings(status?: BookingStatus, propertyId?: string) {
   const ops = useOps();
   const tenantId = useTenantId();
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ['provider', tenantId, 'lodging', 'bookings', status ?? 'all', propertyId ?? 'all'],
-    queryFn: () =>
+    initialPageParam: undefined as string | undefined,
+    retry: false,
+    queryFn: ({ pageParam }) =>
       ops.lodging.listBookings(tenantId, {
         limit: 100,
+        ...(pageParam ? { cursor: pageParam } : {}),
         ...(status ? { status } : {}),
         ...(propertyId ? { propertyId } : {}),
       }),
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
   });
 }
 

@@ -6,7 +6,7 @@ import type {
 } from '@kapsora/api-client';
 import { ApiError } from '@kapsora/api-client';
 import { useSession, useTenantId } from '@kapsora/auth';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useOps } from '../services';
 
@@ -91,6 +91,23 @@ export function useBookings(status?: BookingStatus) {
     queryKey: ['member', tenantId, 'bookings', status ?? 'all'],
     queryFn: () =>
       ops.lodging.listBookings(tenantId, status ? { status, limit: 50 } : { limit: 50 }),
+  });
+}
+
+/** Booking history pages only when the member asks for older records. */
+export function useBookingHistory() {
+  const ops = useOps();
+  const tenantId = useTenantId();
+  return useInfiniteQuery({
+    queryKey: ['member', tenantId, 'bookings', 'history'],
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) =>
+      ops.lodging.listBookings(tenantId, {
+        limit: 50,
+        ...(pageParam ? { cursor: pageParam } : {}),
+      }),
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    retry: false,
   });
 }
 

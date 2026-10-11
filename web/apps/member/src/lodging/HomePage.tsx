@@ -31,6 +31,7 @@ export function HomePage() {
     .sort((a, b) => a.checkIn.localeCompare(b.checkIn));
   const next = live.find((b) => b.status !== 'HOLD') ?? live[0];
   const hold = live.find((b) => b.status === 'HOLD');
+  const bookingsIncomplete = bookings.isSuccess && bookings.data.nextCursor != null;
 
   return (
     <div className="grid gap-4 p-4">
@@ -99,11 +100,15 @@ export function HomePage() {
       )}
 
       <Card>
-        <h2 className="text-base font-semibold">{t('lodging.home.next')}</h2>
+        <h2 className="text-base font-semibold">
+          {bookingsIncomplete ? t('lodging.booking.list') : t('lodging.home.next')}
+        </h2>
         {bookings.isPending ? (
           <Loading />
         ) : bookings.isError ? (
           <ProblemAlert problem={problemOf(bookings.error)} />
+        ) : bookingsIncomplete ? (
+          <p className="text-fg-muted mt-2 text-sm">{t('lodging.home.incompleteBookings')}</p>
         ) : !next ? (
           <p className="mt-2 text-sm">{t('lodging.home.none')}</p>
         ) : (
@@ -129,7 +134,16 @@ export function HomePage() {
             </span>
           </Link>
         )}
-        {hold && hold !== next ? (
+        {bookings.isSuccess ? (
+          <Link
+            to="/bookings"
+            className="text-primary mt-3 block text-sm underline underline-offset-4"
+            data-testid="home-all-bookings"
+          >
+            {t('lodging.home.allBookings')}
+          </Link>
+        ) : null}
+        {bookings.isSuccess && !bookingsIncomplete && hold && hold !== next ? (
           <Link
             to="/bookings/$bookingId"
             params={{ bookingId: hold.id }}

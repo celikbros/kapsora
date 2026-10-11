@@ -433,6 +433,18 @@ resolving fact is already in the refusal.
 columns an operator sorts by — no cards, no avatars, no progress rings. Decoration costs
 rows, and rows are what the work is.
 
+**Older rows arrive on request, and a failed page leaves the list usable.** Provider lodging
+arrivals and departures load older rows in groups of 100. Member booking history and backoffice
+medical report review lists load them in groups of 50; changing a status filter starts that list
+again from its first page. If a later page fails, keep the loaded rows and offer that page for
+retry. A partially loaded list is not an empty list.
+
+**The member home only names a next stay when its booking result is complete.** If older
+bookings remain, the card uses the neutral booking-list heading, explains that the full booking
+list can be checked, and links to all bookings. It does not select a next stay, a held booking,
+or an empty-state message from a partial result. When the result is complete, the existing next
+stay or no-planned-stay state remains, with the all-bookings link available.
+
 **A name being fetched is "…"; a name nobody has is "—".** Lists resolve people, providers
 and services by id one cached read at a time, so a cell is empty for a moment after the
 rows land. That moment reads as "unknown" if it shows the same dash unknown shows. It does

@@ -650,7 +650,8 @@
     "copied": "Kopyalandı",
     "details": "Ayrıntılar",
     "actions": "İşlemler",
-    "continue": "Devam et"
+    "continue": "Devam et",
+    "loadMore": "Daha fazla yükle"
   },
   "problems": {
     "INVITATION_CONFIRMATION_REQUIRED": "Kuruma katılmayı onaylayın.",
@@ -3527,6 +3528,8 @@
       "remainingHint": "Planınızın bu dönem size ayırdığı, henüz kullanmadığınız haklar.",
       "noEntitlements": "Planınızda kullanılabilir hak görünmüyor.",
       "next": "Yaklaşan konaklama",
+      "incompleteBookings": "Konaklama tarihlerinizi ve rezervasyon durumlarınızı tüm rezervasyonlarınızdan kontrol edebilirsiniz.",
+      "allBookings": "Tüm rezervasyonlarını görüntüle",
       "none": "Planlanmış konaklamanız yok.",
       "search": "Konaklama ara",
       "hold": "Onay bekleyen seçiminiz var",

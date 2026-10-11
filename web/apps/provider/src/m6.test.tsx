@@ -3,7 +3,7 @@ import { initI18n } from '@kapsora/i18n';
 import { createMemoryHistory } from '@tanstack/react-router';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { createServices } from './services';
 
@@ -81,6 +81,105 @@ describe('the allotment', () => {
 });
 
 describe('the door', () => {
+  it('keeps loaded arrivals visible when a later page fails and retries that cursor', async () => {
+    const { services } = mount('/lodging/desk');
+    const listBookings = services.ops.lodging.listBookings.bind(services.ops.lodging);
+    const arrival = api.world.bookings.find((booking) => booking.status === 'CONFIRMED')!;
+    let attempts = 0;
+    const calls: Array<{ status: string | undefined; cursor: string | undefined }> = [];
+    vi.spyOn(services.ops.lodging, 'listBookings').mockImplementation(
+      async (tenantId, query = {}) => {
+        calls.push({ status: query.status, cursor: query.cursor });
+        if (query.status === 'CONFIRMED' && query.cursor === 'later-page') {
+          attempts += 1;
+          if (attempts === 1) throw new Error('Later page unavailable');
+          const page = await listBookings(tenantId, { status: 'CONFIRMED', limit: 1 });
+          return {
+            items: [{ ...page.items[0]!, id: api.world.nextId(), reference: 'RETRIED-ARRIVAL' }],
+            nextCursor: null,
+          };
+        }
+        const page = await listBookings(tenantId, query);
+        return query.status === 'CONFIRMED' ? { ...page, nextCursor: 'later-page' } : page;
+      },
+    );
+
+    const user = await login('reservation.a');
+    const list = await screen.findByTestId('arrival-list');
+    const section = list.closest('section')!;
+    expect(within(list).getByText(arrival.reference)).toBeInTheDocument();
+    await user.click(within(section).getByRole('button', { name: 'Daha fazla yükle' }));
+    await within(section).findByRole('alert');
+    expect(within(list).getByText(arrival.reference)).toBeInTheDocument();
+    await user.click(within(section).getByRole('button', { name: 'Yeniden dene' }));
+    expect(await within(list).findByText('RETRIED-ARRIVAL')).toBeInTheDocument();
+    expect(within(list).getByText(arrival.reference)).toBeInTheDocument();
+    expect(attempts).toBe(2);
+    expect(calls.filter((call) => call.cursor === 'later-page')).toEqual([
+      { status: 'CONFIRMED', cursor: 'later-page' },
+      { status: 'CONFIRMED', cursor: 'later-page' },
+    ]);
+  });
+
+  it('reaches an older arrival and departure beyond the first 100 bookings for each status', async () => {
+    const arrival = api.world.bookings.find((b) => b.status === 'CONFIRMED')!;
+    const departure = api.world.bookings.find((b) => b.status === 'CHECKED_IN')!;
+    // The server orders by creation, not stay date. These newer records put both actionable
+    // bookings on a later cursor page without changing their check-in/check-out windows.
+    for (const booking of [arrival, departure]) {
+      for (let index = 0; index < 100; index += 1) {
+        api.world.bookings.push({
+          ...booking,
+          id: api.world.nextId(),
+          reference: `PAGE-${booking.status}-${index}`,
+          createdAt: '2099-01-01T00:00:00Z',
+        });
+      }
+    }
+
+    const { services } = mount('/lodging/desk');
+    const listBookings = vi.spyOn(services.ops.lodging, 'listBookings');
+    const user = await login('reservation.a');
+    const arrivals = await screen.findByTestId('arrival-list');
+    const departures = await screen.findByTestId('departure-list');
+    expect(within(arrivals).queryByText(arrival.reference)).not.toBeInTheDocument();
+    expect(within(departures).queryByText(departure.reference)).not.toBeInTheDocument();
+
+    await user.click(
+      within(arrivals.closest('section')!).getByRole('button', { name: 'Daha fazla yükle' }),
+    );
+    const arrivalRow = (await within(arrivals).findAllByTestId('arrival-row')).find((row) =>
+      within(row).queryByText(arrival.reference),
+    );
+    expect(arrivalRow).toBeDefined();
+    expect(within(arrivalRow!).getByRole('button', { name: 'Giriş yap' })).toBeDisabled();
+    expect(within(arrivalRow!).getByRole('button', { name: 'Gelmedi' })).toBeEnabled();
+
+    await user.click(
+      within(departures.closest('section')!).getByRole('button', { name: 'Daha fazla yükle' }),
+    );
+    const departureRow = (await within(departures).findAllByTestId('departure-row')).find((row) =>
+      within(row).queryByText(departure.reference),
+    );
+    expect(departureRow).toBeDefined();
+    expect(within(departureRow!).getByRole('button', { name: 'Çıkış yap' })).toBeEnabled();
+    for (const list of [arrivals, departures]) {
+      const rows = within(list).getAllByTestId(list === arrivals ? 'arrival-row' : 'departure-row');
+      const references = rows.map((row) => row.querySelector('span.font-mono')?.textContent);
+      expect(rows.length).toBeGreaterThan(100);
+      expect(new Set(references).size).toBe(rows.length);
+    }
+    expect(arrival.status).toBe('CONFIRMED');
+    expect(departure.status).toBe('CHECKED_IN');
+    for (const status of ['CONFIRMED', 'CHECKED_IN'] as const) {
+      const calls = listBookings.mock.calls.filter(([, query]) => query?.status === status);
+      expect(calls).toHaveLength(2);
+      expect(calls[0]![1]).toEqual({ limit: 100, status });
+      expect(calls[1]![1]).toEqual({ limit: 100, status, cursor: expect.any(String) });
+      expect(calls[1]![0]).toBe(calls[0]![0]);
+    }
+  }, 90_000);
+
   it('checks a guest in by their token, refuses a wrong one, and checks them out', async () => {
     // The seeded stays lie weeks ahead; the door only opens inside the check-in window, so
     // one confirmed booking is moved to arrive today before the desk is opened. The window is

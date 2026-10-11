@@ -24,6 +24,44 @@ proof. MGT-04's two-field scope and system TENANT_ADMIN expansion are approved; 
 is implemented on `a6a0c79`. Its final CI/local rollout status is recorded below.
 This snapshot supersedes dated next-step instructions in historical checkpoints.
 
+**Health/lodging working-list closure (2026-10-11):** four observed user-facing
+defects are corrected. Provider arrivals/departures previously stopped at 100 newest
+bookings, member history at 50 bookings, and medical report review at 50 reports. Each
+now offers explicit cursor paging under the same tenant/status scope. Loaded rows remain
+visible if a later page fails, and the same page can be retried. Report status changes
+reset the list. Existing command invalidation reaches the paged queries; no new authority,
+API contract, setting, monetary rule or database change is introduced.
+
+The member home previously treated its first booking page as a complete history. When
+older pages remain, it now shows neutral guidance and an all-bookings link instead of a
+possibly false next-stay or no-planned-stay claim. Complete results retain the existing
+next/hold/empty behavior. The API does not supply an earliest-active aggregate; no
+unbounded background history traversal is added.
+
+Astra scoped the corrections; Sol implemented/reviewed paging and Luna implemented the
+bounded Home guard and documentation. Before/after regressions reproduce the missing
+page-two access. Focused provider lodging tests pass 10/10, report paging 4/4 and combined
+member lodging/history/Home tests 24/24. Independent Sol review found no material blocker.
+Workspace typecheck, lint, formatting and production builds pass. The complete local
+unit run passed 788/789 tests in 97 files; the only failure was the new 202-row
+desk regression exceeding the default five-second test limit. With a scoped
+90-second allowance and unchanged assertions, the provider suite passed 10/10
+again. Full corrected branch CI is pending at this checkpoint.
+
+The current-runtime entry/read pass covered 26 distinct real role/navigation checks plus
+one wholly intercepted audit presentation check. An initially skipped retained paid-detail
+case passed once its existing fixture was supplied. During concurrent edits, the desk
+briefly received a new query shape before its consumer was updated; a fresh stable-source
+reservation entry rerun passed, as did medical entry. The separate member history/detail
+helper passed at 390/1440 with zero browser errors, denied supporting reads or business
+writes. Selected health/member captures were manually inspected under PRODUCT/DESIGN.
+No booking, clinical episode, upload, export, invoice or payment was created by this pass;
+session commands and normal audited reads are separate from business mutations.
+
+The retained capped no-show still awaits 12 October 00:00 Europe/Istanbul. Management
+mutation acceptance, formal owner review and genuine October 15/30 scheduler evidence
+remain separately open; the list corrections do not mark those gates passed.
+
 **MGT-04 approved implementation checkpoint (2026-10-11):** source `ce79523`
 implements GET/PUT `/api/v1/admin/tenant-settings/accommodation` and the capability-gated
 `/admin/tenant-settings` UI. Only `holdMinutes` and `quoteTtlMinutes` are admitted, as

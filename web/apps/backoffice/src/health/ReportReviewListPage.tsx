@@ -3,6 +3,7 @@ import { usePermission } from '@kapsora/auth';
 import { formatDate, useTranslation } from '@kapsora/i18n';
 import {
   Badge,
+  Button,
   EmptyState,
   PageHeader,
   ProblemAlert,
@@ -41,7 +42,8 @@ export function ReportReviewListPage() {
   const [status, setStatus] = useState<MedicalReportStatus>('SUBMITTED');
   const canReadOrganizations = usePermission('organization.read');
   const query = useReports({ status, limit: 50 });
-  const rows = query.data?.items ?? [];
+  const rows = query.data?.pages.flatMap((page) => page.items) ?? [];
+  const firstPageError = query.isError && rows.length === 0;
 
   return (
     <>
@@ -61,8 +63,15 @@ export function ReportReviewListPage() {
         <div className="text-fg-muted flex items-center gap-2 p-6 text-sm" aria-busy="true">
           <Spinner /> {t('common.loading')}
         </div>
-      ) : query.error ? (
-        <ProblemAlert problem={problemOf(query.error)} />
+      ) : firstPageError ? (
+        <ProblemAlert
+          problem={problemOf(query.error)}
+          actions={
+            <Button variant="secondary" onClick={() => void query.refetch()}>
+              {t('common.retry')}
+            </Button>
+          }
+        />
       ) : rows.length === 0 ? (
         <EmptyState title={t('review.report.empty')} />
       ) : (
@@ -109,6 +118,26 @@ export function ReportReviewListPage() {
           </TBody>
         </Table>
       )}
+      {rows.length > 0 && query.isFetchNextPageError && query.error ? (
+        <ProblemAlert
+          problem={problemOf(query.error)}
+          actions={
+            <Button variant="secondary" onClick={() => void query.fetchNextPage()}>
+              {t('common.retry')}
+            </Button>
+          }
+        />
+      ) : null}
+      {rows.length > 0 && query.hasNextPage && !query.isFetchNextPageError ? (
+        <Button
+          variant="secondary"
+          className="mt-4"
+          disabled={query.isFetchingNextPage}
+          onClick={() => void query.fetchNextPage()}
+        >
+          {query.isFetchingNextPage ? t('common.loading') : t('common.loadMore')}
+        </Button>
+      ) : null}
     </>
   );
 }

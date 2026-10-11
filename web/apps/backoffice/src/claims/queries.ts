@@ -11,7 +11,7 @@ import type {
 } from '@kapsora/api-client';
 import { etagOf } from '@kapsora/api-client';
 import { useSession, useTenantId } from '@kapsora/auth';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useOps } from '../api';
 
@@ -126,9 +126,19 @@ export function useClaimCommands(claimId: string, access: AccessContext | undefi
 export function useReports(query: MedicalReportListQuery) {
   const ops = useOps();
   const tenantId = useTenantId();
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ['reports', tenantId, 'list', query],
-    queryFn: () => ops.reports.list(tenantId, query),
+    initialPageParam: null as string | null,
+    queryFn: ({ pageParam }) =>
+      ops.reports.list(tenantId, { ...query, ...(pageParam ? { cursor: pageParam } : {}) }),
+    getNextPageParam: (lastPage, pages, lastPageParam) => {
+      const cursor = lastPage.nextCursor;
+      return !cursor ||
+        cursor === lastPageParam ||
+        pages.slice(0, -1).some((page) => page.nextCursor === cursor)
+        ? undefined
+        : cursor;
+    },
   });
 }
 
