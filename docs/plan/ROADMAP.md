@@ -140,6 +140,35 @@ Synthetic browser checks at 390/1440 verified identity reset and status/version 
 with zero business writes, unexpected API calls, page errors or overflow. Selected screens
 were manually reviewed. This is bounded UI behavior evidence, not full health acceptance.
 
+All six jobs passed on source `b17c9e26cb7b2f7aee9dc49d34680f46b2a59f5a` in
+[CI run 38168927951](https://github.com/celikbros/kapsora/actions/runs/38168927951): 819 unit
+tests in 104 files and 25 mock browser tests passed. The 111 opt-in live/calendar cases
+were skipped, not accepted.
+
+**Claim editing and review state isolation (2026-10-11):** cached navigation between
+claims with equal versions previously carried provider line edits or reviewer amounts,
+decisions and reasons into the next claim. Different reviewer line numbers could also
+crash the editor. Both initial regressions failed before the fix. Claim-level component
+boundaries now own those drafts; version/status/projection/stage changes reset affected
+editors and command forms. Failed reads cannot restore an old command after recovery.
+Unchanged successful refreshes preserve drafts. Command handlers recheck eligibility and
+pending state; a closed but pending provider cancellation continues blocking other writes.
+
+Late saves, submissions, cancellations and review decisions cannot show the previous
+claim's feedback or close the current dialog. Stable claim-level save callbacks preserve
+normal success feedback when a successful save refreshes and replaces the line editor.
+Existing clinical/financial projections, own-file restrictions and server authority remain
+unchanged; no API, schema, permission or monetary policy changed.
+
+The provider safety suite passes 10/10 and its related health/billing/access suites 31/31.
+Backoffice safety passes 7/7, shared claim/report regressions 28/28 and backoffice clinical
+privacy/own-file tests 12/12. Both app typechecks/builds and scoped lint/format checks pass.
+Independent source review found no material blocker in either app.
+Synthetic provider, financial-review and medical-review browser checks at 390/1440 verify
+draft and dialog isolation, with no business writes, unexpected reads, browser errors or
+document overflow. Selected captures were manually inspected under PRODUCT/DESIGN.
+This is bounded healthcare workflow evidence; the separate live/calendar gates remain open.
+
 **Health/lodging working-list closure (2026-10-11):** four observed user-facing
 defects are corrected. Provider arrivals/departures previously stopped at 100 newest
 bookings, member history at 50 bookings, and medical report review at 50 reports. Each

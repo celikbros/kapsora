@@ -472,6 +472,14 @@ version, status or eligibility, or a failed report read, closes the open decisio
 does not reopen it; the reviewer explicitly starts a fresh decision. Delayed command feedback
 cannot affect another report, while normal same-report success feedback remains available.
 
+**Claim forms belong to one claim.** Provider line edits and cancellation reasons, and
+reviewer decisions, approved amounts, comments and approve/reject/return reasons, stay with
+the selected claim identity. Changing claims clears the drafts. A version, status, projection
+or eligibility change, or a failed read, invalidates the affected command form; an unchanged
+successful refresh preserves its draft. A late completion from another claim cannot close the
+current form or show feedback on it. A successful save on the current claim keeps its normal
+feedback. Existing projection and permission rules continue to decide which controls appear.
+
 **Report correction depends on known history.** Version history has loading and retryable
 error states, preserving known versions on a failed refresh. Correction requires a successful,
 idle history read and the existing permission, clinical projection, status and later-version

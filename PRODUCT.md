@@ -86,6 +86,15 @@ When the read recovers, the decision stays closed until the reviewer explicitly 
 decision. A delayed command result cannot show feedback on another report; normal success
 feedback remains available while the reviewer stays on the report being decided.
 
+Provider claim line edits and cancellation reasons belong to the selected claim. Backoffice
+review decisions, approved amounts, comments and approve/reject/return reasons belong to the
+claim the reviewer selected. Changing claims clears their drafts; a changed version, status,
+projection, eligibility or failed claim read invalidates the affected command form. An
+unchanged successful refresh preserves the draft. A late completion for a previous claim
+cannot close the current form or show feedback on it; a save on the current claim keeps its
+normal success feedback. These behaviors preserve the existing financial and clinical access
+rules: claim projections still determine which fields a person may see or decide.
+
 Report version history shows loading and retryable errors while retaining known versions.
 A correction is offered only after a successful, settled history read establishes that no
 later version exists, under the existing clinical/status/permission rules.
