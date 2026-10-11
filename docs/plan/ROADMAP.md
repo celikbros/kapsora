@@ -20,9 +20,10 @@ PC-01 through PC-04 are verified locally for the defined health/hospital demo sc
 PC-05 financial journeys passed local technical acceptance; formal owner acceptance and
 true October 15/30 scheduler observations remain open. PC-06 capped cancellation passed live; terminal no-show acceptance
 awaits its natural arrival window. MGT-02 invitation/membership, MGT-03A ordinary role
-mutations and MGT-04 settings changes now pass bounded live technical acceptance. MGT-03B
-pending/self-denial/cancel boundaries pass, while positive distinct-checker approval remains
-open because no eligible checker is available. Formal owner review and October 15/30
+mutations, MGT-03B pending/self-denial/cancel plus distinct-checker approval, and MGT-04
+settings changes now pass bounded live technical acceptance. Positive MGT-03B evidence uses
+the explicitly authorized one-off DEMO_B bootstrap exception; general bootstrap helpers
+remain excluded from product acceptance. Formal owner review and October 15/30
 observations remain separate gates. This snapshot supersedes dated next-step instructions
 in historical checkpoints.
 
@@ -63,9 +64,9 @@ writes. Selected health/member captures were manually inspected under PRODUCT/DE
 No booking, clinical episode, upload, export, invoice or payment was created by this pass;
 session commands and normal audited reads are separate from business mutations.
 
-The retained capped no-show still awaits 12 October 00:00 Europe/Istanbul. The positive
-MGT-03B distinct-checker gate, formal owner review and genuine October 15/30 scheduler
-evidence remain separately open; the list corrections do not mark those gates passed.
+The retained capped no-show still awaits 12 October 00:00 Europe/Istanbul. Formal owner
+review and genuine October 15/30 scheduler evidence remain separately open; the list
+corrections do not mark those gates passed.
 
 **MGT-04 approved implementation checkpoint (2026-10-11):** source `ce79523`
 implements GET/PUT `/api/v1/admin/tenant-settings/accommodation` and the capability-gated
@@ -109,11 +110,11 @@ These are migration-time preservation counts, before the bounded lodging test re
 described below. The subsequent settings GET/denial checks now pass 5/5 after restart.
 No live settings update, grant command or payment was created.
 
-At this implementation checkpoint, local setting commands, MGT-02 invitation/suspension
-and MGT-03 role mutations, terminal capped no-show acceptance, formal owner walkthrough and
-genuine October 15/30 observations were open. The following live checkpoint now closes the
-bounded MGT-02/03A/04 paths; MGT-03B positive checker approval and the other listed gates
-remain open. No new clinical, financial or custom-role authority is included. This checkpoint
+At this historical implementation checkpoint, local setting commands, MGT-02 invitation/
+suspension and MGT-03 role mutations, terminal capped no-show acceptance, formal owner
+walkthrough and genuine October 15/30 observations were open. The bounded MGT-02/03A/04
+paths later passed; MGT-03B positive checker acceptance is recorded below. No new clinical,
+financial or custom-role authority is included. This checkpoint
 supersedes the historical MGT-04 approval status below.
 
 **Live acceptance checkpoint (2026-10-11, after operator restart):** API 8090,
@@ -135,12 +136,32 @@ memberships and three grant-history rows. Existing operator grants, credentials 
 were unchanged. Ordinary-command exact resend was not exercised; journal recovery behavior
 is covered by implementation and isolated checks.
 
-The separate MGT-03B checker passed 1/1: a zero-access DEMO_B member's privileged proposal
-was created and exactly replayed; same-maker approval was denied, pending access stayed
-denied, and the maker cancelled the request with exact cancellation replay. No grant was
-applied. No eligible distinct authorized approver was available, so positive approval
-remains open. Thirteen journal entries comprise 10 committed ordinary commands, two
-accepted proposal/cancellation commands and one refused self-approval.
+**Earlier MGT-03B boundary checkpoint (2026-10-11):** the separate checker passed 1/1: a
+zero-access DEMO_B member's privileged proposal was created and exactly replayed; same-maker
+approval was denied, pending access stayed denied, and the maker cancelled the request with
+exact cancellation replay. No grant was applied in that boundary case. At that earlier
+checkpoint no eligible distinct authorized approver was available, so positive approval was
+still open. Thirteen journal entries comprised 10 committed ordinary commands, two accepted
+proposal/cancellation commands and one refused self-approval.
+
+**MGT-03B positive distinct-checker acceptance (2026-10-11):** the explicitly authorized
+single DEMO_B positive checker case passed 1/1 in about 1.4 seconds. Separately, the new
+synthetic invitation and acceptance passed 1/1 in about 1.5 seconds. A one-off finite
+two-hour TENANT_ADMIN grant was installed atomically with its audit record for the new
+checker only. The checker accepted pending RULE_APPROVER assignment and then revocation
+proposals, with exact replay of both approval headers and response body. Pending assignment
+reads returned 403, opened after assignment and returned 403 after revocation; pending
+revocation reads remained 200. After suspension, the already-open checker session lost
+authority immediately on its next request; the original admin session remained usable.
+Three distinct global actors produced 11 durable observed proof records. The case included
+seven accepted public business commands and one offline grant write. No rule was published,
+and no real two-human judgment or owner acceptance is claimed. The original 17-table
+baseline remains intact; 29 rows were new relative to it, of which 13 were added by this
+case. No pre-existing operator grants, roles, templates, permissions, settings, bookings or
+clinical/financial data changed. This is local private technical evidence, not a portable
+committed harness; the one-off bootstrap exception does not admit general bootstrap helpers.
+The latest committed source `a012171` passed all six CI jobs: 789 tests in 97 files and 25
+mock browser tests passed; 111 opt-in cases were skipped.
 
 Settings changed `holdMinutes` 15→16 while `quoteTtlMinutes` stayed 60, exactly replayed the
 PUT, then restored 15/60. Stale ETag returned 412, key reuse 409 and financial reviewer 403;
@@ -291,7 +312,7 @@ administration commands. Existing organization CRUD remains its own delivered wo
 | --- | --- | --- | --- |
 | MGT-01 | Tenant user membership directory | VERIFIED; bounded live reads passed 2026-10-08 | Real list/filter/paging and membership detail with assigned-role validity; tenant-wide permission and strict data projection |
 | MGT-02 | Account onboarding and membership lifecycle | ACTIVE; bounded invitation/membership live mutation passed; broader owner review remains | Explicit public command contracts, validation, scoped lifecycle effects and retry/audit behavior |
-| MGT-03 | Role assignment and revocation | ACTIVE; ordinary roles in both demo tenants verified live; privileged pending/self-denial/cancel boundaries passed; positive checker approval remains open | Step-up, privileged maker-checker rules, scoped commands and recorded history |
+| MGT-03 | Role assignment and revocation | ACTIVE; ordinary roles in both demo tenants and privileged distinct-checker assignment/revocation verified live; formal owner review remains open. Positive checker case used the explicitly authorized one-off DEMO_B bootstrap exception; general bootstrap helpers remain excluded. | Step-up, privileged maker-checker rules, scoped commands and recorded history |
 | MGT-04 | Typed tenant settings | ACTIVE; approved implementation, isolated acceptance and bounded live change/replay/restore passed; schema 61 applied | Named supported settings and validated changes; no arbitrary JSON editor |
 
 **Historical operator/live checkpoint (2026-10-10 20:15 Istanbul):** API PID 27972
