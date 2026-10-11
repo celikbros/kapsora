@@ -62,13 +62,48 @@ tenant_membership 15; platform.tenant_setting 13. The two new permission catalog
 and four system TENANT_ADMIN role-permission rows are the only admitted authority expansion.
 All 13 setting row versions initialize to 1; existing values remain unchanged, and the
 new forced-RLS command receipt table is empty. Schema 61 is clean; business commands 0.
-The operator restart and subsequent bounded settings GET/denial checks are pending.
+The subsequent bounded settings GET/denial checks remain pending; the failed restart
+and reproduced source correction are recorded below.
 No live settings update, grant command, booking or payment was created.
 
 Local setting commands, MGT-02 invitation/suspension and MGT-03 role mutations, capped
 penalty settlement, formal owner walkthrough and genuine October 15/30 observations
 remain separate acceptance gates. No new clinical, financial or custom-role authority
 is included. This checkpoint supersedes the historical MGT-04 approval status below.
+
+**API startup correction (2026-10-11):** the operator's restart left the panel reachable,
+but port 8090 had no listener and the first bounded settings login returned 502. No
+settings read/denial case or live business command passed in that attempt. Local API
+compilation succeeded; a new database-free production-router test reproduced a startup
+panic from duplicate `/admin` mounts. Commit `018e63d` mounts Management once and keeps
+settings-only no-store middleware, command hashing and stored-result authorization intact.
+The router test checks liveness and settings/user/invitation/role routes without a listener
+or database. All local `cmd/api` and settings transport tests, vet and build pass;
+independent Sol review found no blocker. CI for this correction and the operator's reload
+of the corrected source remain separate checkpoints; the previous green CI did not cover
+complete production-router construction. Server start/stop remains operator-owned.
+
+**Remaining lodging acceptance:** the original lodging journeys have live technical
+acceptance. The later approved partial-approval penalty cap still needs actual cancellation
+and confirmed no-show proof. A fresh read-only inventory of DEMO_A/DEMO_B found no HOLD,
+PENDING_APPROVAL or CONFIRMED record to resume. The new bounded synthetic tests reuse
+published demo terms and existing actors; they retain a private fixture and original
+command keys rather than recreate a booking after an uncertain response. Cancellation
+uses a 0.5-night approval under a one-night monetary policy; no-show uses 1.5 nights under
+a larger frozen policy and the genuine arrival window. Fees remain frozen. Zero-fee
+no-show cap proof cannot establish a fee-bearing no-show claim. No new booking, approval,
+fee claim, document, payment or setting change has run in this checkpoint.
+
+The two opt-in cap checkers are prepared and independently reviewed; TypeScript,
+ESLint, Prettier and discovery pass. An explicit no-opt-in run skipped both without
+business actions; this is guard verification, not cap acceptance. See the
+[bounded live runbook](../delegation/PC06-fractional-penalty-decision.md#bounded-opt-in-live-checker).
+
+Functionality closure depends on these live cap results, not on waiting for October 30.
+Formal owner walkthrough remains separate. The retained hotel's reconciliation requires
+the October 15 UTC execution window (03:00 Istanbul October 15 to 03:00 October 16);
+health requires October 30 UTC (03:00 October 30 to 03:00 October 31). Future skips remain
+PENDING; no clock override, replacement episode or automatic catch-up is claimed.
 
 ## Historical cap technical snapshot (2026-10-10)
 

@@ -259,3 +259,11 @@ consumer/security evidence pass, not when this plan or a read-only panel exists.
 ## Delivery checkpoint (2026-10-11)
 
 Source `ce79523` passed all six jobs in [CI run 38089128497](https://github.com/celikbros/kapsora/actions/runs/38089128497): settings module 8 plus managed consumers 3, schema 195, accommodation 123 and directory/invitation 70 without skips; web 777 plus 25 mock browser cases. The approved local 60-to-61 rollout preserved original fields across 16 tables and added only the two permission codes/four system TENANT_ADMIN role-permission rows. Schema 61 is clean; existing setting values are unchanged and command receipts are empty. Operator restart, local read/denial verification and explicit setting-command acceptance remain open. See current HANDOVER for the full evidence and retained product gates.
+
+The subsequent operator restart did not yield an API listener; panel login returned 502,
+so none of the five bounded settings GET/denial cases passed. A database-free complete
+router regression reproduced the duplicate `/admin` mount startup panic. Correction
+`018e63d` registers settings inside the existing Management mount with its original scoped
+no-store/idempotency/result-authorization behavior. Local API/settings transport tests,
+vet and build pass; independent Sol review found no blocker. Reload and live verification
+remain pending; the prior green module/CI tests did not test complete router construction.

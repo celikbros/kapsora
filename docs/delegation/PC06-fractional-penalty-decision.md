@@ -322,3 +322,66 @@ rollback and zero terminal reserve; historical exact-evidence omission; unchange
 claim projection; and safe no-authorization release without a new factor-evidence gate.
 Run SQL only in isolated CI. Update ordinary integer projections and UI tests as contract
 changes, never by recording an invented whole night for fractional consumption.
+
+## Current live closure preparation (2026-10-11)
+
+The original lodging technical scope remains accepted; later capped cancellation/no-show
+commands have isolated acceptance only. Current read-only inventory of both demo tenants
+found no HOLD/PENDING_APPROVAL/CONFIRMED fixture. The attempted operator restart exposed
+an API startup blocker: duplicate `/admin` mounts. Database-free reproduction and the
+scoped `018e63d` fix pass local router/settings tests, vet and build; corrected-source
+reload and its CI are separate gates. No live business action passed in this checkpoint.
+
+The bounded live plan reuses DEMO_A's published NIGHT factor-1 terms and existing actors.
+Cancellation approves 0.5 service night under the existing one-night policy, consumes 0.5
+unit, releases no terminal remainder and preserves frozen first-night fee shares; prior
+partial approval releases the other 2.5 units. Confirmed no-show approves 1.5 service
+nights under a larger frozen policy and consumes exactly 1.5 units after the genuine
+arrival window closes. Zero-fee no-show proves the cap only; a fee-bearing claim remains
+unproven unless actual frozen money is positive. Tests retain private resume fixtures,
+exact original command identities, ledger/inventory baselines and frozen money. They do
+not alter published terms, grants, clocks, settings or old terminal records.
+
+Formal owner review and retained hotel October 15 / health October 30 UTC reconciliation
+remain separate from feature delivery. Keep the scheduler running in the exact windows
+recorded in ROADMAP; pre-date skips are pending and no automatic backfill is claimed.
+
+### Bounded opt-in live checker
+
+The new [cancellation checker](../../tests/e2e/real-lodging-cap-cancellation.spec.ts) and
+[no-show checker](../../tests/e2e/real-lodging-cap-noshow.spec.ts) require explicit opt-in
+and separate persistent fixtures under ignored `tmp/`. Scoped TypeScript, ESLint,
+Prettier and discovery pass; independent Sol review found no remaining material blocker.
+Both cases skip without opt-in, verified without starting a server. Those two skips are
+NOT live acceptance. Review corrected moving-date resume bounds, receipt-retention guards,
+atomic fixture writes and document-ready/link polling before relying on a result.
+
+After the operator reload and existing private environment loading, use the same private
+files on every retry. Never remove or replace them to obtain a fresh booking:
+
+```powershell
+$env:E2E_REAL_API = '1'
+$env:E2E_EXISTING_UI_URL = 'http://127.0.0.1:5181'
+$env:E2E_LODGING_CAP_CANCELLATION = '1'
+$env:E2E_LODGING_CAP_CANCELLATION_FIXTURE = Join-Path (Get-Location) 'tmp/pc06-cap-cancellation-live.json'
+pnpm exec playwright test --config tests/e2e/playwright.config.ts real-lodging-cap-cancellation.spec.ts --project chromium --trace off --workers 1
+$env:E2E_LODGING_CAP_CANCELLATION = ''
+
+$env:E2E_LODGING_CAP_NOSHOW = '1'
+$env:E2E_LODGING_CAP_NOSHOW_FIXTURE = Join-Path (Get-Location) 'tmp/pc06-cap-noshow-live.json'
+pnpm exec playwright test --config tests/e2e/playwright.config.ts real-lodging-cap-noshow.spec.ts --project chromium --trace off --workers 1
+$env:E2E_LODGING_CAP_NOSHOW = ''
+```
+
+The existing single-door URL suppresses Playwright's server launcher. Real no-show evidence
+also needs the operator's MinIO/ClamAV and worker; do not bypass scanning. A natural-window
+skip retains the same confirmed booking; its retry timestamp is only the documented-default
+estimate, and the server's current window remains authoritative. An uncertain upload must
+reconcile that same reserved document rather than upload another. A stale run lock needs
+inspection of its owner before release. Neither pending path is passed acceptance.
+
+Cancellation receipts normally expire after 24 hours. The checker preserves intent time,
+original response and replay proof; it does not resend expired uncertain hold/cancel keys.
+Later terminal reads can validate retained balances/ledger/inventory/claim, but unknown
+response identity remains pending. Neither checker changes template grants, tenant settings,
+frozen fees, accepted paid episodes or historical movements.
