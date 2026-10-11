@@ -34,7 +34,10 @@ keep them current as you build.
 
 ## 2. Where things stand
 
-**Current owner priority: complete the running product, with health first.**
+**Current owner priority: health is KAPSORA's primary purpose; finish and verify its user
+workflows first.** Lodging and other benefits remain secondary, while finance and
+administration support health delivery. M8/M9 recovery and pilot work remain deferred by the
+owner.
 The [product completion roadmap](plan/ROADMAP.md#current-product-completion-roadmap-2026-09-22)
 records the approved sequence and acceptance criteria.
 
@@ -90,6 +93,19 @@ session commands and normal audited reads are separate from business mutations.
 The retained capped no-show still awaits 12 October 00:00 Europe/Istanbul. Formal owner
 review and genuine October 15/30 scheduler evidence remain separately open; the list
 corrections do not mark those gates passed.
+
+**Provider hospital case paging (2026-10-11):** older cases are now accessible in pages of
+50 under the existing tenant/status scope. Loaded cases survive a next-page error with
+same-cursor retry; overlapping IDs are shown once. The focused regression passes 1/1,
+provider typecheck, scoped lint/format and independent Sol review pass. Synthetic browser
+checks at 390/1440 passed paging, retry, deduplication, filter reset and document overflow
+checks with zero business writes. Selected captures were inspected manually. This is
+bounded UI acceptance, not a new clinical business-flow or calendar acceptance.
+
+**Active next health correction:** the provider case page currently renders failed report
+or inpatient-stay reads as empty lists, and may offer admission after a failed stay lookup.
+Correct chapter errors/retry and suppress admission until a successful lookup establishes
+no open stay. This correction is in progress and remains unverified.
 
 **MGT-03B positive distinct-checker acceptance (2026-10-11):** the explicitly authorized
 single DEMO_B positive checker case passed 1/1 in about 1.4 seconds. Separately, the new

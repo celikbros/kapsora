@@ -34,11 +34,12 @@ to see which one.
 
 ## Product Purpose
 
-KAPSORA manages entitlement programs end to end: a payer defines what its members are
-entitled to (health sessions, lodging nights, allowances), providers deliver those
-services, and the system checks eligibility, records requests and claims, settles with
-providers, issues fiscal documents through the GİB e-Belge integrator and posts to the
-accounting ledger.
+KAPSORA's primary purpose is health benefit and service orchestration: a payer defines
+members' health entitlements, and sponsors, members, clinics and hospitals follow a care
+request from eligibility and authorization through outpatient or inpatient care, medical
+reports, claim review and provider settlement. Lodging and other benefits are supporting,
+secondary programs. Finance and administration support these health journeys; integrations
+and performance work follow completion of the health workflows that users need.
 
 It replaces spreadsheets, e-mail approvals and per-provider portals with one auditable
 record shared by payer, provider and member, with tenant isolation enforced in the
@@ -51,8 +52,9 @@ financial decisions without being offered clinical report access.
 The backoffice Reports entry leads staff with `report.read` to recorded reconciliation runs
 and export requests. Requesting or downloading exports remains a separate permission.
 
-Long provider lodging arrival and departure lists, member booking history, and backoffice
-medical report review lists let people request older records as needed. If an older page cannot be loaded,
+Long provider hospital case lists, lodging arrival and departure lists, member booking
+history, and backoffice medical report review lists let people request older records as
+needed. If an older page cannot be loaded,
 the records already shown remain available and the page can be retried.
 
 The member home names the next stay or says there is no planned stay when its booking results

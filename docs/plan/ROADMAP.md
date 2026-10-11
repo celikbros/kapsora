@@ -27,6 +27,23 @@ remain excluded from product acceptance. Formal owner review and October 15/30
 observations remain separate gates. This snapshot supersedes dated next-step instructions
 in historical checkpoints.
 
+**Current owner priority:** health is KAPSORA's primary product purpose; lodging and other
+benefits remain secondary. Complete and verify the remaining health user workflows before
+resuming deferred M8/M9 recovery or pilot work. Provider hospital case paging is verified
+below. The active next health fix is the case page: report/stay read errors currently look
+like empty chapters, and admission may be offered after a failed stay lookup. Chapter
+errors/retry and admission gating are in progress and remain unverified.
+
+**Provider hospital case paging (2026-10-11):** cases load on request in groups of 50,
+under the existing tenant/status key. Previously loaded rows remain on a failed next page;
+retry uses the same cursor, overlapping IDs render once, and status changes reset the list.
+Focused regression passes 1/1; provider typecheck, scoped lint/format and independent Sol
+review pass. Synthetic 390/1440 browser checks verified paging/retry/deduplication/filter
+reset with no document overflow and zero business writes; selected captures were inspected.
+No API, permission, database or clinical-command change is introduced. Tenant-switch
+isolation remains covered structurally by the existing tenant key and auth cache reset,
+not by a new focused tenant-switch UI test.
+
 **Health/lodging working-list closure (2026-10-11):** four observed user-facing
 defects are corrected. Provider arrivals/departures previously stopped at 100 newest
 bookings, member history at 50 bookings, and medical report review at 50 reports. Each
@@ -565,7 +582,10 @@ The existing [decision note](../delegation/PC06-fractional-penalty-decision.md) 
 bounded package, restored-reporting control and still-pending business-rule decision.
 
 This is the owner's approved execution order: finish the running product, with health
-first. It takes precedence over the older "next" instructions below. The M0–M11 tables
+first. Lodging and other benefits remain secondary; finance and administration support
+health delivery, and integrations/performance follow completion of outstanding health user
+workflows. M8/M9 recovery remains deferred. This takes precedence over the older "next"
+instructions below. The M0–M11 tables
 record original implementation deliveries; a historical `DONE` does not certify today's
 complete browser workflow. This section tracks that separate acceptance work. It reuses
 the existing work-package contracts rather than starting their implementation again.

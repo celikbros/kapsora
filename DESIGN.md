@@ -434,8 +434,9 @@ columns an operator sorts by — no cards, no avatars, no progress rings. Decora
 rows, and rows are what the work is.
 
 **Older rows arrive on request, and a failed page leaves the list usable.** Provider lodging
-arrivals and departures load older rows in groups of 100. Member booking history and backoffice
-medical report review lists load them in groups of 50; changing a status filter starts that list
+arrivals and departures load older rows in groups of 100. Provider hospital cases, member
+booking history and backoffice medical report review lists load them in groups of 50;
+changing a status filter starts that list
 again from its first page. If a later page fails, keep the loaded rows and offer that page for
 retry. A partially loaded list is not an empty list.
 

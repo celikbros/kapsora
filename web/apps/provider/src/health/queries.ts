@@ -14,7 +14,7 @@ import type {
 } from '@kapsora/api-client';
 import { etagOf } from '@kapsora/api-client';
 import { usePermission, useTenantId } from '@kapsora/auth';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useOps } from '../services';
 
@@ -30,10 +30,17 @@ const ICD10 = 'ICD10';
 export function useCases(status: string) {
   const ops = useOps();
   const tenantId = useTenantId();
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ['provider', tenantId, 'cases', status],
-    queryFn: () =>
-      ops.health.listCases(tenantId, status ? { status: status as 'OPEN' | 'CLOSED' } : {}),
+    initialPageParam: '' as string,
+    retry: false,
+    queryFn: ({ pageParam }) =>
+      ops.health.listCases(tenantId, {
+        limit: 50,
+        ...(status ? { status: status as 'OPEN' | 'CLOSED' } : {}),
+        ...(pageParam ? { cursor: pageParam } : {}),
+      }),
+    getNextPageParam: (last) => last.nextCursor || undefined,
   });
 }
 
